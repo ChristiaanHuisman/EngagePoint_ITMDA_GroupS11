@@ -26,6 +26,7 @@ cd EngagePoint_ITMDA_GroupS11.git
 
 Project Structure
 
+```
 EngagePoint_ITMDA_GroupS11/
 ├─ Frontend/              # Flutter app
 ├─ Backend/               # Custom microservices
@@ -43,6 +44,7 @@ EngagePoint_ITMDA_GroupS11/
 ├─ NOTICE                 # License notice
 ├─ README.md              # Information about the project details
 └─ SETUP.md               # Setup guide to work on and run the project
+```
 
 ---
 

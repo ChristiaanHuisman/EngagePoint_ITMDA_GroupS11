@@ -64,6 +64,7 @@ Backend (Microservices):
 
 Project Structure
 
+```
 EngagePoint_ITMDA_GroupS11/
 ├─ Frontend/              # Flutter app
 ├─ Backend/               # Custom microservices
@@ -81,6 +82,7 @@ EngagePoint_ITMDA_GroupS11/
 ├─ NOTICE                 # License notice
 ├─ README.md              # Information about the project details
 └─ SETUP.md               # Setup guide to work on and run the project
+```
 
 ---
 
@@ -110,12 +112,12 @@ Contributors
 
 EngagePoint App Group S11 – Eduvos
 
-* Benjamin Dähn ()
-* Kieran Horsford ()
+* Benjamin Dähn (https://github.com/BenjaminDahn)
+* Kieran Horsford (https://github.com/KieranH2001)
 * Nicolaas Huisman (https://github.com/ChristiaanHuisman)
-* Luca Karsten ()
-* Hayden Muller ()
-* Durotimi Samuel ()
+* Luca Karsten (https://github.com/Lewcak)
+* Hayden Muller (https://github.com/HaydenMuller)
+* Durotimi Samuel (https://github.com/Timi-Samuel)
 * Supervisor: Ntombesisa Mateyisi (ntombesisa.mateyisi@eduvos.com)
 
 ---
@@ -126,7 +128,7 @@ This project is licensed under the Apache License 2.0 – see the LICENSE file f
 
 ---
 
-Future Improvements
+Possible Future Improvements
 
 * Web dashboard for businesses
 * AI-driven personalized recommendations
