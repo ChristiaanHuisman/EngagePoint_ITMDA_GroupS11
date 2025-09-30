@@ -1,0 +1,6 @@
+@BusinessAnalytics_Service_HostAddress = http://localhost:5186
+
+GET {{BusinessAnalytics_Service_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

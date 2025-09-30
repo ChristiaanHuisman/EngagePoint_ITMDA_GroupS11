@@ -1,0 +1,6 @@
+@BusinessVerification_Service_HostAddress = http://localhost:5163
+
+GET {{BusinessVerification_Service_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

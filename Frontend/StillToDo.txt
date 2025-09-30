@@ -1,0 +1,9 @@
+Add and implement Riverpod in app for state management.
+Use flutter_dotenv for environment variables.
+Setup folders and dependencies for assets like images, icons, and fonts.
+Use flutter_launcer_icons and flutter_native_splash for app icons and splash screens.
+Use go_router for routing structure.
+
+Add Firebase product dependencies needed for app, add the FlutterFire plugins in pubspec.yaml and initialize in main.dart.
+
+Need Apple products to configure and compile iOS specific sections of Flutter x Firebase app. There might be extensions to edit Flutter x Firebase configurations, Nicolaas will look into that.

@@ -1,0 +1,136 @@
+# ===========================================
+# General settings
+# ===========================================
+
+# Normalize line endings to LF in repo, adjust for platform on checkout
+* text=auto eol=lf
+# Keep Windows batch files with CRLF
+*.bat text eol=crlf
+# Markdown / Docs
+*.md text eol=lf
+*.txt text eol=lf
+# C# and other source code
+*.cs text eol=lf
+*.csproj text eol=lf
+*.sln text eol=lf
+# Python
+*.py text eol=lf
+# Java
+*.java text eol=lf
+# Dart / Flutter
+*.dart text eol=lf
+*.yaml text eol=lf
+# JSON / configs
+*.json text eol=lf
+*.yml text eol=lf
+*.xml text eol=lf
+*.plist text eol=lf
+
+# Mark binary files so Git doesn’t mess with them
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.svg    binary
+*.dll    binary
+*.exe    binary
+*.pdb    binary
+*.zip    binary
+*.7z     binary
+*.pdf    binary
+*.mp3    binary
+*.mp4    binary
+*.mov    binary
+*.jar    binary
+*.keystore binary
+*.jks    binary
+*.p12    binary
+*.crt    binary
+*.pem    binary
+*.key    binary
+
+# ===========================================
+# Dart / Flutter files
+# ===========================================
+*.dart       text
+*.yaml       text
+*.yml        text
+*.gradle     text
+*.xml        text
+*.properties text
+
+# iOS / Xcode project files
+*.pbxproj    text
+*.plist      text
+*.storyboard text
+*.xib        text
+
+# ===========================================
+# Python files
+# ===========================================
+*.py         text
+*.pyw        text
+*.toml       text
+*.ini        text
+*.cfg        text
+*.txt        text
+requirements.txt text
+
+# ===========================================
+# Java files
+# ===========================================
+*.java       text
+*.gradle     text
+*.properties text
+
+# ===========================================
+# C# / .NET files
+# ===========================================
+*.cs         text
+*.csproj     text
+*.sln        text
+*.props      text
+*.targets    text
+*.config     text
+*.xaml       text
+*.resx       text
+
+# ===========================================
+# Web / Frontend / Config
+# ===========================================
+*.ts         text
+*.tsx        text
+*.js         text
+*.jsx        text
+*.json       text
+*.css        text
+*.scss       text
+*.sass       text
+*.less       text
+*.html       text
+*.md         text
+*.env        text
+*.editorconfig text
+Dockerfile   text
+
+# ===========================================
+# IDE / Editor-specific
+# ===========================================
+.vscode/*    text eol=lf
+.idea/*      text eol=lf
+*.suo        binary
+*.user       text eol=lf
+*.userosscache binary
+
+# ===========================================
+# Exclude build artifacts from source exports
+# ===========================================
+bin/*            export-ignore
+obj/*            export-ignore
+node_modules/*   export-ignore
+dist/*           export-ignore
+build/*          export-ignore
+.gradle/*        export-ignore
+__pycache__/*    export-ignore
+.venv/*          export-ignore
