@@ -93,7 +93,7 @@ Prerequisites
 - Firebase CLI (https://firebase.google.com/docs/cli)
 - Docker (https://www.docker.com/) (for microservices)
 - .NET 8 SDK (https://dotnet.microsoft.com/download) (for C# services)
-- Java 17+ (https://adoptium.net/) (for recommendation engine)
+- Java 21 (https://adoptium.net/) (for recommendation engine)
 - Python 3.10+ (https://www.python.org/) (for sentiment/moderation services)
 
 See SETUP.md for further detail.
