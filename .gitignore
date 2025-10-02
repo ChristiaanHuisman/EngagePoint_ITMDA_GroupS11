@@ -30,6 +30,7 @@ Desktop.ini
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
+.flutter-versions
 .pub-cache/
 .pub/
 *.iml
@@ -141,6 +142,10 @@ Flutter/flutter_assets/
 Flutter/flutter_export_environment.sh
 ServiceDefinitions.json
 Runner/GeneratedPluginRegistrant.*
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Generated.xcconfig
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
 # Exceptions to above rules.
 !default.mode1v3
 !default.mode2v3
