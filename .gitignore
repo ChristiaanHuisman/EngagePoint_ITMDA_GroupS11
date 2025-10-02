@@ -2,152 +2,126 @@
 # OS / GENERAL
 # =============================
 # macOS
-.DS_Store
-.AppleDouble
-.LSOverride
+**/.DS_Store
+**/.AppleDouble
+**/.LSOverride
+**/.AppleDB
+**/.AppleDesktop
 
 # Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+**/Thumbs.db
+**/ehthumbs.db
+**/Desktop.ini
 
 # Linux
-*~
+**/*~
 
+# Temporary/system crash files
+**/*.crash
+**/*.stackdump
+**/*.gz
+**/*.zip
+**/*.tar
+
+# =============================
 # IDE / EDITORS
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# =============================
+**/.vscode/
+**/.idea/
+**/*.suo
+**/*.ntvs*
+**/*.njsproj
+**/*.sln
+**/*.sw?
+**/*.user
+**/*.userosscache
+**/*.rsuser
+**/*.code-workspace
+**/*.sublime-project
+**/*.sublime-workspace
+**/*.ipr
+**/*.iws
+**/*.swp
 
 # =============================
-# FLUTTER / DART
+# FLUTTER / DART (any folder depth)
 # =============================
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.flutter-versions
-.pub-cache/
-.pub/
-*.iml
-.metadata
-/.idea/
-build/
-/build/
-coverage/
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
-ios/ServiceDefinitions.json
-android/.gradle/
-android/app/key.properties
-android/local.properties
-/shelf/
-/workspace.xml
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-*.iml
-*.ipr
-*.iws
-.idea/
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
-app.*.symbols
-app.*.map.json
-/android/app/debug
-/android/app/profile
-/android/app/release
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.flutter-*
+**/build/
+**/coverage/
+**/app.*.symbols
+**/app.*.map.json
+**/Flutter/App.framework
+**/Flutter/Flutter.framework
+**/Flutter/Flutter.podspec
+**/Flutter/Generated.xcconfig
+**/Flutter/ephemeral/
+**/Flutter/app.flx
+**/Flutter/app.zip
+**/Flutter/flutter_assets/
+**/Flutter/flutter_export_environment.sh
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/ephemeral/
+**/android/.gradle/
+**/android/app/key.properties
+**/android/local.properties
+**/workspace.xml
+**/shelf/
+**/ServiceDefinitions.json
 
-# Generated files
-*.log
-*.lock
-*.tmp
+# Generated logs/temp
+**/*.log
+**/*.lock
+**/*.tmp
 
 # =============================
-# ANDROID / IOS
+# ANDROID / iOS SPECIFIC
 # =============================
 # Android
-*.apk
-*.aar
-*.iml
-.gradle/
-local.properties
-GeneratedPluginRegistrant.java
-gradle-wrapper.jar
-/.gradle
-/captures/
-/gradlew
-/gradlew.bat
-/local.properties
-GeneratedPluginRegistrant.java
-.cxx/
-# Remember to never publicly share your keystore.
-# See https://flutter.dev/to/reference-keystore
-key.properties
+**/*.apk
+**/*.aar
+**/*.iml
+**/.gradle/
+**/gradle-wrapper.jar
+**/captures/
+**/GeneratedPluginRegistrant.java
+**/.cxx/
 **/*.keystore
 **/*.jks
+**/gradlew
+**/gradlew.bat
+**/key.properties
+**/local.properties
 
 # iOS
-Pods/
-Podfile.lock
-DerivedData/
-*.xcworkspace
-*.xcuserstate
-*.xcuserdatad
-*.lock
-**/dgph
-*.mode1v3
-*.mode2v3
-*.moved-aside
-*.pbxuser
-*.perspectivev3
-**/*sync/
-.sconsign.dblite
-.tags*
-**/.vagrant/
-**/DerivedData/
-Icon?
 **/Pods/
-**/.symlinks/
-profile
-xcuserdata
+**/Podfile.lock
+**/DerivedData/
+**/*.xcworkspace
+**/*.xcuserstate
+**/*.xcuserdatad
+**/*.mode1v3
+**/*.mode2v3
+**/*.moved-aside
+**/*.pbxuser
+**/*.perspectivev3
+**/dgph/
+**/*sync/
+**/.sconsign.dblite
+**/.tags*
+**/xcshareddata/
+**/profile
 **/.generated/
-Flutter/App.framework
-Flutter/Flutter.framework
-Flutter/Flutter.podspec
-Flutter/Generated.xcconfig
-Flutter/ephemeral/
-Flutter/app.flx
-Flutter/app.zip
-Flutter/flutter_assets/
-Flutter/flutter_export_environment.sh
-ServiceDefinitions.json
-Runner/GeneratedPluginRegistrant.*
-ios/Flutter/flutter_export_environment.sh
-ios/Flutter/Generated.xcconfig
-ios/Flutter/Flutter.framework
-ios/Flutter/Flutter.podspec
-ios/Flutter/ephemeral/
-# Exceptions to above rules.
+**/.symlinks/
+
+# Exceptions to iOS ignore rules
 !default.mode1v3
 !default.mode2v3
 !default.pbxuser
@@ -156,151 +130,109 @@ ios/Flutter/ephemeral/
 # =============================
 # FIREBASE
 # =============================
-# Firebase config files (replace with safe copies if needed)
-google-services.json
-GoogleService-Info.plist
+**/google-services.json
+**/GoogleService-Info.plist
 
 # =============================
 # PYTHON (microservices)
 # =============================
-__pycache__/
-*.py[cod]
-*.pyc
-*.pyo
-*.pyd
-*.pdb
-*.egg
-*.egg-info/
-*.manifest
-*.spec
-dist/
-build/
-.eggs/
-.mypy_cache/
-.pytest_cache/
-.venv/
-venv/
-.env
-env/
-ENV/
-.ipynb_checkpoints
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+**/*.pyd
+**/*.pdb
+**/*.egg
+**/*.egg-info/
+**/*.manifest
+**/*.spec
+**/dist/
+**/build/
+**/.eggs/
+**/.mypy_cache/
+**/.pytest_cache/
+**/.venv/
+**/venv/
+**/.env
+**/env/
+**/ENV/
+**/.ipynb_checkpoints
+**/.poetry/
 
 # =============================
 # JAVA (microservices)
 # =============================
-*.class
-*.jar
-*.war
-*.ear
-*.iml
-*.log
-*.tmp
-hs_err_pid*
-.gradle/
-target/
-out/
-
-# Maven / Gradle
-.settings/
-.classpath
-.project
-build/
-bin/
+**/*.class
+**/*.jar
+**/*.war
+**/*.ear
+**/*.log
+**/*.tmp
+**/hs_err_pid*
+**/.gradle/
+**/target/
+**/out/
+**/.settings/
+**/.classpath
+**/.project
+**/bin/
 
 # =============================
 # C# / .NET (microservices)
 # =============================
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-*.user
-*.rsuser
-*.suo
-*.userosscache
-*.sln.docstates
-*.vs/
-*.nuget/
-.nuget/
-packages/
-*.nupkg
-
-# Rider / JetBrains
-.idea/
+**/[Bb]in/
+**/[Oo]bj/
+**/[Ll]og/
+**/*.sln.docstates
+**/.vs/
+**/.nuget/
+**/packages/
+**/*.nupkg
 
 # =============================
 # DOCKER
 # =============================
-# Ignore local dev volumes and env files
-*.pid
-*.seed
-*.pid.lock
-.dockerignore
-docker-compose.override.yml
-.env
-.env.*
+**/*.pid
+**/*.seed
+**/*.pid.lock
+**/.dockerignore
+**/docker-compose.override.yml
+**/.env
+**/.env.*
 
 # =============================
-# NODE (if any tooling is used)
+# NODE / FRONTEND
 # =============================
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+**/node_modules/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/.pnpm-debug.log*
+**/dist
+**/out
+**/.turbo
+**/.next
+**/.nuxt
+**/build/web/
 
 # =============================
 # COVERAGE / TEST OUTPUT
 # =============================
-coverage/
-test-output/
-*.lcov
+**/coverage/
+**/test-output/
+**/*.lcov
 
 # =============================
-# MISC
+# MISC / TEMP / CREDENTIALS
 # =============================
-# Don’t commit credentials or temp files
-*.key
-*.pem
-*.crt
-*.p12
-*.jks
-*.keystore
-*.bak
-*.tmp
-*.orig
-*.rej
-
-# Ignore local notes
-*.todo
-*.md.bak
-
-# ===============================
-# Extra or duplicates to be safe
-# ===============================
-.flutter-plugins-dependencies
-.flutter-plugins
-.flutter-*
-/build/web/
-.dart_tool/
-*.code-workspace
-*.sublime-project
-*.sublime-workspace
-*.swp
-*~
-xcshareddata/
-*.trace
-.poetry/
-*.ipynb_checkpoints
-/dist
-/out
-/build
-/.turbo
-/.next
-/.nuxt
-*.crash
-*.stackdump
-.AppleDB
-.AppleDesktop
-*.gz
-*.zip
-*.tar
+**/*.key
+**/*.pem
+**/*.crt
+**/*.p12
+**/*.jks
+**/*.keystore
+**/*.bak
+**/*.tmp
+**/*.orig
+**/*.rej
+**/*.todo
+**/*.md.bak
