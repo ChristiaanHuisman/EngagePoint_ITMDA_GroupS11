@@ -146,6 +146,7 @@ ios/Flutter/flutter_export_environment.sh
 ios/Flutter/Generated.xcconfig
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
+ios/Flutter/ephemeral/
 # Exceptions to above rules.
 !default.mode1v3
 !default.mode2v3
@@ -272,3 +273,34 @@ test-output/
 # Ignore local notes
 *.todo
 *.md.bak
+
+# ===============================
+# Extra or duplicates to be safe
+# ===============================
+.flutter-plugins-dependencies
+.flutter-plugins
+.flutter-*
+/build/web/
+.dart_tool/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+*.swp
+*~
+xcshareddata/
+*.trace
+.poetry/
+*.ipynb_checkpoints
+/dist
+/out
+/build
+/.turbo
+/.next
+/.nuxt
+*.crash
+*.stackdump
+.AppleDB
+.AppleDesktop
+*.gz
+*.zip
+*.tar
