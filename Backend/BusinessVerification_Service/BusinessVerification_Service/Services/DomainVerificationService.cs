@@ -1,0 +1,93 @@
+﻿using Nager.PublicSuffix;
+using System.Net.Mail;
+
+namespace BusinessVerification_Service.Services
+{
+    public class DomainVerificationService
+    {
+        private readonly ILogger<DomainVerificationService> _logger;
+        private readonly DomainParser _domainParser;
+
+        public DomainVerificationService(ILogger<DomainVerificationService> logger)
+        {
+            _logger = logger;
+
+            // Initialize the DomainParser with a TLD rule provider
+            // WebTldRuleProvider fetches the newest list from publicsuffix.org
+            _domainParser = new DomainParser(new WebTldRuleProvider());
+        }
+
+        public bool VerifyDomainMatch(string email, string website)
+        {
+            try
+            {
+                // Normalize variables
+                email = email.Trim().ToLower();
+                website = website.Trim().ToLower();
+
+                // Handle errors
+                if (string.IsNullOrWhiteSpace(email))
+                {
+                    _logger.LogWarning(
+                        "VerifyDomainMatch was called with empty email."
+                    );
+                    throw new ArgumentNullException(nameof(email), "No email recieved.");
+                }
+                if (string.IsNullOrWhiteSpace(website))
+                {
+                    _logger.LogWarning(
+                        "VerifyDomainMatch was called with empty website."
+                    );
+                    throw new ArgumentNullException(nameof(website), "No website recieved.");
+                }
+
+                // Get domain only from email address
+                var emailDomain = new MailAddress(email).Host;
+                var emailDomainInfo = _domainParser.Parse(emailDomain);
+
+                // Ensure website is a fully complete URL
+                var uriBuilder = new UriBuilder(
+                    website.StartsWith("http", StringComparison.OrdinalIgnoreCase) 
+                    ? website : $"https://{website}"
+                );
+
+                // Get domain only from website URL
+                var websiteDomain = uriBuilder.Uri.Host;
+                var websiteDomainInfo = _domainParser.Parse(websiteDomain);
+
+                // Return if the email and website domains match
+                bool isMatch = emailDomainInfo.RegistrableDomain == websiteDomainInfo.RegistrableDomain;
+                _logger.LogInformation(
+                    "Domain verification for email {email} and website {website} result is {isMatch}.", 
+                    email, website, isMatch
+                );
+                return isMatch;
+            }
+            // Handle errors
+            catch (FormatException exception)
+            {
+                _logger.LogWarning(exception, 
+                    "Invalid format for email {email} and/or website {website}.", 
+                    email, website
+                );
+                throw new ArgumentException("Invalid email or website format.", exception);
+            }
+            catch (HttpRequestException exception)
+            {
+                _logger.LogError(exception, 
+                    "Network issue while verifying domain for email {email} and website {website}.", 
+                    email, website
+                );
+                throw new ApplicationException("Network issue while verifying domain.", exception);
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, 
+                    "Unexpected error while verifying domain for email {email} and website {website}.", 
+                    email, website
+                );
+                throw new ApplicationException("Domain verification failed unexpectedly.", exception);
+            }
+        }
+    }
+}

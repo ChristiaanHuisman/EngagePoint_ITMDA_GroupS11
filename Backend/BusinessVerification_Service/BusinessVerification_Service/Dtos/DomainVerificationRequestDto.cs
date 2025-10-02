@@ -1,10 +1,9 @@
-﻿namespace BusinessVerification_Service.Models
+﻿namespace BusinessVerification_Service.Dtos
 {
-    public class DomainVerificationModel
+    public class DomainVerificationRequestDto
     {
         public string UserId { get; set; }
         public string BusinessEmail { get; set; }
         public string BusinessWebsite { get; set; }
-        public string BusinessName { get; set; }
     }
 }
