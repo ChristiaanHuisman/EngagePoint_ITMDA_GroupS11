@@ -6,15 +6,12 @@ namespace BusinessVerification_Service.Services
     public class DomainVerificationService
     {
         private readonly ILogger<DomainVerificationService> _logger;
-        private readonly DomainParser _domainParser;
+        private readonly IDomainParser _domainParser;
 
-        public DomainVerificationService(ILogger<DomainVerificationService> logger)
+        public DomainVerificationService(ILogger<DomainVerificationService> logger, IDomainParser domainParser)
         {
             _logger = logger;
-
-            // Initialize the DomainParser with a TLD rule provider
-            // WebTldRuleProvider fetches the newest list from publicsuffix.org
-            _domainParser = new DomainParser(new WebTldRuleProvider());
+            _domainParser = domainParser;
         }
 
         public bool VerifyDomainMatch(string email, string website)
