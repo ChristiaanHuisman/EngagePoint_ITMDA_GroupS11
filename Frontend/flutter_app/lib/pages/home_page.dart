@@ -50,7 +50,7 @@ class HomePage extends StatelessWidget {
           children: <Widget>[
             Container(
               height: 100.0,
-              decoration: const BoxDecoration(color: Colors.blueAccent),
+              decoration: const BoxDecoration(color: Colors.deepPurpleAccent),
               child: const Align(
                 alignment: Alignment.bottomLeft,
                 child: Padding(

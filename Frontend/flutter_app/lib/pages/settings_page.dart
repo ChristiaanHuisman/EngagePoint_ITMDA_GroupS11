@@ -31,6 +31,10 @@ class SettingsPage extends StatelessWidget {
                   onChanged: (bool value) {
                     settings.receiveNotifications = value;
                   },
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: Colors.deepPurple,
+                  inactiveThumbColor: Colors.grey[700],
+                  inactiveTrackColor: Colors.grey[400],
                 ),
                 SwitchListTile(
                   title: const Text("Context Notifications"),
@@ -43,6 +47,10 @@ class SettingsPage extends StatelessWidget {
                           settings.contextNotificationsEnabled = value;
                         }
                       : null,
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: Colors.deepPurple,
+                  inactiveThumbColor: Colors.grey[700],
+                  inactiveTrackColor: Colors.grey[400],
                 ),
                 if (settings.receiveNotifications && settings.contextNotificationsEnabled)
                   Padding(
@@ -113,6 +121,10 @@ class SettingsPage extends StatelessWidget {
                   onChanged: (bool value) {
                     settings.darkModeEnabled = value;
                   },
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: Colors.deepPurple,
+                  inactiveThumbColor: Colors.grey[700],
+                  inactiveTrackColor: Colors.grey[400],
                 ),
                 ListTile(
                   leading: const Icon(Icons.help_outline),
