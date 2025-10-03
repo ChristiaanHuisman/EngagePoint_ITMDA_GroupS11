@@ -18,10 +18,6 @@ namespace BusinessVerification_Service.Services
         {
             try
             {
-                // Normalize variables
-                email = email.Trim().ToLower();
-                website = website.Trim().ToLower();
-
                 // Handle errors
                 if (string.IsNullOrWhiteSpace(email))
                 {
@@ -37,6 +33,10 @@ namespace BusinessVerification_Service.Services
                     );
                     throw new ArgumentNullException(nameof(website), "No website recieved.");
                 }
+
+                // Normalize variables
+                email = email.Trim().ToLower();
+                website = website.Trim().ToLower();
 
                 // Get domain only from email address
                 var emailDomain = new MailAddress(email).Host;
