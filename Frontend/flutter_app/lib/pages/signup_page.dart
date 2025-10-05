@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// Update the import path to the correct relative location of auth_service.dart
+import '../services/auth_service.dart';
 import 'home_page.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -9,32 +11,37 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  final TextEditingController _fullNameController = TextEditingController();
+  final AuthService _authService = AuthService();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmController = TextEditingController();
+  bool _loading = false;
 
-  @override
-  void dispose() {
-    _fullNameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-
-  void _handleSignUp() {
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match!')));
+  Future<void> _signUp() async {
+    if (_passwordController.text != _confirmController.text) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Passwords do not match")));
       return;
     }
 
-    Navigator.pushReplacement<void, void>(
-      context,
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => const HomePage(),
-      ),
+    setState(() => _loading = true);
+    final user = await _authService.signUpWithEmail(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+      _nameController.text.trim(),
     );
+    setState(() => _loading = false);
+
+    if (user != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Sign up failed")));
+    }
   }
 
   @override
@@ -45,92 +52,53 @@ class _SignUpPageState extends State<SignUpPage> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Text(
-                "Create Your Account",
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 30),
+            children: [
               TextField(
-                controller: _fullNameController,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.person),
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.person),
                   labelText: "Full Name",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  border: OutlineInputBorder(),
                 ),
-                keyboardType: TextInputType.name,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _emailController,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.email),
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.email),
                   labelText: "Email",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  border: OutlineInputBorder(),
                 ),
-                keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.lock),
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.lock),
                   labelText: "Password",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  border: OutlineInputBorder(),
                 ),
-                enableSuggestions: false,
-                autocorrect: false,
               ),
               const SizedBox(height: 16),
               TextField(
-                controller: _confirmPasswordController,
+                controller: _confirmController,
                 obscureText: true,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.lock),
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.lock),
                   labelText: "Confirm Password",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  border: OutlineInputBorder(),
                 ),
-                enableSuggestions: false,
-                autocorrect: false,
               ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: _handleSignUp,
-                  child: const Text("Sign Up", style: TextStyle(fontSize: 18)),
+                  onPressed: _loading ? null : _signUp,
+                  child: _loading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Sign Up"),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  const Text("Already have an account?"),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text("Login"),
-                  ),
-                ],
               ),
             ],
           ),

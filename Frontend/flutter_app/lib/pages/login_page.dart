@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
+import '../services/auth_service.dart';
 import 'signup_page.dart';
+import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -10,180 +11,110 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _rememberMe = false;
+  bool _loading = false;
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  Future<void> _loginWithEmail() async {
+    setState(() => _loading = true);
+    final user = await _authService.signInWithEmail(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+    );
+    setState(() => _loading = false);
+
+    if (user != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Login failed")));
+    }
   }
 
-  void _handleLogin() {
-    Navigator.pushReplacement<void, void>(
-      context,
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => const HomePage(),
-      ),
-    );
+  Future<void> _loginWithGoogle() async {
+    setState(() => _loading = true);
+    final user = await _authService.signInWithGoogle();
+    setState(() => _loading = false);
+
+    if (user != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Google login failed")));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Text(
-                "Engage Point",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Image.network(
-                'https://www.nicepng.com/png/detail/436-4361187_logo-random.png',
-                height: 80,
-                width: 80,
-                fit: BoxFit.cover,
-              ),
-              const SizedBox(height: 20),
-              Text(
-                "Welcome Back",
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            children: [
+              Text("Engage Point",
+                  style: TextStyle(
+                      fontSize: 32,
                       fontWeight: FontWeight.bold,
-                    ),
-              ),
+                      color: Theme.of(context).colorScheme.primary)),
               const SizedBox(height: 30),
+
               TextField(
                 controller: _emailController,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.email),
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.email),
                   labelText: "Email",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  border: OutlineInputBorder(),
                 ),
-                keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),
+
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.lock),
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.lock),
                   labelText: "Password",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  border: OutlineInputBorder(),
                 ),
-                enableSuggestions: false,
-                autocorrect: false,
               ),
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Checkbox(
-                        value: _rememberMe,
-                        onChanged: (bool? newValue) {
-                          setState(() {
-                            _rememberMe = newValue ?? false;
-                          });
-                        },
-                      ),
-                      const Text("Remember Me"),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      debugPrint('Forgot Password pressed');
-                    },
-                    child: const Text("Forgot Password?"),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: _handleLogin,
-                  child: const Text("Login", style: TextStyle(fontSize: 18)),
+                  onPressed: _loading ? null : _loginWithEmail,
+                  child: _loading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Login"),
                 ),
               ),
               const SizedBox(height: 20),
-              const Row(
-                children: <Widget>[
-                  Expanded(child: Divider(thickness: 1)),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text("OR"),
-                  ),
-                  Expanded(child: Divider(thickness: 1)),
-                ],
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: Image.network(
-                    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ2sSeQqjaUTuZ3gRgkKjidpaipF_l6s72lBw&s',
-                    height: 20,
-                  ),
-                  label: const Text(
-                    "Continue with Google",
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: BorderSide(color: Theme.of(context).dividerColor),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () {
-                    debugPrint('Google login button pressed');
-                  },
+
+              OutlinedButton.icon(
+                icon: Image.network(
+                  'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+                  height: 20,
                 ),
+                label: const Text("Continue with Google"),
+                onPressed: _loading ? null : _loginWithGoogle,
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.person_add),
-                  label: const Text("Sign Up", style: TextStyle(fontSize: 16)),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: BorderSide(color: Theme.of(context).dividerColor),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () {
-                    debugPrint('Sign Up button pressed');
-                    Navigator.push<void>(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (BuildContext context) => const SignUpPage(),
-                      ),
-                    );
-                  },
+
+              OutlinedButton.icon(
+                icon: const Icon(Icons.person_add),
+                label: const Text("Sign Up"),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SignUpPage()),
                 ),
               ),
             ],
