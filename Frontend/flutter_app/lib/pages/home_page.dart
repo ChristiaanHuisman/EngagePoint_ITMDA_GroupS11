@@ -10,7 +10,7 @@ import 'settings_page.dart';
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  Future<void> _signOut(BuildContext context) async {
+  Future<void> signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     await GoogleSignIn().signOut();
   }
