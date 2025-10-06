@@ -1,4 +1,5 @@
 ﻿using Nager.PublicSuffix;
+using System;
 using System.Net.Mail;
 
 namespace BusinessVerification_Service.Services
@@ -18,7 +19,12 @@ namespace BusinessVerification_Service.Services
         {
             try
             {
-                // Handle errors
+                _logger.LogInformation(
+                    "Domain verification for email {email} and website {website} started.",
+                    email, website
+                );
+
+                // Handle empty errors
                 if (string.IsNullOrWhiteSpace(email))
                 {
                     _logger.LogWarning(
@@ -52,6 +58,18 @@ namespace BusinessVerification_Service.Services
                 var websiteDomain = uriBuilder.Uri.Host;
                 var websiteDomainInfo = _domainParser.Parse(websiteDomain);
 
+                // Handle errors in domain parsing
+                if (emailDomainInfo == null)
+                {
+                    _logger.LogWarning("Failed to parse email domain: {email}", email);
+                    throw new ArgumentException("Invalid email format entered.");
+                }
+                if (websiteDomainInfo == null)
+                {
+                    _logger.LogWarning("Failed to parse website domain: {website}", website);
+                    throw new ArgumentException("Invalid website format entered.");
+                }
+
                 // Return if the email and website domains match
                 bool isMatch = emailDomainInfo.RegistrableDomain == websiteDomainInfo.RegistrableDomain;
                 _logger.LogInformation(
@@ -61,6 +79,10 @@ namespace BusinessVerification_Service.Services
                 return isMatch;
             }
             // Handle errors
+            catch (ArgumentNullException)
+            {
+                throw;
+            }
             catch (FormatException exception)
             {
                 _logger.LogWarning(exception, 

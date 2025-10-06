@@ -75,6 +75,12 @@ namespace BusinessVerification_Service.Tests.Services
         [InlineData("person@example.com", "https://www.example.com:8080", true)] // Port number - valid
         [InlineData("person@example.com", "ftp://example.com", true)] // Mixed protocal - valid
         [InlineData("person@xn--fsq.com", "https://xn--fsq.com", true)] // Punycode domain - valid
+        [InlineData("person@example.com.", "https://www.example.com.", false)] // Trailing . - invalid
+        [InlineData("person@example.", "https://www.example.", false)] // No suffix trailing . - invalid
+        [InlineData("person@example.com", "tps://www.example.com", false)] // Wrong start of website - invalid
+        [InlineData("person@example.com", "://www.example.com", false)] // Wrong start of website - invalid
+        [InlineData("person@example.com", "/www.example.com", false)] // Wrong start of website - invalid
+        [InlineData("person@example.com", "/example.com", false)] // Wrong start of website without www - invalid
         public void VerifyDomainMatch_VariousCases_ReturnsExpected(
             string email, string website, bool expectedResult)
         {
@@ -88,20 +94,39 @@ namespace BusinessVerification_Service.Tests.Services
             Assert.Equal(expectedResult, result);
         }
 
+        // Test invalid email or website throws ArgumentException
+        [Theory]
+
+        public void VerifyDomainMatch_InvalidInputs_ThrowsArgumentException(
+            string email, string website)
+        {
+            // Arrange
+            var service = CreateService();
+
+            // Act and assert
+            Assert.Throws<ArgumentException>(() 
+                => service.VerifyDomainMatch(email, website)
+            );
+        }
+
         // Test empty email or website throws ArgumentNullException
         [Theory]
         [InlineData("", "example.com")]
         [InlineData("user@example.com", "")]
         [InlineData(" ", "example.com")]
         [InlineData("user@example.com", " ")]
+        [InlineData("", "")]
+        [InlineData(" ", " ")]
         public void VerifyDomainMatch_EmptyEmailOrWebsite_ThrowsArgumentNullException(
             string email, string website)
         {
             // Arrange
             var service = CreateService();
 
-            // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => service.VerifyDomainMatch(email, website));
+            // Act and assert
+            Assert.Throws<ArgumentNullException>(() 
+                => service.VerifyDomainMatch(email, website)
+            );
         }
     }
 }
