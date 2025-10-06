@@ -105,6 +105,18 @@ class HomePage extends StatelessWidget {
                   },
                 ),
                 const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: const Text('Logout', style: TextStyle(color: Colors.red)),
+                   onTap: () {
+                  Navigator.pushReplacement<void, void>(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (BuildContext context) => const LoginPage(),
+                    ),
+                  );
+                },
+              ),
                 
               ],
             ),

@@ -52,7 +52,7 @@ class ProfilePage extends StatelessWidget {
                 ).textTheme.titleMedium?.copyWith(color: Colors.grey),
               ),
               const SizedBox(height: 20),
-              // ... (Your other widgets for followers, etc.)
+              
               const SizedBox(height: 30),
               ListTile(
                 leading: const Icon(Icons.person),
@@ -73,13 +73,13 @@ class ProfilePage extends StatelessWidget {
                   );
                 },
               ),
-              // Add this ListTile back in
+              
               ListTile(
                 leading: const Icon(Icons.notifications),
                 title: const Text("Notifications"),
                 onTap: () {
                   debugPrint('Notifications tapped');
-                  // Add your navigation or function call here
+                  
                 },
               ),
               const Divider(),

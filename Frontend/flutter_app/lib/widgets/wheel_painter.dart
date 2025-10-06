@@ -14,7 +14,7 @@ class WheelPainter extends CustomPainter {
     final double segmentAngle = 2 * pi / rewards.length;
 
     for (int i = 0; i < rewards.length; i++) {
-      final Paint paint = Paint()..color = rewards[i].color.withOpacity(0.8);
+      final Paint paint = Paint()..color = rewards[i].color;
       final double startAngle = (i * segmentAngle) - (segmentAngle / 2) - (pi / 2);
 
       canvas.drawArc(

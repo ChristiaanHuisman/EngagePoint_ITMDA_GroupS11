@@ -35,9 +35,9 @@ class MyApp extends StatelessWidget {
     return Consumer<SettingsData>(
       builder: (context, settings, child) {
         final systemUiOverlayStyle = SystemUiOverlayStyle(
-          // Make the status bar transparent
+          
           statusBarColor: Colors.transparent,
-          // Set the icon brightness based on the theme
+          
           statusBarIconBrightness: settings.darkModeEnabled ? Brightness.light : Brightness.dark,
         );
         SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
@@ -54,8 +54,8 @@ class MyApp extends StatelessWidget {
               brightness: Brightness.light,
             ),
             appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.deepPurpleAccent, // ✅ Banner color
-              foregroundColor: Colors.white,             // ✅ Text & icons white
+              backgroundColor: Colors.deepPurpleAccent, 
+              foregroundColor: Colors.white,            
               elevation: 0,
             ),
           ),
@@ -68,7 +68,7 @@ class MyApp extends StatelessWidget {
               brightness: Brightness.dark,
             ),
             appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.deepPurpleAccent, // ✅ Banner color in dark mode too
+              backgroundColor: Colors.deepPurpleAccent, 
               foregroundColor: Colors.white,
               elevation: 0,
             ),
