@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// Update the import path to the correct relative location of auth_service.dart
 import '../services/auth_service.dart';
 import 'home_page.dart';
 
@@ -7,16 +6,20 @@ class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
   @override
-  _SignUpPageState createState() => _SignUpPageState();
+  SignUpPageState createState() => SignUpPageState();
 }
 
-class _SignUpPageState extends State<SignUpPage> {
+class SignUpPageState extends State<SignUpPage> {
   final AuthService _authService = AuthService();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
   bool _loading = false;
+  
+  // state variable to track if the user is signing up as a business.
+  bool _isBusiness = false;
+  
 
   Future<void> _signUp() async {
     if (_passwordController.text != _confirmController.text) {
@@ -26,11 +29,18 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     setState(() => _loading = true);
+    
+    
     final user = await _authService.signUpWithEmail(
       _emailController.text.trim(),
       _passwordController.text.trim(),
       _nameController.text.trim(),
+      isBusiness: _isBusiness, 
     );
+    
+    
+   
+    if (!mounted) return;
     setState(() => _loading = false);
 
     if (user != null) {
@@ -57,7 +67,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 controller: _nameController,
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.person),
-                  labelText: "Full Name",
+                  labelText: "Full Name or Business Name", 
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -90,13 +100,29 @@ class _SignUpPageState extends State<SignUpPage> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 24),
+              
+              
+              CheckboxListTile(
+                title: const Text("Sign up as a Business Account"),
+                subtitle: const Text("You will require verification."),
+                value: _isBusiness,
+                onChanged: (newValue) {
+                  setState(() {
+                    _isBusiness = newValue ?? false;
+                  });
+                },
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+              
+
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _loading ? null : _signUp,
                   child: _loading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
                       : const Text("Sign Up"),
                 ),
               ),

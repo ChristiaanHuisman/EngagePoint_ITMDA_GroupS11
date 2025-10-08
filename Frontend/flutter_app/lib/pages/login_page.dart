@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // <-- 1. Import the package
+import 'package:shared_preferences/shared_preferences.dart'; 
 import '../services/auth_service.dart';
 import 'signup_page.dart';
 
@@ -7,15 +7,15 @@ class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  _LoginPageState createState() => _LoginPageState();
+  LoginPageState createState() => LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class LoginPageState extends State<LoginPage> {
   final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _loading = false;
-  bool _rememberMe = false; // <-- 2. State variable for the checkbox
+  bool _rememberMe = false; 
 
   @override
   void initState() {
@@ -30,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // 3. Method to load the saved email from device storage
+  //  Method to load the saved email from device storage
   void _loadUserEmail() async {
     final prefs = await SharedPreferences.getInstance();
     final String? email = prefs.getString('email');
@@ -42,7 +42,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // 4. Method to handle saving or removing the email
+  //  Method to handle saving or removing the email
   Future<void> _handleRememberMe() async {
     final prefs = await SharedPreferences.getInstance();
     if (_rememberMe) {
@@ -62,7 +62,7 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _loading = false);
 
     if (user != null) {
-      await _handleRememberMe(); // <-- 5. Save/remove email on successful login
+      await _handleRememberMe(); //  Save/remove email on successful login
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login failed")),

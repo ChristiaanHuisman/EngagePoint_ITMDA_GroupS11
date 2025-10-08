@@ -10,6 +10,13 @@ class ProfilePage extends StatelessWidget {
 
   Future<void> _signOut(BuildContext context) async {
     await AuthService().signOut();
+
+    
+    // This check ensures the widget is still on the screen before we try to navigate.
+    
+    if (!context.mounted) return;
+    
+
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const LoginPage()),
       (Route<dynamic> route) => false,
@@ -27,9 +34,7 @@ class ProfilePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Profile"),
-        // THE FIX: Use the main 'primary' color for a consistent deep purple.
         backgroundColor: Theme.of(context).colorScheme.primary,
-        // To make the title and icons readable on the dark background
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
       
@@ -91,7 +96,12 @@ class ProfilePage extends StatelessWidget {
                   debugPrint('Notifications tapped');
                 },
               ),
-              
+              const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: const Text('Logout', style: TextStyle(color: Colors.red)),
+                  onTap: () => _signOut(context),
+                ),
             ],
           ),
         ),
