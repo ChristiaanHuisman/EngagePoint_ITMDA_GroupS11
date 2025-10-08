@@ -1,5 +1,4 @@
 ﻿using Nager.PublicSuffix;
-using System;
 using System.Net.Mail;
 
 namespace BusinessVerification_Service.Services
@@ -15,6 +14,8 @@ namespace BusinessVerification_Service.Services
             _domainParser = domainParser;
         }
 
+        // Verifies if the domain of the provided email matches the domain of the provided website
+        // Returns true if they match, false and error messages otherwise
         public bool VerifyDomainMatch(string email, string website)
         {
             try
@@ -30,27 +31,59 @@ namespace BusinessVerification_Service.Services
                     _logger.LogWarning(
                         "VerifyDomainMatch was called with empty email."
                     );
-                    throw new ArgumentNullException(nameof(email), "No email recieved.");
+                    throw new ArgumentNullException(nameof(email), 
+                        "No email recieved. " +
+                        "Please ensure all details are entered correctly and try again, " +
+                        "or contact support if the issue persists."
+                    );
                 }
                 if (string.IsNullOrWhiteSpace(website))
                 {
                     _logger.LogWarning(
                         "VerifyDomainMatch was called with empty website."
                     );
-                    throw new ArgumentNullException(nameof(website), "No website recieved.");
+                    throw new ArgumentNullException(nameof(website),
+                        "No website recieved. " +
+                        "Please ensure all details are entered correctly and try again, " +
+                        "or contact support if the issue persists."
+                    );
                 }
 
                 // Normalize variables
                 email = email.Trim().ToLower();
                 website = website.Trim().ToLower();
 
+                // Handling trailing full stop errors
+                if (email.EndsWith('.'))
+                {
+                    _logger.LogWarning("Email {email} ends with a trailing full stop.", 
+                        email
+                    );
+                    throw new ArgumentException("Email cannot end with a trailing full stop. " +
+                        "Please ensure all details are entered correctly and try again, " +
+                        "or contact support if the issue persists."
+                    );
+                }
+                if (website.EndsWith('.'))
+                {
+                    _logger.LogWarning("Website {website} ends with a trailing full stop.",
+                        website
+                    );
+                    throw new ArgumentException("Website cannot end with a trailing full stop. " +
+                        "Please ensure all details are entered correctly and try again, " +
+                        "or contact support if the issue persists."
+                    );
+                }
+
                 // Get domain only from email address
                 var emailDomain = new MailAddress(email).Host;
                 var emailDomainInfo = _domainParser.Parse(emailDomain);
 
                 // Ensure website is a fully complete URL
+                // ftp is also supported
                 var uriBuilder = new UriBuilder(
                     website.StartsWith("http", StringComparison.OrdinalIgnoreCase) 
+                    || website.StartsWith("ftp", StringComparison.OrdinalIgnoreCase) 
                     ? website : $"https://{website}"
                 );
 
@@ -59,15 +92,27 @@ namespace BusinessVerification_Service.Services
                 var websiteDomainInfo = _domainParser.Parse(websiteDomain);
 
                 // Handle errors in domain parsing
-                if (emailDomainInfo == null)
+                if (emailDomainInfo == null 
+                    || string.IsNullOrWhiteSpace(emailDomainInfo.RegistrableDomain) 
+                    || emailDomainInfo.RegistrableDomain == emailDomainInfo.TopLevelDomain)
                 {
-                    _logger.LogWarning("Failed to parse email domain: {email}", email);
-                    throw new ArgumentException("Invalid email format entered.");
+                    _logger.LogWarning("Failed to parse email {email} domain.", email);
+                    throw new ArgumentException(
+                        "Invalid or incomplete email format entered. " +
+                        "Please ensure all details are entered correctly and try again, " +
+                        "or contact support if the issue persists."
+                    );
                 }
-                if (websiteDomainInfo == null)
+                if (websiteDomainInfo == null 
+                    || string.IsNullOrWhiteSpace(websiteDomainInfo.RegistrableDomain) 
+                    || websiteDomainInfo.RegistrableDomain == websiteDomainInfo.TopLevelDomain)
                 {
-                    _logger.LogWarning("Failed to parse website domain: {website}", website);
-                    throw new ArgumentException("Invalid website format entered.");
+                    _logger.LogWarning("Failed to parse website {website} domain.", website);
+                    throw new ArgumentException(
+                        "Invalid or incomplete website format entered. " +
+                        "Please ensure all details are entered correctly and try again, " +
+                        "or contact support if the issue persists."
+                    );
                 }
 
                 // Return if the email and website domains match
@@ -89,7 +134,12 @@ namespace BusinessVerification_Service.Services
                     "Invalid format for email {email} and/or website {website}.", 
                     email, website
                 );
-                throw new ArgumentException("Invalid email or website format.", exception);
+                throw new ArgumentException(
+                    "Invalid email or website format. " +
+                    "Please ensure all details are entered correctly and try again, " +
+                    "or contact support if the issue persists.", 
+                    exception
+                );
             }
             catch (HttpRequestException exception)
             {
@@ -97,15 +147,25 @@ namespace BusinessVerification_Service.Services
                     "Network issue while verifying domain for email {email} and website {website}.", 
                     email, website
                 );
-                throw new ApplicationException("Network issue while verifying domain.", exception);
+                throw new ApplicationException(
+                    "Network issue while verifying domain. " +
+                    "Please ensure all details are entered correctly and try again, " +
+                    "or contact support if the issue persists.", 
+                    exception
+                );
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception, 
-                    "Unexpected error while verifying domain for email {email} and website {website}.", 
+                    "Unexpected error while verifying domain match for email {email} and website {website}.", 
                     email, website
                 );
-                throw new ApplicationException("Domain verification failed unexpectedly.", exception);
+                throw new ApplicationException(
+                    "Domain verification failed unexpectedly. " +
+                    "Please ensure all details are entered correctly and try again, " +
+                    "or contact support if the issue persists.", 
+                    exception
+                );
             }
         }
     }

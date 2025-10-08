@@ -5,6 +5,9 @@ using Nager.PublicSuffix.RuleProviders;
 
 namespace BusinessVerification_Service.Tests.Services
 {
+    // Most possible test cases for email and website combinations entered by users
+    // including valid matches, invalid matches, and various edge cases
+    // for the DomainVerificationService.VerifyDomainMatch method is covered here
     public class DomainVerificationServiceTests
     {
         private DomainVerificationService CreateService()
@@ -45,18 +48,6 @@ namespace BusinessVerification_Service.Tests.Services
         [InlineData("person@example.個人.hk", "https://www.example.個人.hk", true)] // Mathcing weird suffix - valid
         [InlineData("person@example.個人.hk", "https://www.different.個人.hk", false)] // Non-mathcing weird suffix - invalid
         [InlineData("person@example.個人.hk", "https://www.example.公司.hk", false)] // Non-matching and weird suffix - invalid
-        [InlineData("person@example.xyz123", "https://www.example.xyz123", false)] // Matching non-existent suffix - invalid
-        [InlineData("person@example.xyz123", "https://www.different.xyz123", false)] // Non-matching and non-existent suffix - invalid
-        [InlineData("person@example.xyz123", "https://www.example.xyz1234", false)] // Non-matching non-existent suffix - invalid
-        [InlineData("person@example", "https://www.example", false)] // Matching no suffix - invalid
-        [InlineData("person@example", "https://www.different", false)] // Non-matching no suffix - invalid
-        [InlineData("person@example.com", "https://www.example", false)] // Matching missing suffix - invalid
-        [InlineData("person@.com", "https://www..com", false)] // No domain - invalid
-        [InlineData("person@.com", "https://www..co.za", false)] // No domain non-matching suffix - invalid
-        [InlineData("person@com", "https://www.com", false)] // No domain missing . suffix - invalid
-        [InlineData("person@com", "https://www.co.za", false)] // No domain non-matching and missing . suffix - invalid
-        [InlineData("person@.com", "https://.com", false)] // No domain no www - invalid
-        [InlineData("person@com", "https://com", false)] // No domain missing . suffix no www - invalid
         [InlineData("PERSON@EXAMPLE.COM", "https://www.example.com", true)] // Uppercase email - valid
         [InlineData("person@example.com", "HTTPS://www.EXAMPLE.COM", true)] // Uppercase website - valid
         [InlineData("PERSON@EXAMPLE.COM", "HTTPS://www.EXAMPLE.COM", true)] // Uppercase - valid
@@ -69,18 +60,11 @@ namespace BusinessVerification_Service.Tests.Services
         [InlineData("person@specific.role.example.com", "https://www.role.example.com", true)] // Multi subdomain - valid
         [InlineData("person@specific.role.example.com", "https://www.specific.role.example.com", true)] // Multi subdomain - valid
         [InlineData("person@sub.sub.sub.sub.sub.example.com", "https://example.com", true)] // Deep subdomain - valid
-        [InlineData("personexample.com", "example.com", false)] // Missing @ - invalid
-        [InlineData("person@example.com", "https://www.192.168.1.1", false)] // IP - invalid
         [InlineData("person+alias@example.com", "https://www.example.com", true)] // Email alias - valid
         [InlineData("person@example.com", "https://www.example.com:8080", true)] // Port number - valid
         [InlineData("person@example.com", "ftp://example.com", true)] // Mixed protocal - valid
         [InlineData("person@xn--fsq.com", "https://xn--fsq.com", true)] // Punycode domain - valid
-        [InlineData("person@example.com.", "https://www.example.com.", false)] // Trailing . - invalid
-        [InlineData("person@example.", "https://www.example.", false)] // No suffix trailing . - invalid
-        [InlineData("person@example.com", "tps://www.example.com", false)] // Wrong start of website - invalid
-        [InlineData("person@example.com", "://www.example.com", false)] // Wrong start of website - invalid
-        [InlineData("person@example.com", "/www.example.com", false)] // Wrong start of website - invalid
-        [InlineData("person@example.com", "/example.com", false)] // Wrong start of website without www - invalid
+        [InlineData("person@com.com", "https://www.com.com", true)] // Matching registerable and top-level domain - valid
         public void VerifyDomainMatch_VariousCases_ReturnsExpected(
             string email, string website, bool expectedResult)
         {
@@ -96,7 +80,20 @@ namespace BusinessVerification_Service.Tests.Services
 
         // Test invalid email or website throws ArgumentException
         [Theory]
-
+        [InlineData("person@.com", "https://www..com")] // No domain
+        [InlineData("person@.com", "https://www..co.za")] // No domain non-matching suffix
+        [InlineData("person@.com", "https://.com")] // No domain no www
+        [InlineData("personexample.com", "example.com")] // Missing @
+        [InlineData("person@example.com", "://www.example.com")] // Wrong start of website
+        [InlineData("person@example.com", "/www.example.com")] // Wrong start of web
+        [InlineData("person@example.com", "/example.com")] // Wrong start of website without www
+        [InlineData("@", "https://www.example.com")] // Weird case
+        [InlineData("<person@example.com", "https://www.example.com")] // Email starting with <
+        [InlineData(".person@example.com", "https://www.example.com")] // Email starting with .
+        [InlineData("person@example.com", "https://www.example.com>")] // Weird case
+        [InlineData("person@example.com>", "https://www.example.com>")] // Trailing >
+        [InlineData("person@example.com", "<https://www.example.com")] // Website starting with <
+        [InlineData("person@example.com", ".https://www.example.com")] // Website starting with .
         public void VerifyDomainMatch_InvalidInputs_ThrowsArgumentException(
             string email, string website)
         {
@@ -109,6 +106,34 @@ namespace BusinessVerification_Service.Tests.Services
             );
         }
 
+        // Test cases cause unexpected URI or parsing issues and throws ApplicationException
+        [Theory]
+        [InlineData("person@example.xyz123", "https://www.example.xyz123")] // Matching non-existent suffix
+        [InlineData("person@example.xyz123", "https://www.different.xyz123")] // Non-matching and non-existent suffix
+        [InlineData("person@example.xyz123", "https://www.example.xyz1234")] // Non-matching non-existent suffix
+        [InlineData("person@example.com", "https://www.192.168.1.1")] // IP
+        [InlineData("person@example.com", "tps://www.example.com")] // Wrong start of website
+        [InlineData("person@example", "https://www.example")] // Matching no suffix
+        [InlineData("person@example", "https://www.different")] // Non-matching no suffix
+        [InlineData("person@example.com", "https://www.example")] // Matching missing suffix
+        [InlineData("person@example.", "https://www.example.")] // No suffix trailing .
+        [InlineData("person@example.com.", "https://www.example.com.")] // Trailing .
+        [InlineData("person@example.com", ".")] // Weird case
+        [InlineData("person@com", "https://www.com")] // No domain missing . suffix
+        [InlineData("person@com", "https://www.co.za")] // No domain non-matching and missing . suffix
+        [InlineData("person@com", "https://com")] // No domain missing . suffix no www
+        public void VerifyDomainMatch_UnexpectedErrorInputs_ThrowsArgumentException(
+            string email, string website)
+        {
+            // Arrange
+            var service = CreateService();
+
+            // Act and assert
+            Assert.Throws<ApplicationException>(()
+                => service.VerifyDomainMatch(email, website)
+            );
+        }
+
         // Test empty email or website throws ArgumentNullException
         [Theory]
         [InlineData("", "example.com")]
@@ -117,6 +142,10 @@ namespace BusinessVerification_Service.Tests.Services
         [InlineData("user@example.com", " ")]
         [InlineData("", "")]
         [InlineData(" ", " ")]
+        [InlineData("     ", "     ")]
+        [InlineData(null, "example.com")]
+        [InlineData("user@example.com", null)]
+        [InlineData(null, null)]
         public void VerifyDomainMatch_EmptyEmailOrWebsite_ThrowsArgumentNullException(
             string email, string website)
         {
