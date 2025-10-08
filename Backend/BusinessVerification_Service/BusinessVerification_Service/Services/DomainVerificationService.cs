@@ -18,6 +18,7 @@ namespace BusinessVerification_Service.Services
         // Returns true if they match, false and error messages otherwise
         public bool VerifyDomainMatch(string email, string website)
         {
+            // Wrapper safety try block for the entire method
             try
             {
                 _logger.LogInformation(
@@ -32,7 +33,7 @@ namespace BusinessVerification_Service.Services
                         "VerifyDomainMatch was called with empty email."
                     );
                     throw new ArgumentNullException(nameof(email), 
-                        "No email recieved. " +
+                        "No email received. " +
                         "Please ensure all details are entered correctly and try again, " +
                         "or contact support if the issue persists."
                     );
@@ -43,7 +44,7 @@ namespace BusinessVerification_Service.Services
                         "VerifyDomainMatch was called with empty website."
                     );
                     throw new ArgumentNullException(nameof(website),
-                        "No website recieved. " +
+                        "No website received. " +
                         "Please ensure all details are entered correctly and try again, " +
                         "or contact support if the issue persists."
                     );
@@ -131,7 +132,7 @@ namespace BusinessVerification_Service.Services
             catch (FormatException exception)
             {
                 _logger.LogWarning(exception, 
-                    "Invalid format for email {email} and/or website {website}.", 
+                    "Invalid format for email {email} or website {website}.", 
                     email, website
                 );
                 throw new ArgumentException(
