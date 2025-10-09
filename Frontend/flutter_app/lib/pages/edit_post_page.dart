@@ -1,23 +1,38 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
-import '../services/storage_service.dart'; // Import the StorageService
+import '../services/storage_service.dart';
 
-class CreatePostPage extends StatefulWidget {
-  const CreatePostPage({super.key});
+class EditPostPage extends StatefulWidget {
+  final QueryDocumentSnapshot post;
+
+  const EditPostPage({super.key, required this.post});
 
   @override
-  State<CreatePostPage> createState() => _CreatePostPageState();
+  State<EditPostPage> createState() => _EditPostPageState();
 }
 
-class _CreatePostPageState extends State<CreatePostPage> {
+class _EditPostPageState extends State<EditPostPage> {
   final FirestoreService _firestoreService = FirestoreService();
-  final StorageService _storageService = StorageService(); // Create an instance of StorageService
+  final StorageService _storageService = StorageService();
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _contentController = TextEditingController();
+  
+  late TextEditingController _titleController;
+  late TextEditingController _contentController;
+  
   bool _isLoading = false;
-  File? _imageFile; // State variable to hold the selected image file
+  File? _imageFile;
+  String? _existingImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = widget.post.data() as Map<String, dynamic>;
+    _titleController = TextEditingController(text: data['title'] ?? '');
+    _contentController = TextEditingController(text: data['content'] ?? '');
+    _existingImageUrl = data['imageUrl'];
+  }
 
   @override
   void dispose() {
@@ -25,18 +40,18 @@ class _CreatePostPageState extends State<CreatePostPage> {
     _contentController.dispose();
     super.dispose();
   }
-  
-  // Method to handle picking an image from the gallery.
+
   Future<void> _pickImage() async {
     final file = await _storageService.pickImage();
     if (file != null) {
       setState(() {
         _imageFile = file;
+        _existingImageUrl = null; // Remove existing image if new one is picked
       });
     }
   }
 
-  Future<void> _submitPost() async {
+  Future<void> _updatePost() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -44,31 +59,32 @@ class _CreatePostPageState extends State<CreatePostPage> {
     setState(() => _isLoading = true);
 
     try {
-      String? imageUrl;
-      // If an image was selected, upload it first.
+      String? imageUrl = _existingImageUrl;
+      
+      // If a new image was selected, upload it.
       if (_imageFile != null) {
-        // Create a unique path for the post image.
-        final path = 'post_images/${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final path = 'post_images/${widget.post.id}.jpg'; // Use post ID for image name
         imageUrl = await _storageService.uploadFile(path, _imageFile!);
       }
       
-      // Pass the new imageUrl to the createPost method.
-      await _firestoreService.createPost(
+      // We will create this 'updatePost' method in the next step.
+      await _firestoreService.updatePost(
+        postId: widget.post.id,
         title: _titleController.text,
         content: _contentController.text,
-        imageUrl: imageUrl, // Pass the URL
+        imageUrl: imageUrl,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post created successfully!')),
+          const SnackBar(content: Text('Post updated successfully!')),
         );
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create post: $e')),
+          SnackBar(content: Text('Failed to update post: $e')),
         );
       }
     } finally {
@@ -82,9 +98,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create New Post'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        title: const Text('Edit Post'),
+        actions: [
+          IconButton(
+            onPressed: _isLoading ? null : _updatePost,
+            icon: const Icon(Icons.check),
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,
@@ -93,7 +113,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // This section adds the image picker UI.
               Container(
                 height: 200,
                 decoration: BoxDecoration(
@@ -103,24 +122,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 child: InkWell(
                   onTap: _pickImage,
                   child: _imageFile != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(_imageFile!, fit: BoxFit.cover, width: double.infinity),
-                        )
-                      : const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_a_photo_outlined, size: 40, color: Colors.grey),
-                              SizedBox(height: 8),
-                              Text('Add an image (optional)'),
-                            ],
-                          ),
-                        ),
+                      ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(_imageFile!, fit: BoxFit.cover))
+                      : (_existingImageUrl != null
+                          ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(_existingImageUrl!, fit: BoxFit.cover))
+                          : const Center(child: Text('Add an image'))),
                 ),
               ),
               const SizedBox(height: 24),
-
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
@@ -140,20 +148,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 maxLines: 8,
                 validator: (value) => value == null || value.isEmpty ? 'Please enter content' : null,
               ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _submitPost,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                      )
-                    : const Text('Publish Post'),
-              ),
             ],
           ),
         ),
@@ -161,4 +155,3 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
   }
 }
-

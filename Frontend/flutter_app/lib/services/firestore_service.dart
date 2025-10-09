@@ -6,7 +6,11 @@ class FirestoreService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Creates a new post document in the 'posts' collection.
-  Future<void> createPost({required String title, required String content}) async {
+  Future<void> createPost({
+    required String title,
+    required String content,
+    String? imageUrl,
+  }) async {
     final User? user = _auth.currentUser;
     if (user == null) {
       throw Exception("No user is logged in to create a post.");
@@ -29,6 +33,7 @@ class FirestoreService {
       'businessId': user.uid,
       'title': title,
       'content': content,
+      'imageUrl': imageUrl,
       'createdAt': FieldValue.serverTimestamp(),
       'status': 'published',
     });
@@ -158,7 +163,7 @@ class FirestoreService {
 
       double totalRating = 0;
       for (var doc in snapshot.docs) {
-        final data = doc.data();
+        final data = doc.data() as Map<String, dynamic>;
         totalRating += (data['rating'] as num?)?.toDouble() ?? 0.0;
       }
 
@@ -169,7 +174,7 @@ class FirestoreService {
       };
     });
   }
-
+  
   // Adds a new review or updates an existing one for a business.
   Future<void> addOrUpdateReview({
     required String businessId,
@@ -191,8 +196,7 @@ class FirestoreService {
       'createdAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
-
- 
+  
   // Returns a stream of all business users with a 'pending' status.
   Stream<QuerySnapshot<Object?>> getPendingBusinesses() {
     return _db
@@ -204,7 +208,118 @@ class FirestoreService {
 
   // Updates a user's status field in their document.
   Future<void> updateUserStatus(String uid, String status) async {
-    await _db.collection('users').doc(uid).update({'status': status});
+    if (status == 'verified' || status == 'rejected') {
+      await _db.collection('users').doc(uid).update({'status': status});
+    }
+  }
+
+  // Deletes a post from the 'posts' collection.
+  Future<void> deletePost(String postId) async {
+    await _db.collection('posts').doc(postId).delete();
+  }
+
+  // Deletes a review from the 'reviews' collection.
+  Future<void> deleteReview(String businessId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+    await _db.collection('reviews').doc('${currentUser.uid}_$businessId').delete();
+  }
+
+  // Adds a response from a business to a review document.
+  Future<void> addResponseToReview(String reviewId, String response) async {
+    await _db.collection('reviews').doc(reviewId).update({
+      'response': response,
+      'respondedAt': FieldValue.serverTimestamp(),
+    });
+  }
+  
+  // Updates a user's profile document with new data.
+  Future<void> updateUserProfile(String uid, Map<String, dynamic> data) async {
+    if (data.containsKey('name')) {
+      data['searchName'] = (data['name'] as String).toLowerCase();
+    }
+    await _db.collection('users').doc(uid).update(data);
+  }
+
+  /// Returns a stream of reviews written by a specific customer.
+  Stream<QuerySnapshot<Object?>> getReviewsForCustomer(String customerId) {
+    return _db
+        .collection('reviews')
+        .where('customerId', isEqualTo: customerId)
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
+  // Updates an existing post document with new data.
+  Future<void> updatePost({
+    required String postId,
+    required String title,
+    required String content,
+    String? imageUrl,
+  }) async {
+    await _db.collection('posts').doc(postId).update({
+      'title': title,
+      'content': content,
+      'imageUrl': imageUrl,
+    });
+  }
+
+  // Toggles a user's reaction (like) on a post.
+  Future<void> togglePostReaction(String postId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+    final reactionRef = _db.collection('posts').doc(postId).collection('reactions').doc(currentUser.uid);
+    final reactionDoc = await reactionRef.get();
+    if (reactionDoc.exists) {
+      await reactionRef.delete();
+    } else {
+      await reactionRef.set({'createdAt': FieldValue.serverTimestamp()});
+    }
+  }
+
+  // Checks if the current user has reacted to a specific post.
+  Stream<bool> hasUserReacted(String postId) {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return Stream.value(false);
+    return _db.collection('posts').doc(postId).collection('reactions').doc(currentUser.uid).snapshots().map((snapshot) => snapshot.exists);
+  }
+
+  /// Gets the real-time count of reactions for a post.
+  Stream<int> getPostReactionCount(String postId) {
+    return _db.collection('posts').doc(postId).collection('reactions').snapshots().map((snapshot) => snapshot.docs.length);
+  }
+
+  
+  // The following methods have been simplified to handle a single 'like' reaction for reviews.
+
+  // Toggles a user's like on a review.
+  Future<void> toggleReviewReaction(String reviewId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    final reactionRef = _db.collection('reviews').doc(reviewId).collection('reactions').doc(currentUser.uid);
+    final reactionDoc = await reactionRef.get();
+
+    if (reactionDoc.exists) {
+      // If the user has already liked, remove their like.
+      await reactionRef.delete();
+    } else {
+      // If the user has not liked, add their like.
+      await reactionRef.set({'createdAt': FieldValue.serverTimestamp()});
+    }
+  }
+
+  /// Checks if the current user has liked a specific review.
+  Stream<bool> hasUserReactedToReview(String reviewId) {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return Stream.value(false);
+
+    return _db.collection('reviews').doc(reviewId).collection('reactions').doc(currentUser.uid).snapshots().map((snapshot) => snapshot.exists);
+  }
+
+  /// Gets the real-time count of likes for a review.
+  Stream<int> getReviewReactionCount(String reviewId) {
+    return _db.collection('reviews').doc(reviewId).collection('reactions').snapshots().map((snapshot) => snapshot.docs.length);
   }
   
 }

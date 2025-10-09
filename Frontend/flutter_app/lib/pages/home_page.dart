@@ -5,15 +5,14 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
 import 'login_page.dart';
-import 'profile_page.dart';
 import 'discover_page.dart';
 import 'create_post_page.dart';
 import 'rewards_page.dart';
 import 'settings_page.dart';
-import 'business_profile_page.dart';
-import 'admin_page.dart'; 
+import 'admin_page.dart';
+import 'user_profile_page.dart';
 
-/// This widget is the main entry point of your app after main.dart.
+// This widget is the main entry point of your app after main.dart.
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -58,7 +57,11 @@ class _MainAppNavigatorState extends State<MainAppNavigator> {
     _pages = <Widget>[
       FollowingFeed(user: _user),
       const DiscoverPage(),
-      const ProfilePage(),
+      
+      // The Profile tab points to the new UserProfilePage,
+      // passing the current user's ID to show their own profile.
+      if (_user != null) UserProfilePage(userId: _user!.uid) else const Center(child: Text("Not Logged In")),
+      
     ];
   }
 
@@ -349,7 +352,9 @@ class _FollowingFeedState extends State<FollowingFeed> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => BusinessProfilePage(businessId: business.id),
+                      
+                      builder: (context) => UserProfilePage(userId: business.id),
+                      
                     ),
                   );
                 },
