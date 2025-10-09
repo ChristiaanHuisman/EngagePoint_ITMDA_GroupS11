@@ -1,3 +1,4 @@
+using BusinessVerification_Service.Interfaces;
 using BusinessVerification_Service.Services;
 using Nager.PublicSuffix;
 using Nager.PublicSuffix.RuleProviders;
@@ -10,16 +11,17 @@ namespace BusinessVerification_Service
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Register DomainParser as a singleton
+            // Register DomainParser as a Singleton
             builder.Services.AddSingleton<IDomainParser>(sp =>
             {
+                // Use the real domain parser to download the newest public suffix list
                 var ruleProvider = new SimpleHttpRuleProvider();
                 ruleProvider.BuildAsync().GetAwaiter().GetResult();
                 return new DomainParser(ruleProvider);
             });
 
-            // Add services to the container.
-            builder.Services.AddScoped<DomainVerificationService>();
+            // Register interface services
+            builder.Services.AddScoped<IDomainVerificationService, DomainVerificationService>();
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -28,7 +30,7 @@ namespace BusinessVerification_Service
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            // Configure the HTTP request pipeline
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();

@@ -1,4 +1,5 @@
-﻿using BusinessVerification_Service.Services;
+﻿using BusinessVerification_Service.Interfaces;
+using BusinessVerification_Service.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nager.PublicSuffix;
 using Nager.PublicSuffix.RuleProviders;
@@ -10,7 +11,7 @@ namespace BusinessVerification_Service.Tests.Services
     // for the DomainVerificationService.VerifyDomainMatch method is covered here
     public class DomainVerificationServiceTests
     {
-        private DomainVerificationService CreateService()
+        private IDomainVerificationService CreateService()
         {
             // Use NullLogger for testing purposes that won't log anything
             var logger = NullLogger<DomainVerificationService>.Instance;
@@ -69,7 +70,7 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website, bool expectedResult)
         {
             // Arrange
-            var service = CreateService();
+            IDomainVerificationService service = CreateService();
 
             // Act
             bool result = service.VerifyDomainMatch(email, website);
@@ -98,7 +99,7 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website)
         {
             // Arrange
-            var service = CreateService();
+            IDomainVerificationService service = CreateService();
 
             // Act and assert
             Assert.Throws<ArgumentException>(() 
@@ -126,7 +127,7 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website)
         {
             // Arrange
-            var service = CreateService();
+            IDomainVerificationService service = CreateService();
 
             // Act and assert
             Assert.Throws<ApplicationException>(()
@@ -150,7 +151,7 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website)
         {
             // Arrange
-            var service = CreateService();
+            IDomainVerificationService service = CreateService();
 
             // Act and assert
             Assert.Throws<ArgumentNullException>(() 

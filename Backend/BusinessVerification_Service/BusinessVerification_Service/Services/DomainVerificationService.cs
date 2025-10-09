@@ -1,9 +1,10 @@
-﻿using Nager.PublicSuffix;
+﻿using BusinessVerification_Service.Interfaces;
+using Nager.PublicSuffix;
 using System.Net.Mail;
 
 namespace BusinessVerification_Service.Services
 {
-    public class DomainVerificationService
+    public class DomainVerificationService : IDomainVerificationService
     {
         private readonly ILogger<DomainVerificationService> _logger;
         private readonly IDomainParser _domainParser;
