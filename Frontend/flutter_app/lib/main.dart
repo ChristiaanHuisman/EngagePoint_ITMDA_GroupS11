@@ -3,6 +3,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
+// core Flutter primitives
+import 'package:flutter/foundation.dart';
+// core FlutterFire dependency
+import 'package:firebase_core/firebase_core.dart';
 
 import 'services/auth_service.dart';
 import 'pages/login_page.dart';
@@ -13,9 +17,7 @@ import 'models/settings_data.dart';
 void main() async {
   // Ensure Flutter is ready before initializing Firebase
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Wrap the entire app in a ChangeNotifierProvider to make SettingsData available globally
   runApp(
@@ -35,16 +37,19 @@ class MyApp extends StatelessWidget {
     return Consumer<SettingsData>(
       builder: (context, settings, child) {
         final systemUiOverlayStyle = SystemUiOverlayStyle(
-          
           statusBarColor: Colors.transparent,
-          
-          statusBarIconBrightness: settings.darkModeEnabled ? Brightness.light : Brightness.dark,
+
+          statusBarIconBrightness: settings.darkModeEnabled
+              ? Brightness.light
+              : Brightness.dark,
         );
         SystemChrome.setSystemUIOverlayStyle(systemUiOverlayStyle);
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Engage Point',
-          themeMode: settings.darkModeEnabled ? ThemeMode.dark : ThemeMode.light,
+          themeMode: settings.darkModeEnabled
+              ? ThemeMode.dark
+              : ThemeMode.light,
 
           // -- Light Theme Definition --
           theme: ThemeData(
@@ -54,8 +59,8 @@ class MyApp extends StatelessWidget {
               brightness: Brightness.light,
             ),
             appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.deepPurpleAccent, 
-              foregroundColor: Colors.white,            
+              backgroundColor: Colors.deepPurpleAccent,
+              foregroundColor: Colors.white,
               elevation: 0,
             ),
           ),
@@ -68,7 +73,7 @@ class MyApp extends StatelessWidget {
               brightness: Brightness.dark,
             ),
             appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.deepPurpleAccent, 
+              backgroundColor: Colors.deepPurpleAccent,
               foregroundColor: Colors.white,
               elevation: 0,
             ),
@@ -105,4 +110,3 @@ class AuthWrapper extends StatelessWidget {
     );
   }
 }
-
