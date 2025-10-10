@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
 import 'user_profile_page.dart';
@@ -60,7 +59,7 @@ class _ReviewPageState extends State<ReviewPage> {
     final double rating = (data['rating'] as num?)?.toDouble() ?? 0.0;
     final String? response = data['response'];
     final String customerId = data['customerId'] ?? '';
-    final String businessId = data['businessId'] ?? '';
+    
 
     String customerName = 'Anonymous';
     String businessName = 'The Business';

@@ -163,7 +163,7 @@ class FirestoreService {
 
       double totalRating = 0;
       for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         totalRating += (data['rating'] as num?)?.toDouble() ?? 0.0;
       }
 
@@ -322,5 +322,22 @@ class FirestoreService {
     return _db.collection('reviews').doc(reviewId).collection('reactions').snapshots().map((snapshot) => snapshot.docs.length);
   }
   
-}
+  // Saves or updates the user's FCM token in a 'devices' subcollection.
+  Future<void> saveUserToken(String token) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
 
+    // The document ID is the token itself to prevent duplicates.
+    final deviceRef = _db
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('devices')
+        .doc(token);
+
+    await deviceRef.set({
+      'token': token,
+      'createdAt': FieldValue.serverTimestamp(),
+      'lastSeenAt': FieldValue.serverTimestamp(),
+    });
+  }
+}

@@ -60,7 +60,7 @@ class _MainAppNavigatorState extends State<MainAppNavigator> {
       
       // The Profile tab points to the new UserProfilePage,
       // passing the current user's ID to show their own profile.
-      if (_user != null) UserProfilePage(userId: _user!.uid) else const Center(child: Text("Not Logged In")),
+      if (_user != null) UserProfilePage(userId: _user.uid) else const Center(child: Text("Not Logged In")),
       
     ];
   }
