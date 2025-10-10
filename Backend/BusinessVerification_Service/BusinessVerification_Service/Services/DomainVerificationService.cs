@@ -23,7 +23,7 @@ namespace BusinessVerification_Service.Services
             try
             {
                 _logger.LogInformation(
-                    "Domain verification for email {email} and website {website} started.",
+                    "Service: Domain verification for email {email} and website {website} started.",
                     email, website
                 );
 
@@ -31,7 +31,7 @@ namespace BusinessVerification_Service.Services
                 if (string.IsNullOrWhiteSpace(email))
                 {
                     _logger.LogWarning(
-                        "VerifyDomainMatch was called with empty email."
+                        "Service: VerifyDomainMatch was called with empty email."
                     );
                     throw new ArgumentNullException(nameof(email), 
                         "No email received. " +
@@ -42,7 +42,7 @@ namespace BusinessVerification_Service.Services
                 if (string.IsNullOrWhiteSpace(website))
                 {
                     _logger.LogWarning(
-                        "VerifyDomainMatch was called with empty website."
+                        "Service: VerifyDomainMatch was called with empty website."
                     );
                     throw new ArgumentNullException(nameof(website),
                         "No website received. " +
@@ -58,7 +58,7 @@ namespace BusinessVerification_Service.Services
                 // Handling trailing full stop errors
                 if (email.EndsWith('.'))
                 {
-                    _logger.LogWarning("Email {email} ends with a trailing full stop.", 
+                    _logger.LogWarning("Service: Email {email} ends with a trailing full stop.", 
                         email
                     );
                     throw new ArgumentException("Email cannot end with a trailing full stop. " +
@@ -68,7 +68,7 @@ namespace BusinessVerification_Service.Services
                 }
                 if (website.EndsWith('.'))
                 {
-                    _logger.LogWarning("Website {website} ends with a trailing full stop.",
+                    _logger.LogWarning("Service: Website {website} ends with a trailing full stop.",
                         website
                     );
                     throw new ArgumentException("Website cannot end with a trailing full stop. " +
@@ -98,7 +98,7 @@ namespace BusinessVerification_Service.Services
                     || string.IsNullOrWhiteSpace(emailDomainInfo.RegistrableDomain) 
                     || emailDomainInfo.RegistrableDomain == emailDomainInfo.TopLevelDomain)
                 {
-                    _logger.LogWarning("Failed to parse email {email} domain.", email);
+                    _logger.LogWarning("Service: Failed to parse email {email} domain.", email);
                     throw new ArgumentException(
                         "Invalid or incomplete email format entered. " +
                         "Please ensure all details are entered correctly and try again, " +
@@ -109,7 +109,7 @@ namespace BusinessVerification_Service.Services
                     || string.IsNullOrWhiteSpace(websiteDomainInfo.RegistrableDomain) 
                     || websiteDomainInfo.RegistrableDomain == websiteDomainInfo.TopLevelDomain)
                 {
-                    _logger.LogWarning("Failed to parse website {website} domain.", website);
+                    _logger.LogWarning("Service: Failed to parse website {website} domain.", website);
                     throw new ArgumentException(
                         "Invalid or incomplete website format entered. " +
                         "Please ensure all details are entered correctly and try again, " +
@@ -120,7 +120,7 @@ namespace BusinessVerification_Service.Services
                 // Return if the email and website domains match
                 bool isMatch = emailDomainInfo.RegistrableDomain == websiteDomainInfo.RegistrableDomain;
                 _logger.LogInformation(
-                    "Domain verification for email {email} and website {website} result is {isMatch}.", 
+                    "Service: Domain verification for email {email} and website {website} result is {match}.", 
                     email, website, isMatch
                 );
                 return isMatch;
@@ -132,8 +132,8 @@ namespace BusinessVerification_Service.Services
             }
             catch (FormatException exception)
             {
-                _logger.LogWarning(exception, 
-                    "Invalid format for email {email} or website {website}.", 
+                _logger.LogWarning(exception,
+                    "Service: Invalid format for email {email} or website {website}.", 
                     email, website
                 );
                 throw new ArgumentException(
@@ -145,8 +145,8 @@ namespace BusinessVerification_Service.Services
             }
             catch (HttpRequestException exception)
             {
-                _logger.LogError(exception, 
-                    "Network issue while verifying domain for email {email} and website {website}.", 
+                _logger.LogError(exception,
+                    "Service: Network issue while verifying domain for email {email} and website {website}.", 
                     email, website
                 );
                 throw new ApplicationException(
@@ -158,8 +158,8 @@ namespace BusinessVerification_Service.Services
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, 
-                    "Unexpected error while verifying domain match for email {email} and website {website}.", 
+                _logger.LogError(exception,
+                    "Service: Unexpected error while verifying domain match for email {email} and website {website}.", 
                     email, website
                 );
                 throw new ApplicationException(

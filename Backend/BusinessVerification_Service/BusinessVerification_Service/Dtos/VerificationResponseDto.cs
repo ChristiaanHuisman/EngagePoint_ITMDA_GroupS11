@@ -2,7 +2,7 @@
 {
     public class VerificationResponseDto
     {
-        public bool Result { get; set; }
+        public bool Match { get; set; }
         public string Message { get; set; }
     }
 }
