@@ -29,24 +29,14 @@ namespace BusinessVerification_Service.Services
                 );
 
                 // Handle empty errors
-                if (string.IsNullOrWhiteSpace(email))
+                if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(website))
                 {
                     _logger.LogWarning(
-                        "Service: VerifyDomainMatch was called with empty email."
+                        "Service: Empty email {email} or website {website}.", 
+                        email, website
                     );
-                    throw new ArgumentNullException(nameof(email), 
-                        "No email received. " +
-                        "Please ensure all details are entered correctly and try again, " +
-                        "or contact support if the issue persists."
-                    );
-                }
-                if (string.IsNullOrWhiteSpace(website))
-                {
-                    _logger.LogWarning(
-                        "Service: VerifyDomainMatch was called with empty website."
-                    );
-                    throw new ArgumentNullException(nameof(website),
-                        "No website received. " +
+                    throw new ArgumentNullException("email/website", 
+                        "No email or website received. " +
                         "Please ensure all details are entered correctly and try again, " +
                         "or contact support if the issue persists."
                     );
@@ -57,22 +47,13 @@ namespace BusinessVerification_Service.Services
                 website = website.Trim().ToLower();
 
                 // Handling trailing full stop errors
-                if (email.EndsWith('.'))
+                if (email.EndsWith('.') || website.EndsWith('.'))
                 {
-                    _logger.LogWarning("Service: Email {email} ends with a trailing full stop.", 
-                        email
+                    _logger.LogWarning(
+                        "Service: Email {email} or website {website} ends with a trailing full stop.", 
+                        email, website
                     );
-                    throw new ArgumentException("Email cannot end with a trailing full stop. " +
-                        "Please ensure all details are entered correctly and try again, " +
-                        "or contact support if the issue persists."
-                    );
-                }
-                if (website.EndsWith('.'))
-                {
-                    _logger.LogWarning("Service: Website {website} ends with a trailing full stop.",
-                        website
-                    );
-                    throw new ArgumentException("Website cannot end with a trailing full stop. " +
+                    throw new ArgumentException("Email or website cannot end with a trailing full stop. " +
                         "Please ensure all details are entered correctly and try again, " +
                         "or contact support if the issue persists."
                     );
@@ -83,7 +64,7 @@ namespace BusinessVerification_Service.Services
                 var emailDomainInfo = _domainParser.Parse(emailDomain);
 
                 // Checking and building URI for the website address
-                UriBuilder uriBuilder = null;
+                UriBuilder uriBuilder;
                 try
                 {
                     // Ensure website is a fully complete URL
@@ -105,19 +86,6 @@ namespace BusinessVerification_Service.Services
                         "Please ensure all details are entered correctly and try again, " +
                         "or contact support if the issue persists.", 
                         exception
-                    );
-                }
-
-                // Ensuring URI builder is not null
-                if (uriBuilder == null)
-                {
-                    _logger.LogWarning("Service: UriBuilder for website {website} is null.",
-                        website
-                    );
-                    throw new ArgumentException(
-                        "Invalid or incomplete website format entered. " +
-                        "Please ensure all details are entered correctly and try again, " +
-                        "or contact support if the issue persists."
                     );
                 }
 
