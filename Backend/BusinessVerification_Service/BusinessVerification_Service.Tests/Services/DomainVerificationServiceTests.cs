@@ -87,30 +87,10 @@ namespace BusinessVerification_Service.Tests.Services
         [InlineData("person@.com", "https://www..co.za")] // No domain non-matching suffix
         [InlineData("person@.com", "https://.com")] // No domain no www
         [InlineData("personexample.com", "example.com")] // Missing @
-        [InlineData("person@example.com", "://www.example.com")] // Wrong start of website
-        [InlineData("person@example.com", "/www.example.com")] // Wrong start of web
-        [InlineData("person@example.com", "/example.com")] // Wrong start of website without www
         [InlineData("@", "https://www.example.com")] // Weird case
         [InlineData("<person@example.com", "https://www.example.com")] // Email starting with <
         [InlineData(".person@example.com", "https://www.example.com")] // Email starting with .
-        [InlineData("person@example.com", "https://www.example.com>")] // Weird case
         [InlineData("person@example.com>", "https://www.example.com>")] // Trailing >
-        [InlineData("person@example.com", "<https://www.example.com")] // Website starting with <
-        [InlineData("person@example.com", ".https://www.example.com")] // Website starting with .
-        public void VerifyDomainMatch_InvalidInputs_ThrowsArgumentException(
-            string email, string website)
-        {
-            // Arrange
-            IDomainVerificationService service = CreateService();
-
-            // Act and assert
-            Assert.Throws<ArgumentException>(() 
-                => service.VerifyDomainMatch(email, website)
-            );
-        }
-
-        // Test cases cause unexpected URI or parsing issues and throws ApplicationException
-        [Theory]
         [InlineData("person@example.xyz123", "https://www.example.xyz123")] // Matching non-existent suffix
         [InlineData("person@example.xyz123", "https://www.different.xyz123")] // Non-matching and non-existent suffix
         [InlineData("person@example.xyz123", "https://www.example.xyz1234")] // Non-matching non-existent suffix
@@ -125,14 +105,20 @@ namespace BusinessVerification_Service.Tests.Services
         [InlineData("person@com", "https://www.com")] // No domain missing . suffix
         [InlineData("person@com", "https://www.co.za")] // No domain non-matching and missing . suffix
         [InlineData("person@com", "https://com")] // No domain missing . suffix no www
-        public void VerifyDomainMatch_UnexpectedErrorInputs_ThrowsArgumentException(
+        [InlineData("person@example.com", "/example.com")] // Wrong start of website without www
+        [InlineData("person@example.com", "/www.example.com")] // Wrong start of web
+        [InlineData("person@example.com", "https://www.example.com>")] // Weird case
+        [InlineData("person@example.com", "://www.example.com")] // Wrong start of website
+        [InlineData("person@example.com", "<https://www.example.com")] // Website starting with <
+        [InlineData("person@example.com", ".https://www.example.com")] // Website starting with .
+        public void VerifyDomainMatch_InvalidInputs_ThrowsArgumentException(
             string email, string website)
         {
             // Arrange
             IDomainVerificationService service = CreateService();
 
             // Act and assert
-            Assert.Throws<ApplicationException>(()
+            Assert.Throws<ArgumentException>(() 
                 => service.VerifyDomainMatch(email, website)
             );
         }

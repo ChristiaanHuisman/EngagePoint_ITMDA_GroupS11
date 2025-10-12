@@ -82,13 +82,44 @@ namespace BusinessVerification_Service.Services
                 var emailDomain = new MailAddress(email).Host;
                 var emailDomainInfo = _domainParser.Parse(emailDomain);
 
-                // Ensure website is a fully complete URL
-                // ftp is also supported
-                var uriBuilder = new UriBuilder(
-                    website.StartsWith("http", StringComparison.OrdinalIgnoreCase) 
-                    || website.StartsWith("ftp", StringComparison.OrdinalIgnoreCase) 
-                    ? website : $"https://{website}"
-                );
+                // Checking and building URI for the website address
+                UriBuilder uriBuilder = null;
+                try
+                {
+                    // Ensure website is a fully complete URL
+                    // ftp is also supported
+                    uriBuilder = new UriBuilder(
+                        website.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                        || website.StartsWith("ftp", StringComparison.OrdinalIgnoreCase)
+                        ? website : $"https://{website}"
+                    );
+                }
+                // Handle errors
+                catch (UriFormatException exception)
+                {
+                    _logger.LogWarning("Service: Invalid website {website} format.", 
+                        website
+                    );
+                    throw new ArgumentException(
+                        "Invalid or incomplete website format entered. " +
+                        "Please ensure all details are entered correctly and try again, " +
+                        "or contact support if the issue persists.", 
+                        exception
+                    );
+                }
+
+                // Ensuring URI builder is not null
+                if (uriBuilder == null)
+                {
+                    _logger.LogWarning("Service: UriBuilder for website {website} is null.",
+                        website
+                    );
+                    throw new ArgumentException(
+                        "Invalid or incomplete website format entered. " +
+                        "Please ensure all details are entered correctly and try again, " +
+                        "or contact support if the issue persists."
+                    );
+                }
 
                 // Get domain only from website URL
                 var websiteDomain = uriBuilder.Uri.Host;
@@ -128,6 +159,10 @@ namespace BusinessVerification_Service.Services
             }
             // Handle errors
             catch (ArgumentNullException)
+            {
+                throw;
+            }
+            catch (ArgumentException)
             {
                 throw;
             }
