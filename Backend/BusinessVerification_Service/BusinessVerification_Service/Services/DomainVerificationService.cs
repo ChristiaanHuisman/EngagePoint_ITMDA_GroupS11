@@ -9,6 +9,7 @@ namespace BusinessVerification_Service.Services
         private readonly ILogger<DomainVerificationService> _logger;
         private readonly IDomainParser _domainParser;
 
+        // Constructor for dependency injection of logger and domain parser
         public DomainVerificationService(ILogger<DomainVerificationService> logger, IDomainParser domainParser)
         {
             _logger = logger;

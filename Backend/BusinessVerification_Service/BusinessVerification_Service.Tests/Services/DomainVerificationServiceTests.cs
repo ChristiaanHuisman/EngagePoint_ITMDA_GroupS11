@@ -9,8 +9,10 @@ namespace BusinessVerification_Service.Tests.Services
     // Most possible test cases for email and website combinations entered by users
     // including valid matches, invalid matches, and various edge cases
     // for the DomainVerificationService.VerifyDomainMatch method is covered here
+    [Trait("Category", "Service Tests")]
     public class DomainVerificationServiceTests
     {
+        // Helper method to create a service instance with real dependencies
         private IDomainVerificationService CreateService()
         {
             // Use NullLogger for testing purposes that won't log anything

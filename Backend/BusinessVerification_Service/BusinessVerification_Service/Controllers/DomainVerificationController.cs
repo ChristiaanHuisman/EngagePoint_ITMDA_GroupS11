@@ -11,6 +11,7 @@ namespace BusinessVerification_Service.Controllers
         private readonly ILogger<DomainVerificationController> _logger;
         private readonly IDomainVerificationService _domainVerificationService;
 
+        // Constructor for dependency injection of logger and service
         public DomainVerificationController(ILogger<DomainVerificationController> logger, 
             IDomainVerificationService domainVerificationService)
         {
@@ -21,7 +22,7 @@ namespace BusinessVerification_Service.Controllers
         // API call for veryfying the user input domains match,
         // matches user input to DTO properties
         [HttpPost("verify")]
-        public IActionResult VerifyDomain([FromBody] DomainVerificationRequestDto requestDto)
+        public async Task<IActionResult> VerifyDomain([FromBody] DomainVerificationRequestDto requestDto)
         {
             // Wrapper safety try block for the entire action
             try
@@ -72,7 +73,7 @@ namespace BusinessVerification_Service.Controllers
                         Match = returnResult, 
                         Message = returnResult 
                         ? "Business domain verification was successful." 
-                        : $"The email and website domain provided does not match."
+                        : "The email and website domain provided does not match."
                     }
                 );
             }
