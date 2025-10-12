@@ -1,4 +1,4 @@
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 
@@ -61,7 +61,8 @@ export const sendPostNotification =
       return;
     }
 
-    const message = {
+    // NEW APPROACH: Create an array of messages for sendEach()
+    const messages = tokens.map((token) => ({
       notification: {
         title: `${businessName} has a new post!`,
         body: postTitle,
@@ -69,21 +70,11 @@ export const sendPostNotification =
       data: {
         postId: postId,
       },
-      tokens: tokens,
-    };
+      token: token, // Each message object has a single token
+    }));
 
-    logger.log(`Sending notification to ${tokens.length} tokens.`);
+    logger.log(`Sending notification to ${messages.length} devices.`);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const messaging = admin.messaging() as any;
-if (typeof messaging.sendMulticast === "function") {
-  return messaging.sendMulticast(message);
-} else {
-  logger.log("sendMulticast not found — using sendToDevice fallback.");
-  return messaging.sendToDevice(message.tokens, {
-    notification: message.notification,
-    data: message.data,
-  });
-}
-
+    // Use the new sendEach() method
+    return admin.messaging().sendEach(messages);
   });

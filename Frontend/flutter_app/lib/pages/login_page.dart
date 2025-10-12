@@ -92,15 +92,12 @@ class LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                "EngagePoint",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+             
+              Image.asset(
+                'assets/icon.png', // Path to your logo
+                height: 150,       // Adjust the size as needed
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 40),
 
               // Email field
               TextField(

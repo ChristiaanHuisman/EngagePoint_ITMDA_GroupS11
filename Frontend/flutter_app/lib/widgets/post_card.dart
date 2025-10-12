@@ -7,48 +7,16 @@ import '../pages/user_profile_page.dart';
 import '../pages/post_page.dart';
 import '../pages/edit_post_page.dart';
 
-/// A widget that displays a single post in a card format.
-class PostCard extends StatefulWidget {
+// FIX: The PostCard is now a StatelessWidget.
+// This simplifies the widget and removes the problematic state management that was
+// causing the wrong business banner to appear when scrolling. The responsibility
+// of fetching and displaying the business information is now handled by the new
+// self-contained `PostHeader` widget below.
+class PostCard extends StatelessWidget {
   final QueryDocumentSnapshot post;
-
-  const PostCard({super.key, required this.post});
-
-  @override
-  State<PostCard> createState() => _PostCardState();
-}
-
-class _PostCardState extends State<PostCard> {
   final FirestoreService _firestoreService = FirestoreService();
-  DocumentSnapshot? _businessProfile;
-  bool _isLoading = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchBusinessProfile();
-  }
-
-  Future<void> _fetchBusinessProfile() async {
-    try {
-      final postData = widget.post.data() as Map<String, dynamic>;
-      final String? businessId = postData['businessId'];
-      
-      if (businessId != null) {
-        final profile = await _firestoreService.getUserProfile(businessId);
-        if (mounted) {
-          setState(() {
-            _businessProfile = profile;
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    } catch (e) {
-      debugPrint("Error fetching business profile: $e");
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
+  PostCard({super.key, required this.post});
 
   void _showDeleteConfirmation(BuildContext context, String postId) {
     showDialog(
@@ -79,24 +47,13 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> data = widget.post.data() as Map<String, dynamic>;
+    final Map<String, dynamic> data = post.data() as Map<String, dynamic>;
     final String title = data['title'] ?? 'No Title';
     final String content = data['content'] ?? 'No Content';
     final Timestamp timestamp = data['createdAt'] ?? Timestamp.now();
     final String formattedDate = DateFormat('MMM dd, yyyy').format(timestamp.toDate());
     final String? imageUrl = data['imageUrl'];
-
-    String businessName = 'Anonymous Business';
-    String? businessPhotoUrl;
-    String businessId = data['businessId'] ?? '';
-    if (_businessProfile != null && _businessProfile!.exists) {
-      final businessData = _businessProfile!.data() as Map<String, dynamic>;
-      businessName = businessData['name'] ?? 'Unnamed Business';
-      businessPhotoUrl = businessData['photoUrl'];
-    }
-
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final bool isOwner = currentUserId != null && currentUserId == businessId;
+    final String businessId = data['businessId'] ?? '';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -108,7 +65,7 @@ class _PostCardState extends State<PostCard> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PostPage(post: widget.post),
+              builder: (context) => PostPage(post: post),
             ),
           );
         },
@@ -131,73 +88,29 @@ class _PostCardState extends State<PostCard> {
                   },
                 ),
               ),
-            
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_isLoading)
-                    const LinearProgressIndicator(),
-                  if (!_isLoading)
-                    GestureDetector(
-                      onTap: () {
-                        if (businessId.isNotEmpty) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => UserProfilePage(userId: businessId),
-                            ),
-                          );
-                        }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundImage: businessPhotoUrl != null
-                                  ? NetworkImage(businessPhotoUrl)
-                                  : null,
-                              radius: 20,
-                              child: businessPhotoUrl == null ? const Icon(Icons.store, size: 20) : null,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                businessName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                            if (isOwner)
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => EditPostPage(post: widget.post),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                    onPressed: () => _showDeleteConfirmation(context, widget.post.id),
-                                  ),
-                                ],
-                              ),
-                          ],
+                  // THE FIX: Using the new self-contained PostHeader widget.
+                  // This widget fetches its own data, making it immune to the
+                  // ListView recycling issue that caused the wrong banner to show.
+                  PostHeader(
+                    businessId: businessId,
+                    onDelete: () => _showDeleteConfirmation(context, post.id),
+                    onEdit: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EditPostPage(post: post),
                         ),
-                      ),
-                    ),
-                  
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
                   Text(
                     title,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -218,8 +131,6 @@ class _PostCardState extends State<PostCard> {
                   ),
                   const SizedBox(height: 16),
 
-                 
-                  
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -227,7 +138,7 @@ class _PostCardState extends State<PostCard> {
                         children: [
                           // StreamBuilder for the like button state
                           StreamBuilder<bool>(
-                            stream: _firestoreService.hasUserReacted(widget.post.id),
+                            stream: _firestoreService.hasUserReacted(post.id),
                             builder: (context, snapshot) {
                               final hasReacted = snapshot.data ?? false;
                               return IconButton(
@@ -236,14 +147,14 @@ class _PostCardState extends State<PostCard> {
                                   color: hasReacted ? Colors.red : Colors.grey,
                                 ),
                                 onPressed: () {
-                                  _firestoreService.togglePostReaction(widget.post.id);
+                                  _firestoreService.togglePostReaction(post.id);
                                 },
                               );
                             },
                           ),
                           // StreamBuilder for the reaction count
                           StreamBuilder<int>(
-                            stream: _firestoreService.getPostReactionCount(widget.post.id),
+                            stream: _firestoreService.getPostReactionCount(post.id),
                             builder: (context, snapshot) {
                               final count = snapshot.data ?? 0;
                               return Text(
@@ -262,7 +173,6 @@ class _PostCardState extends State<PostCard> {
                       ),
                     ],
                   ),
-                 
                 ],
               ),
             ),
@@ -273,3 +183,98 @@ class _PostCardState extends State<PostCard> {
   }
 }
 
+// ADDITION: New self-contained widget to safely display post headers.
+class PostHeader extends StatelessWidget {
+  final String businessId;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final FirestoreService _firestoreService = FirestoreService();
+
+  PostHeader({
+    required this.businessId,
+    required this.onEdit,
+    required this.onDelete,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final bool isOwner = currentUserId != null && currentUserId == businessId;
+
+    // FutureBuilder fetches the data and rebuilds this widget when it arrives.
+    return FutureBuilder<DocumentSnapshot>(
+      future: _firestoreService.getUserProfile(businessId),
+      builder: (context, snapshot) {
+        // While the data is loading, show a simple placeholder.
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Row(
+            children: [
+              const CircleAvatar(backgroundColor: Colors.transparent),
+              const SizedBox(width: 12),
+              const Text('Loading...'),
+            ],
+          );
+        }
+
+        // If the fetch failed or the business doesn't exist, show an error state.
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Text('Unknown Business');
+        }
+
+        // If the data is here, extract it and display it.
+        var businessData = snapshot.data!.data() as Map<String, dynamic>;
+        final String businessName = businessData['name'] ?? 'Unnamed Business';
+        final String? businessPhotoUrl = businessData['photoUrl'];
+
+        return GestureDetector(
+          onTap: () {
+            if (businessId.isNotEmpty) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserProfilePage(userId: businessId),
+                ),
+              );
+            }
+          },
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundImage: businessPhotoUrl != null
+                    ? NetworkImage(businessPhotoUrl)
+                    : null,
+                radius: 20,
+                child: businessPhotoUrl == null ? const Icon(Icons.store, size: 20) : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  businessName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              if (isOwner)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                      onPressed: onEdit,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: onDelete,
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

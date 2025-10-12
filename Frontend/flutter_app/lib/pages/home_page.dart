@@ -445,3 +445,52 @@ class _FollowingFeedState extends State<FollowingFeed> {
   }
 }
 
+// ADDITION: New self-contained widget to safely display post headers.
+class PostHeader extends StatelessWidget {
+  final String businessId;
+  final FirestoreService _firestoreService = FirestoreService();
+
+  PostHeader({required this.businessId, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // FutureBuilder fetches the data and rebuilds this widget when it arrives.
+    return FutureBuilder<DocumentSnapshot>(
+      future: _firestoreService.getUserProfile(businessId),
+      builder: (context, snapshot) {
+        // While the data is loading, show a simple placeholder.
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const ListTile(
+            leading: CircleAvatar(backgroundColor: Colors.transparent),
+            title: Text('Loading...'),
+          );
+        }
+
+        // If the fetch failed or the business doesn't exist, show an error state.
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const ListTile(title: Text('Unknown Business'));
+        }
+
+        // If the data is here, extract it and display it.
+        var businessData = snapshot.data!.data() as Map<String, dynamic>;
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundImage: NetworkImage(businessData['photoUrl'] ?? 'https://via.placeholder.com/150'),
+          ),
+          title: Text(
+            businessData['name'] ?? 'No Name',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UserProfilePage(userId: businessId),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}

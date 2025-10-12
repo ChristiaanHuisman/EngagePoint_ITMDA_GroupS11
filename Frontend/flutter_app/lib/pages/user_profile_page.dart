@@ -18,7 +18,6 @@ class UserProfilePage extends StatefulWidget {
 
 class _UserProfilePageState extends State<UserProfilePage> {
   final FirestoreService _firestoreService = FirestoreService();
-  // State for the toggle buttons (Posts/Reviews)
   final List<bool> _isSelected = [true, false];
 
   @override
@@ -26,14 +25,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final bool isOwnProfile = currentUserId == widget.userId;
 
-    // This is the main StreamBuilder that listens for real-time profile updates.
     return Scaffold(
       appBar: AppBar(
         title: Text(isOwnProfile ? "Your Profile" : "Profile"),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
-          // The Edit Profile button is only shown if it's the user's own profile.
           if (isOwnProfile)
             IconButton(
               icon: const Icon(Icons.edit_outlined),
@@ -75,7 +72,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
           return CustomScrollView(
             slivers: [
-              // This sliver contains the main profile header.
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -92,7 +88,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
-                      // Display the description if it exists for any user role.
                       if (description != null && description.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0),
@@ -103,7 +98,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           ),
                         ),
                       const SizedBox(height: 16),
-                      // This Row contains stats and the Follow button, only shown for businesses.
                       if (role == 'business')
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -111,9 +105,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           children: [
                             _buildStatColumn("Followers", _firestoreService.getFollowerCount(widget.userId)),
                             _buildReviewStatColumn(widget.userId),
-                            // Don't show a follow button on your own profile.
+                            
+                            // THE FIX IS HERE: The role-checking logic is removed.
+                            // The button is now shown to ANY user, as long as they are
+                            // not viewing their own profile.
                             if (!isOwnProfile)
-                               _buildFollowButton(widget.userId)
+                              _buildFollowButton(widget.userId)
                             else
                               const SizedBox(width: 120), // Placeholder for alignment
                           ],
@@ -123,7 +120,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ),
               ),
               
-              // This sliver contains the divider and the content header (toggle or title).
               SliverToBoxAdapter(
                 child: Column(
                   children: [
@@ -134,7 +130,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ),
               ),
               
-              // Conditionally display the correct content list.
               _buildContentBody(role, isOwnProfile),
             ],
           );
@@ -143,7 +138,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  // --- Helper Widgets for building the UI dynamically ---
+  // --- Helper Widgets ---
 
   Widget _buildContentHeader(BuildContext context, String role, bool isOwnProfile) {
     if (role == 'business') {
@@ -168,7 +163,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ),
         ),
       );
-    } else { // For 'customer' or 'admin'
+    } else {
       return Padding(
         padding: const EdgeInsets.all(16.0),
         child: Text(
@@ -232,7 +227,20 @@ class _UserProfilePageState extends State<UserProfilePage> {
     return StreamBuilder<bool>(
       stream: _firestoreService.isFollowing(businessId),
       builder: (context, snapshot) {
-        final isFollowing = snapshot.data ?? false;
+        if (!snapshot.hasData) {
+          return ElevatedButton.icon(
+            onPressed: null,
+            icon: const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            label: const Text("Loading"),
+          );
+        }
+
+        final isFollowing = snapshot.data!;
+
         return ElevatedButton.icon(
           onPressed: () {
             if (isFollowing) {
@@ -243,6 +251,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
           },
           icon: Icon(isFollowing ? Icons.check : Icons.add, size: 16),
           label: Text(isFollowing ? "Following" : "Follow"),
+          style: isFollowing 
+            ? ElevatedButton.styleFrom(backgroundColor: Colors.grey[600]) 
+            : null,
         );
       },
     );
@@ -276,7 +287,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 if(role == 'business')
-                 Text( "Customer Reviews", style: Theme.of(context).textTheme.titleLarge),
+                  Text( "Customer Reviews", style: Theme.of(context).textTheme.titleLarge),
                 if (canWriteReview)
                   TextButton(
                     onPressed: () {
@@ -334,4 +345,3 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 }
-
