@@ -28,7 +28,8 @@ namespace BusinessVerification_Service.Controllers
             try
             {
                 // Check if model binded to DTO successfully
-                if (!ModelState.IsValid)
+                // Should not be needed as no attributes are used in the DTO
+                /*if (!ModelState.IsValid)
                 {
                     // Get all errors from the ModelState
                     var errors = string.Join("; ", 
@@ -42,6 +43,8 @@ namespace BusinessVerification_Service.Controllers
                         "Controller: Invalid request received with errors: {errors}", 
                         errors
                     );
+
+                    // Return response DTO
                     return BadRequest(new VerificationResponseDto
                     {
                         Match = false,
@@ -49,7 +52,7 @@ namespace BusinessVerification_Service.Controllers
                         "Please ensure all details are entered correctly and try again, " +
                         "or contact support if the issue persists."
                     });
-                }
+                }*/
 
                 _logger.LogInformation(
                     "Controller: Domain verification request for email {email} and website {website} recieved.",
