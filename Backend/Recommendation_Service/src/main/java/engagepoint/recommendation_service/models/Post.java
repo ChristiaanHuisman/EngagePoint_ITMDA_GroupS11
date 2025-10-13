@@ -14,7 +14,7 @@ public class Post {
     }
 
     public String getAuthor() {
-        return author;
+        return Business.getBusinessName();
     }
 
     public String getTitle() {
@@ -23,6 +23,8 @@ public class Post {
 
     public void setAuthor(String author) {
         this.author = author;
+        Business business = new Business();
+        business.setBusinessName(author);
     }
 
     public void setTitle(String title) {
@@ -35,5 +37,11 @@ public class Post {
                 "author='" + author + '\'' +
                 ", title='" + title + '\'' +
                 '}';
+    }
+
+    public boolean userInteraction(String username) {
+        
+
+        return true;
     }
 }

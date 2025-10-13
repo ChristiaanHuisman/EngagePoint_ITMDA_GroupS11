@@ -1,7 +1,7 @@
 package engagepoint.recommendation_service.models;
 
 public class Business {
-    public String businessName;
+    public static String businessName;
     public String category;
 
     public Business() {
@@ -9,11 +9,11 @@ public class Business {
     }
 
     public Business(String name, String category) {
-        this.businessName = name;
+        Business.businessName = name;
         this.category = category;
     }
 
-    public String getBusinessName() {
+    public static String getBusinessName() {
         return businessName;
     }
 
@@ -22,7 +22,7 @@ public class Business {
     }
 
     public void setBusinessName(String name) {
-        this.businessName = name;
+        Business.businessName = name;
     }
 
     public void setCategory(String category) {
@@ -36,4 +36,6 @@ public class Business {
                 ", category='" + category + '\'' +
                 '}';
     }
+
+    
 }
