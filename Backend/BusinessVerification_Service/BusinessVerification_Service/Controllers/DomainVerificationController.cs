@@ -8,6 +8,7 @@ namespace BusinessVerification_Service.Controllers
     [ApiController]
     public class DomainVerificationController : ControllerBase
     {
+        // Injected dependencies
         private readonly ILogger<DomainVerificationController> _logger;
         private readonly IDomainVerificationService _domainVerificationService;
 

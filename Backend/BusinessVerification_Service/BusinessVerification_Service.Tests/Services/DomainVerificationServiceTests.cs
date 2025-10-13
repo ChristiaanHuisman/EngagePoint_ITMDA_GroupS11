@@ -111,20 +111,7 @@ namespace BusinessVerification_Service.Tests.Services
         [InlineData("person@example.com", "://www.example.com")] // Wrong start of website
         [InlineData("person@example.com", "<https://www.example.com")] // Website starting with <
         [InlineData("person@example.com", ".https://www.example.com")] // Website starting with .
-        public void VerifyDomainMatch_InvalidInputs_ThrowsArgumentException(
-            string email, string website)
-        {
-            // Arrange
-            IDomainVerificationService service = CreateService();
-
-            // Act and assert
-            Assert.Throws<ArgumentException>(() 
-                => service.VerifyDomainMatch(email, website)
-            );
-        }
-
-        // Test empty email or website throws ArgumentNullException
-        [Theory]
+        // Test empty email or website
         [InlineData("", "example.com")]
         [InlineData("user@example.com", "")]
         [InlineData(" ", "example.com")]
@@ -135,14 +122,14 @@ namespace BusinessVerification_Service.Tests.Services
         [InlineData(null, "example.com")]
         [InlineData("user@example.com", null)]
         [InlineData(null, null)]
-        public void VerifyDomainMatch_EmptyEmailOrWebsite_ThrowsArgumentNullException(
+        public void VerifyDomainMatch_InvalidInputs_ThrowsArgumentException(
             string email, string website)
         {
             // Arrange
             IDomainVerificationService service = CreateService();
 
             // Act and assert
-            Assert.Throws<ArgumentNullException>(() 
+            Assert.Throws<ArgumentException>(() 
                 => service.VerifyDomainMatch(email, website)
             );
         }
