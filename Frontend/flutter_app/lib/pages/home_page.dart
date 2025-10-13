@@ -12,7 +12,6 @@ import 'settings_page.dart';
 import 'admin_page.dart';
 import 'user_profile_page.dart';
 
-// This widget is the main entry point of your app after main.dart.
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -37,15 +36,16 @@ class HomePage extends StatelessWidget {
   }
 }
 
-// This StatefulWidget manages the state of the BottomNavigationBar
 class MainAppNavigator extends StatefulWidget {
   const MainAppNavigator({super.key});
 
   @override
-  State<MainAppNavigator> createState() => _MainAppNavigatorState();
+  // FIX 1/3: Return the new public state class name.
+  State<MainAppNavigator> createState() => MainAppNavigatorState();
 }
 
-class _MainAppNavigatorState extends State<MainAppNavigator> {
+// FIX 2/3: The state class is now public (no leading underscore).
+class MainAppNavigatorState extends State<MainAppNavigator> {
   int _selectedIndex = 0;
 
   late final List<Widget> _pages;
@@ -58,14 +58,12 @@ class _MainAppNavigatorState extends State<MainAppNavigator> {
       FollowingFeed(user: _user),
       const DiscoverPage(),
       
-      // The Profile tab points to the new UserProfilePage,
-      // passing the current user's ID to show their own profile.
-      if (_user != null) UserProfilePage(userId: _user!.uid) else const Center(child: Text("Not Logged In")),
+      if (_user != null) UserProfilePage(userId: _user.uid) else const Center(child: Text("Not Logged In")),
       
     ];
   }
 
-  void _onItemTapped(int index) {
+  void onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
@@ -95,14 +93,12 @@ class _MainAppNavigatorState extends State<MainAppNavigator> {
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Theme.of(context).colorScheme.primary,
-        onTap: _onItemTapped,
+        onTap: onItemTapped,
       ),
     );
   }
 }
 
-
-// FollowingFeed is a StatefulWidget to manage the search and toggle state.
 class FollowingFeed extends StatefulWidget {
   final User? user;
   const FollowingFeed({super.key, this.user});
@@ -113,27 +109,6 @@ class FollowingFeed extends StatefulWidget {
 
 class _FollowingFeedState extends State<FollowingFeed> {
   final FirestoreService _firestoreService = FirestoreService();
-  final List<bool> _isSelected = [true, false];
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      if (_searchQuery != _searchController.text) {
-        setState(() {
-          _searchQuery = _searchController.text;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 
   Future<void> _signOut() async {
     await GoogleSignIn().signOut();
@@ -164,35 +139,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
           appBar: AppBar(
             backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            title: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(38),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search, color: Colors.white, size: 20),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, color: Colors.white, size: 20),
-                          onPressed: () {
-                            _searchController.clear();
-                            FocusScope.of(context).unfocus(); 
-                          },
-                        )
-                      : null,
-                  hintText: 'Search Businesses...',
-                  hintStyle: TextStyle(color: Colors.white.withAlpha(179)),
-                  border: InputBorder.none,
-                  isCollapsed: true, 
-                  // THE FIX IS HERE: Reduced top padding to move the text up.
-                  contentPadding: const EdgeInsets.only(top: 9), 
-                ),
-              ),
-            ),
+            title: const Text('Home'),
           ),
           drawer: Drawer(
             child: ListView(
@@ -207,13 +154,14 @@ class _FollowingFeedState extends State<FollowingFeed> {
                   decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
                 ),
                 ListTile(leading: const Icon(Icons.home), title: const Text('Home'), onTap: () => Navigator.pop(context)),
-                  ListTile(
+                ListTile(
                   leading: const Icon(Icons.explore),
                   title: const Text('Discover'),
                   onTap: () {
                     Navigator.pop(context);
-                    final navState = context.findAncestorStateOfType<_MainAppNavigatorState>();
-                    navState?._onItemTapped(1);
+                    // FIX 3/3: Use the public state type here.
+                    final navState = context.findAncestorStateOfType<MainAppNavigatorState>();
+                    navState?.onItemTapped(1);
                   },
                 ),
                 ListTile(
@@ -221,8 +169,9 @@ class _FollowingFeedState extends State<FollowingFeed> {
                   title: const Text('Profile'),
                   onTap: () {
                     Navigator.pop(context);
-                    final navState = context.findAncestorStateOfType<_MainAppNavigatorState>();
-                    navState?._onItemTapped(2);
+                    // FIX 3/3: Use the public state type here.
+                    final navState = context.findAncestorStateOfType<MainAppNavigatorState>();
+                    navState?.onItemTapped(2);
                   },
                 ),
                 ListTile(
@@ -272,99 +221,41 @@ class _FollowingFeedState extends State<FollowingFeed> {
                   child: const Icon(Icons.add),
                 )
               : null,
-          body: Stack(
+          body: Column(
             children: [
-              Column(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Center(
-                      child: ToggleButtons(
-                        isSelected: _isSelected,
-                        onPressed: (int index) {
-                          setState(() {
-                            for (int i = 0; i < _isSelected.length; i++) {
-                              _isSelected[i] = i == index;
-                            }
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(30.0),
-                        borderColor: Colors.grey.shade300,
-                        selectedBorderColor: Theme.of(context).colorScheme.primary,
-                        constraints: const BoxConstraints(minHeight: 38.0, minWidth: 100.0),
-                        selectedColor: Colors.white,
-                        fillColor: Theme.of(context).colorScheme.primary,
-                        color: Theme.of(context).colorScheme.primary,
-                        children: const [
-                          Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('Following')),
-                          Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('Discover')),
-                        ],
-                      ),
-                    ),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Center(
+                  child: ToggleButtons(
+                    isSelected: [true, false],
+                    onPressed: (int index) {
+                      if (index == 1) {
+                         final navState = context.findAncestorStateOfType<MainAppNavigatorState>();
+                         navState?.onItemTapped(1);
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(30.0),
+                    borderColor: Colors.grey.shade300,
+                    selectedBorderColor: Theme.of(context).colorScheme.primary,
+                    constraints: const BoxConstraints(minHeight: 38.0, minWidth: 100.0),
+                    selectedColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.primary,
+                    color: Theme.of(context).colorScheme.primary,
+                    children: const [
+                      Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('Following')),
+                      Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('Discover')),
+                    ],
                   ),
-                  Expanded(
-                    child: _isSelected[0] ? _buildFollowedFeed() : _buildDiscoverFeed(),
-                  ),
-                ],
+                ),
               ),
-              if (_searchQuery.trim().isNotEmpty)
-                _buildSearchResults(),
+              Expanded(
+                child: _buildFollowedFeed(),
+              ),
             ],
           ),
         );
       },
-    );
-  }
-
-  Widget _buildSearchResults() {
-    return Container(
-      color: Colors.white,
-      child: StreamBuilder<QuerySnapshot>(
-        stream: _firestoreService.searchBusinesses(_searchQuery),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const LinearProgressIndicator();
-          }
-          if (snapshot.hasError) {
-            return const ListTile(title: Text('Error searching businesses.'));
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const ListTile(title: Text('No businesses found.'));
-          }
-
-          final results = snapshot.data!.docs;
-          return ListView.builder(
-            itemCount: results.length,
-            itemBuilder: (context, index) {
-              final business = results[index];
-              final businessData = business.data() as Map<String, dynamic>;
-              final String name = businessData['name'] ?? 'Unnamed Business';
-              final String? photoUrl = businessData['photoUrl'];
-
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                  child: photoUrl == null ? const Icon(Icons.store) : null,
-                ),
-                title: Text(name),
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                  _searchController.clear();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      
-                      builder: (context) => UserProfilePage(userId: business.id),
-                      
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
     );
   }
 
@@ -417,78 +308,6 @@ class _FollowingFeedState extends State<FollowingFeed> {
             return ListView.builder(
               itemCount: posts.length,
               itemBuilder: (context, index) => PostCard(post: posts[index]),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildDiscoverFeed() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestoreService.getAllPosts(),
-      builder: (context, postSnapshot) {
-        if (postSnapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (postSnapshot.hasError) {
-          return const Center(child: Text("Something went wrong."));
-        }
-        if (!postSnapshot.hasData || postSnapshot.data!.docs.isEmpty) {
-          return const Center(child: Text("No posts to discover yet."));
-        }
-        final posts = postSnapshot.data!.docs;
-        return ListView.builder(
-          itemCount: posts.length,
-          itemBuilder: (context, index) => PostCard(post: posts[index]),
-        );
-      },
-    );
-  }
-}
-
-// ADDITION: New self-contained widget to safely display post headers.
-class PostHeader extends StatelessWidget {
-  final String businessId;
-  final FirestoreService _firestoreService = FirestoreService();
-
-  PostHeader({required this.businessId, super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // FutureBuilder fetches the data and rebuilds this widget when it arrives.
-    return FutureBuilder<DocumentSnapshot>(
-      future: _firestoreService.getUserProfile(businessId),
-      builder: (context, snapshot) {
-        // While the data is loading, show a simple placeholder.
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const ListTile(
-            leading: CircleAvatar(backgroundColor: Colors.transparent),
-            title: Text('Loading...'),
-          );
-        }
-
-        // If the fetch failed or the business doesn't exist, show an error state.
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const ListTile(title: Text('Unknown Business'));
-        }
-
-        // If the data is here, extract it and display it.
-        var businessData = snapshot.data!.data() as Map<String, dynamic>;
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundImage: NetworkImage(businessData['photoUrl'] ?? 'https://via.placeholder.com/150'),
-          ),
-          title: Text(
-            businessData['name'] ?? 'No Name',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UserProfilePage(userId: businessId),
-              ),
             );
           },
         );

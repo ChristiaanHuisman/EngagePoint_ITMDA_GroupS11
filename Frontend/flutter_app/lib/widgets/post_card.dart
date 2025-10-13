@@ -208,8 +208,8 @@ class PostHeader extends StatelessWidget {
     required this.businessId,
     required this.onEdit,
     required this.onDelete,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

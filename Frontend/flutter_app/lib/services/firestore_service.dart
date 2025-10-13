@@ -6,7 +6,6 @@ class FirestoreService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Creates a new post document in the 'posts' collection.
-  // FIX: Added imageAspectRatio parameter
   Future<void> createPost({
     required String title,
     required String content,
@@ -36,7 +35,7 @@ class FirestoreService {
       'title': title,
       'content': content,
       'imageUrl': imageUrl,
-      'imageAspectRatio': imageAspectRatio, // FIX: Save aspect ratio to Firestore
+      'imageAspectRatio': imageAspectRatio,
       'createdAt': FieldValue.serverTimestamp(),
       'status': 'published',
     });
@@ -254,7 +253,6 @@ class FirestoreService {
   }
 
   // Updates an existing post document with new data.
-  // FIX: Added imageAspectRatio parameter
   Future<void> updatePost({
     required String postId,
     required String title,
@@ -266,7 +264,7 @@ class FirestoreService {
       'title': title,
       'content': content,
       'imageUrl': imageUrl,
-      'imageAspectRatio': imageAspectRatio, // FIX: Update aspect ratio in Firestore
+      'imageAspectRatio': imageAspectRatio,
     });
   }
 
@@ -340,4 +338,114 @@ class FirestoreService {
       'lastSeenAt': FieldValue.serverTimestamp(),
     });
   }
+  
+  // ADDITION: New methods for the business dashboard
+  
+  /// Gets the total number of likes across all posts for a business.
+  Future<int> getTotalLikesForBusiness(String businessId) async {
+    final postsQuery = await _db.collection('posts').where('businessId', isEqualTo: businessId).get();
+    
+    int totalLikes = 0;
+    
+    // This is inefficient for large numbers of posts. For a production app,
+    // you would use a Cloud Function to update a counter. But for this project, it's fine.
+    for (final postDoc in postsQuery.docs) {
+      final reactionsQuery = await postDoc.reference.collection('reactions').get();
+      totalLikes += reactionsQuery.size;
+    }
+    
+    return totalLikes;
+  }
+
+  /// Gets the total number of reviews for a business.
+  Future<int> getTotalReviewsForBusiness(String businessId) async {
+    final reviewsQuery = await _db.collection('reviews').where('businessId', isEqualTo: businessId).get();
+    return reviewsQuery.size;
+  }
+
+  Future<Map<String, int>> getReviewSentimentStats(String businessId) async {
+    final querySnapshot = await _db
+        .collection('reviews')
+        .where('businessId', isEqualTo: businessId)
+        .get();
+
+    if (querySnapshot.docs.isEmpty) {
+      return {'positive': 0, 'negative': 0, 'neutral': 0};
+    }
+
+    int positiveCount = 0;
+    int negativeCount = 0;
+    int neutralCount = 0;
+
+    for (var doc in querySnapshot.docs) {
+      final data = doc.data();
+      // This assumes your Python microservice saves a field named 'sentiment'
+      // with values like 'positive', 'negative', or 'neutral'.
+      final String? sentiment = data['sentiment'];
+
+      switch (sentiment) {
+        case 'positive':
+          positiveCount++;
+          break;
+        case 'negative':
+          negativeCount++;
+          break;
+        case 'neutral':
+          neutralCount++;
+          break;
+      }
+    }
+
+    return {
+      'positive': positiveCount,
+      'negative': negativeCount,
+      'neutral': neutralCount,
+    };
+  }
+
+  Future<void> addLocation({required String name, required String address}) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+    await _db.collection('users').doc(currentUser.uid).collection('locations').add({
+      'name': name,
+      'address': address,
+    });
+  }
+
+  /// Gets a real-time stream of locations for a specific business.
+  Stream<QuerySnapshot> getLocations(String businessId) {
+    return _db.collection('users').doc(businessId).collection('locations').snapshots();
+  }
+
+  /// Updates an existing location document for the current business.
+  Future<void> updateLocation({
+    required String locationId,
+    required String name,
+    required String address,
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+    await _db
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('locations')
+        .doc(locationId)
+        .update({
+      'name': name,
+      'address': address,
+    });
+  }
+
+  /// Deletes a location document for the current business.
+  Future<void> deleteLocation({required String locationId}) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+    await _db
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('locations')
+        .doc(locationId)
+        .delete();
+  }
 }
+

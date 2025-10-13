@@ -20,6 +20,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
+  // ADDITION: Controller for the new text field
+  late final TextEditingController _businessTypeController;
   File? _imageFile;
   bool _isLoading = false;
 
@@ -28,17 +30,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.initState();
     _nameController = TextEditingController(text: widget.userData['name'] ?? '');
     _descriptionController = TextEditingController(text: widget.userData['description'] ?? '');
+    // ADDITION: Initialize the controller with existing data
+    _businessTypeController = TextEditingController(text: widget.userData['businessType'] ?? '');
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    // ADDITION: Dispose of the new controller
+    _businessTypeController.dispose();
     super.dispose();
   }
-
   
-  // This method now uses the StorageService to pick an image.
   Future<void> _pickImage() async {
     final file = await _storageService.pickImage();
     if (file != null) {
@@ -48,7 +52,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
   
-
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -59,17 +62,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       String? newPhotoUrl;
       
-      // If a new image was picked, upload it to the 'profile_pictures' folder.
       if (_imageFile != null) {
         final path = 'profile_pictures/${widget.userId}';
         newPhotoUrl = await _storageService.uploadFile(path, _imageFile!);
       }
       
-
       final Map<String, dynamic> dataToUpdate = {
         'name': _nameController.text.trim(),
         'searchName': _nameController.text.trim().toLowerCase(),
         'description': _descriptionController.text.trim(),
+        // ADDITION: Get the business type from the text controller
+        'businessType': _businessTypeController.text.trim(),
       };
       
       if (newPhotoUrl != null) {
@@ -120,7 +123,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
           child: Column(
             children: [
               
-              // The UI for picking and previewing the profile picture is now active.
               GestureDetector(
                 onTap: _pickImage,
                 child: CircleAvatar(
@@ -151,7 +153,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               const SizedBox(height: 16),
               
-              // This description field is now available for all user roles.
+              // THE FIX IS HERE: The dropdown is replaced with a standard text field.
+              if (role == 'business')
+                TextFormField(
+                  controller: _businessTypeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Business Type',
+                    hintText: 'e.g., Restaurant, Retail, Cafe',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              
+              if (role == 'business')
+                const SizedBox(height: 16),
+
               TextFormField(
                 controller: _descriptionController,
                 decoration: InputDecoration(
@@ -164,7 +179,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
                 maxLines: 4,
               ),
-             
+              
             ],
           ),
         ),
@@ -172,4 +187,3 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 }
-
