@@ -69,7 +69,7 @@ class PostCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. The header now contains the edit/delete buttons again.
+              
               PostHeader(
                 businessId: businessId,
                 onDelete: () => _showDeleteConfirmation(context, post.id),
@@ -84,7 +84,7 @@ class PostCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // 2. This Row holds the text and image.
+              //  This Row holds the text and image.
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -145,7 +145,7 @@ class PostCard extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               
-              // 3. The action bar is now clean again.
+              
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -196,8 +196,8 @@ class PostCard extends StatelessWidget {
   }
 }
 
-// THE FIX IS HERE:
-// The edit and delete buttons are back inside the PostHeader.
+
+
 class PostHeader extends StatelessWidget {
   final String businessId;
   final VoidCallback onEdit;
@@ -265,7 +265,7 @@ class PostHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              // The buttons are now here, at the end of the header row.
+              
               if (isOwner)
                 Row(
                   mainAxisSize: MainAxisSize.min,

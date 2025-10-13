@@ -447,5 +447,31 @@ class FirestoreService {
         .doc(locationId)
         .delete();
   }
+  Stream<DocumentSnapshot> getUserStream() {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return const Stream.empty();
+    return _db.collection('users').doc(currentUser.uid).snapshots();
+  }
+
+  /// Updates the current user's points by a given amount.
+  Future<void> updateUserPoints(int pointsToAdd) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    final userRef = _db.collection('users').doc(currentUser.uid);
+
+    // Use a transaction to safely update the points
+    await _db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(userRef);
+      if (!snapshot.exists) {
+        // If for some reason the user doc doesn't exist, you could create it
+        // or simply throw an error. For now, we'll assume it exists.
+        return;
+      }
+      final currentPoints = (snapshot.data() as Map<String, dynamic>)['points'] ?? 0;
+      final newPoints = currentPoints + pointsToAdd;
+      transaction.update(userRef, {'points': newPoints});
+    });
+  }
 }
 

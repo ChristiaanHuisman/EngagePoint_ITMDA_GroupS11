@@ -14,7 +14,7 @@ class _AdminPageState extends State<AdminPage> {
 
   @override
   Widget build(BuildContext context) {
-    // THE FIX: Using a TabController to manage the different admin sections.
+    
     return DefaultTabController(
       length: 2, // The number of tabs
       child: Scaffold(
@@ -22,7 +22,7 @@ class _AdminPageState extends State<AdminPage> {
           title: const Text("Admin Dashboard"),
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          // THE FIX: Adding the TabBar to the AppBar
+          //  Adding the TabBar to the AppBar
           bottom: const TabBar(
             tabs: [
               Tab(icon: Icon(Icons.verified_user_outlined), text: 'Verification'),
@@ -33,7 +33,7 @@ class _AdminPageState extends State<AdminPage> {
             unselectedLabelColor: Colors.white70,
           ),
         ),
-        // THE FIX: TabBarView contains the content for each tab.
+        
         body: TabBarView(
           children: [
             // Content for the "Business Verification" tab

@@ -110,7 +110,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   title: const Text('Home'),
                   onTap: () {
                     Navigator.pop(context);
-                    // THE FIX IS HERE: Use the public state type
+                    
                     context.findAncestorStateOfType<MainAppNavigatorState>()?.onItemTapped(0);
                   },
                 ),
@@ -124,19 +124,10 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   title: const Text('Profile'),
                   onTap: () {
                     Navigator.pop(context);
-                    // THE FIX IS HERE: Use the public state type
+                    
                     context.findAncestorStateOfType<MainAppNavigatorState>()?.onItemTapped(2);
                   },
                 ),
-                // This import for RewardsPage is now removed as it's not used directly
-                // ListTile(
-                //   leading: const Icon(Icons.leaderboard),
-                //   title: const Text('Rewards & Progression'),
-                //   onTap: () {
-                //     Navigator.pop(context);
-                //     Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsAndProgressionPage()));
-                //   },
-                // ),
                 ListTile(
                   leading: const Icon(Icons.settings),
                   title: const Text('Settings'),

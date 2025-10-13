@@ -51,12 +51,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     try {
       String? imageUrl;
-      double? imageAspectRatio; // ADDITION: Variable for aspect ratio
+      double? imageAspectRatio; //  Variable for aspect ratio
 
       if (_imageFile != null) {
         final path = 'post_images/${DateTime.now().millisecondsSinceEpoch}.jpg';
         imageUrl = await _storageService.uploadFile(path, _imageFile!);
-        // ADDITION: Calculate aspect ratio before submitting
+        // Calculate aspect ratio before submitting
         imageAspectRatio = await _getImageAspectRatio(_imageFile!);
       }
       
@@ -64,7 +64,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         title: _titleController.text,
         content: _contentController.text,
         imageUrl: imageUrl,
-        imageAspectRatio: imageAspectRatio, // FIX: Pass the aspect ratio
+        imageAspectRatio: imageAspectRatio, 
       );
 
       if (mounted) {
