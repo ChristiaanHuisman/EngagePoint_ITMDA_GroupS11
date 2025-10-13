@@ -24,6 +24,8 @@ class _EditPostPageState extends State<EditPostPage> {
   bool _isLoading = false;
   File? _imageFile;
   String? _existingImageUrl;
+  // ADDITION: Variable to hold aspect ratio of a new image
+  double? _newImageAspectRatio; 
 
   @override
   void initState() {
@@ -41,12 +43,20 @@ class _EditPostPageState extends State<EditPostPage> {
     super.dispose();
   }
 
+  // ADDITION: Helper function to get the aspect ratio from an image file.
+  Future<double> _getImageAspectRatio(File imageFile) async {
+    final image = await decodeImageFromList(imageFile.readAsBytesSync());
+    return image.width / image.height;
+  }
+
   Future<void> _pickImage() async {
     final file = await _storageService.pickImage();
     if (file != null) {
+      // ADDITION: Calculate aspect ratio when new image is picked
+      _newImageAspectRatio = await _getImageAspectRatio(file);
       setState(() {
         _imageFile = file;
-        _existingImageUrl = null; // Remove existing image if new one is picked
+        _existingImageUrl = null;
       });
     }
   }
@@ -60,19 +70,21 @@ class _EditPostPageState extends State<EditPostPage> {
 
     try {
       String? imageUrl = _existingImageUrl;
+      double? imageAspectRatio = (widget.post.data() as Map<String, dynamic>)['imageAspectRatio'];
       
-      // If a new image was selected, upload it.
       if (_imageFile != null) {
-        final path = 'post_images/${widget.post.id}.jpg'; // Use post ID for image name
+        final path = 'post_images/${widget.post.id}.jpg';
         imageUrl = await _storageService.uploadFile(path, _imageFile!);
+        // FIX: Use the aspect ratio we calculated when picking the image
+        imageAspectRatio = _newImageAspectRatio;
       }
       
-      // We will create this 'updatePost' method in the next step.
       await _firestoreService.updatePost(
         postId: widget.post.id,
         title: _titleController.text,
         content: _contentController.text,
         imageUrl: imageUrl,
+        imageAspectRatio: imageAspectRatio, // FIX: Pass the aspect ratio
       );
 
       if (mounted) {

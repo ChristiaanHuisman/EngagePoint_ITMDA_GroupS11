@@ -60,7 +60,7 @@ class _MainAppNavigatorState extends State<MainAppNavigator> {
       
       // The Profile tab points to the new UserProfilePage,
       // passing the current user's ID to show their own profile.
-      if (_user != null) UserProfilePage(userId: _user.uid) else const Center(child: Text("Not Logged In")),
+      if (_user != null) UserProfilePage(userId: _user!.uid) else const Center(child: Text("Not Logged In")),
       
     ];
   }
@@ -187,7 +187,9 @@ class _FollowingFeedState extends State<FollowingFeed> {
                   hintText: 'Search Businesses...',
                   hintStyle: TextStyle(color: Colors.white.withAlpha(179)),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  isCollapsed: true, 
+                  // THE FIX IS HERE: Reduced top padding to move the text up.
+                  contentPadding: const EdgeInsets.only(top: 9), 
                 ),
               ),
             ),
@@ -205,7 +207,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
                   decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
                 ),
                 ListTile(leading: const Icon(Icons.home), title: const Text('Home'), onTap: () => Navigator.pop(context)),
-                 ListTile(
+                  ListTile(
                   leading: const Icon(Icons.explore),
                   title: const Text('Discover'),
                   onTap: () {

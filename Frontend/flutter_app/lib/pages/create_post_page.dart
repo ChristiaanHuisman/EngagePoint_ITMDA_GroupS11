@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
-import '../services/storage_service.dart'; // Import the StorageService
+import '../services/storage_service.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -12,12 +12,12 @@ class CreatePostPage extends StatefulWidget {
 
 class _CreatePostPageState extends State<CreatePostPage> {
   final FirestoreService _firestoreService = FirestoreService();
-  final StorageService _storageService = StorageService(); // Create an instance of StorageService
+  final StorageService _storageService = StorageService();
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   bool _isLoading = false;
-  File? _imageFile; // State variable to hold the selected image file
+  File? _imageFile;
 
   @override
   void dispose() {
@@ -36,6 +36,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
     }
   }
 
+  // ADDITION: Helper function to get the aspect ratio from an image file.
+  Future<double> _getImageAspectRatio(File imageFile) async {
+    final image = await decodeImageFromList(imageFile.readAsBytesSync());
+    return image.width / image.height;
+  }
+
   Future<void> _submitPost() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -45,18 +51,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     try {
       String? imageUrl;
-      // If an image was selected, upload it first.
+      double? imageAspectRatio; // ADDITION: Variable for aspect ratio
+
       if (_imageFile != null) {
-        // Create a unique path for the post image.
         final path = 'post_images/${DateTime.now().millisecondsSinceEpoch}.jpg';
         imageUrl = await _storageService.uploadFile(path, _imageFile!);
+        // ADDITION: Calculate aspect ratio before submitting
+        imageAspectRatio = await _getImageAspectRatio(_imageFile!);
       }
       
-      // Pass the new imageUrl to the createPost method.
       await _firestoreService.createPost(
         title: _titleController.text,
         content: _contentController.text,
-        imageUrl: imageUrl, // Pass the URL
+        imageUrl: imageUrl,
+        imageAspectRatio: imageAspectRatio, // FIX: Pass the aspect ratio
       );
 
       if (mounted) {
@@ -93,7 +101,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // This section adds the image picker UI.
               Container(
                 height: 200,
                 decoration: BoxDecoration(
@@ -161,4 +168,3 @@ class _CreatePostPageState extends State<CreatePostPage> {
     );
   }
 }
-

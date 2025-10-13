@@ -6,10 +6,12 @@ class FirestoreService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Creates a new post document in the 'posts' collection.
+  // FIX: Added imageAspectRatio parameter
   Future<void> createPost({
     required String title,
     required String content,
     String? imageUrl,
+    double? imageAspectRatio,
   }) async {
     final User? user = _auth.currentUser;
     if (user == null) {
@@ -34,6 +36,7 @@ class FirestoreService {
       'title': title,
       'content': content,
       'imageUrl': imageUrl,
+      'imageAspectRatio': imageAspectRatio, // FIX: Save aspect ratio to Firestore
       'createdAt': FieldValue.serverTimestamp(),
       'status': 'published',
     });
@@ -251,16 +254,19 @@ class FirestoreService {
   }
 
   // Updates an existing post document with new data.
+  // FIX: Added imageAspectRatio parameter
   Future<void> updatePost({
     required String postId,
     required String title,
     required String content,
     String? imageUrl,
+    double? imageAspectRatio,
   }) async {
     await _db.collection('posts').doc(postId).update({
       'title': title,
       'content': content,
       'imageUrl': imageUrl,
+      'imageAspectRatio': imageAspectRatio, // FIX: Update aspect ratio in Firestore
     });
   }
 
@@ -289,9 +295,6 @@ class FirestoreService {
     return _db.collection('posts').doc(postId).collection('reactions').snapshots().map((snapshot) => snapshot.docs.length);
   }
 
-  
-  // The following methods have been simplified to handle a single 'like' reaction for reviews.
-
   // Toggles a user's like on a review.
   Future<void> toggleReviewReaction(String reviewId) async {
     final currentUser = _auth.currentUser;
@@ -301,10 +304,8 @@ class FirestoreService {
     final reactionDoc = await reactionRef.get();
 
     if (reactionDoc.exists) {
-      // If the user has already liked, remove their like.
       await reactionRef.delete();
     } else {
-      // If the user has not liked, add their like.
       await reactionRef.set({'createdAt': FieldValue.serverTimestamp()});
     }
   }
@@ -327,7 +328,6 @@ class FirestoreService {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    // The document ID is the token itself to prevent duplicates.
     final deviceRef = _db
         .collection('users')
         .doc(currentUser.uid)
