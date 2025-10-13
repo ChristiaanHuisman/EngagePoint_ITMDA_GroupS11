@@ -1,4 +1,5 @@
 ﻿using BusinessVerification_Service.Interfaces;
+using FuzzySharp;
 using Nager.PublicSuffix;
 using System.Net.Mail;
 
@@ -16,6 +17,16 @@ namespace BusinessVerification_Service.Services
             _logger = logger;
             _domainParser = domainParser;
         }
+
+        // Main verification method called by the controller
+        // Implements all private methods and returns DTO of results
+        public VerifyBusiness()
+        {
+
+        }
+
+        // Possible method for normalization of variables and error catching,
+        // otherwise it can be done in VerifyBusiness
 
         // Verifies if the domain of the provided email matches the domain of the provided website
         // Returns true if they match, false and error messages otherwise
@@ -160,6 +171,34 @@ namespace BusinessVerification_Service.Services
                     errorMessageEnd, exception
                 );
             }
+        }
+
+        // Fuzzy comparison between website domain and business name using FuzzySharp
+        // Returns a score between 0 and 100
+        private double FuzzyMatch(string website, string name)
+        {
+            _logger.LogInformation(
+                "Service: Fuzzy comparison between website {website} " + 
+                "and business name {name} started.", 
+                website, name
+            );
+
+            // Get domain only from website
+            var websiteDomainInfo = _domainParser.Parse(website);
+            string websiteDomain = websiteDomainInfo.Domain;
+
+            // Do a fuzzy comparison using FuzzySharp
+            // Various algorithms can be used, PartialTokenSetRatio is a good balance for this use case
+            int score = Fuzz.PartialTokenSetRatio(websiteDomain, name);
+
+            _logger.LogInformation(
+                "Service: Fuzzy comparison between website {website} " + 
+                "and business name {name} completed with a score of {score}.", 
+                website, name, score
+            );
+
+            // Return fuzzy comparison result
+            return score;
         }
     }
 }
