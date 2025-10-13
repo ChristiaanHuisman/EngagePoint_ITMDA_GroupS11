@@ -228,7 +228,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             title: Text(name),
                             subtitle: Text(address),
                             onTap: () async {
-                              final Uri mapsUrl = Uri.parse('https://www.google.com/maps{Uri.encodeComponent(address)}');
+                              final Uri mapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}');
                               if (await canLaunchUrl(mapsUrl)) {
                                 await launchUrl(mapsUrl);
                               } else if (mounted) {
