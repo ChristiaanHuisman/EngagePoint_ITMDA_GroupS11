@@ -1,9 +1,11 @@
 package engagepoint.recommendation_service.models;
 
+import java.util.List;
+
 public class Post {
     public String author;
     public String title;
-    public String category;
+    List<String> category;
 
     public Post() {
         // Default constructor required for calls to DataSnapshot.getValue(Post.class)
@@ -32,7 +34,13 @@ public class Post {
         this.title = title;
     }
 
-    
+    public List<String> getCategory() {
+        return category;
+    }
+
+    public void setCategory(List<String> category) {
+        this.category = category;
+    }
 
     @Override
     public String toString() {
