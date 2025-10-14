@@ -15,7 +15,9 @@ class WheelPainter extends CustomPainter {
 
     for (int i = 0; i < rewards.length; i++) {
       final Paint paint = Paint()..color = rewards[i].color;
-      final double startAngle = (i * segmentAngle) - (segmentAngle / 2) - (pi / 2);
+      
+      // THE FIX: This calculation ensures the middle of the first segment (index 0) is at the top.
+      final double startAngle = (i * segmentAngle) - (pi / 2) - (segmentAngle / 2);
 
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // <-- 1. Import Firebase Auth
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 import 'settings_page.dart';
 import 'login_page.dart';
 
@@ -7,18 +8,35 @@ import 'login_page.dart';
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
+  Future<void> _signOut(BuildContext context) async {
+    await AuthService().signOut();
+
+    
+    // This check ensures the widget is still on the screen before we try to navigate.
+    
+    if (!context.mounted) return;
+    
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+      (Route<dynamic> route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 2. Get the current user from Firebase Auth
     final User? user = FirebaseAuth.instance.currentUser;
 
-    // A safeguard in case this page is somehow reached without a user.
     if (user == null) {
       return const Scaffold(body: Center(child: Text("No user is logged in.")));
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Profile")),
+      appBar: AppBar(
+        title: const Text("Profile"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      ),
       
       body: Center(
         child: SingleChildScrollView(
@@ -28,7 +46,6 @@ class ProfilePage extends StatelessWidget {
             children: <Widget>[
               const SizedBox(height: 20),
               CircleAvatar(
-                // 3. Use the user's photoURL, with a fallback
                 backgroundImage: NetworkImage(
                   user.photoURL ??
                       'https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg',
@@ -37,15 +54,13 @@ class ProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                // 4. Use the user's displayName, with a fallback
                 user.displayName ?? 'Anonymous User',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 10),
               Text(
-                // 5. Use the user's email, with a fallback
                 user.email ?? 'No email available',
                 style: Theme.of(
                   context,
@@ -79,22 +94,14 @@ class ProfilePage extends StatelessWidget {
                 title: const Text("Notifications"),
                 onTap: () {
                   debugPrint('Notifications tapped');
-                  
                 },
               ),
               const Divider(),
                 ListTile(
                   leading: const Icon(Icons.logout, color: Colors.red),
                   title: const Text('Logout', style: TextStyle(color: Colors.red)),
-                   onTap: () {
-                  Navigator.pushReplacement<void, void>(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (BuildContext context) => const LoginPage(),
-                    ),
-                  );
-                },
-              ),
+                  onTap: () => _signOut(context),
+                ),
             ],
           ),
         ),
@@ -102,3 +109,4 @@ class ProfilePage extends StatelessWidget {
     );
   }
 }
+

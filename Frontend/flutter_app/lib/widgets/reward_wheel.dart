@@ -5,7 +5,8 @@ import '../models/rewards_data.dart';
 import 'wheel_painter.dart';
 
 class RewardWheel extends StatefulWidget {
-  const RewardWheel({super.key});
+  final int spinsAvailable;
+  const RewardWheel({super.key, this.spinsAvailable = 0});
 
   @override
   State<RewardWheel> createState() => _RewardWheelState();
@@ -15,6 +16,9 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
   late AnimationController _animationController;
   late Animation<double> _rotationAnimation;
   final Random _random = Random();
+  
+  // THE FIX: The widget now manages its own angle state locally.
+  double _currentAngle = 0.0;
   int? _selectedIndexForSpin;
 
   @override
@@ -22,26 +26,22 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
-    )..addListener(() {
-        Provider.of<RewardsData>(context, listen: false).updateRotation(
-          _rotationAnimation.value,
-        );
-      });
+      duration: const Duration(seconds: 4), // A slightly longer, smoother spin
+    );
 
     _rotationAnimation = Tween<double>(begin: 0, end: 0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.decelerate),
     );
 
     _animationController.addStatusListener((AnimationStatus status) {
       if (status == AnimationStatus.completed) {
         if (_selectedIndexForSpin != null) {
-          final RewardsData rewardsData = Provider.of<RewardsData>(context, listen: false);
+          final rewardsData = Provider.of<RewardsData>(context, listen: false);
           rewardsData.endSpin(rewardsData.rewards[_selectedIndexForSpin!]);
-          _selectedIndexForSpin = null;
+          // Save the final angle for the next spin and normalize it
+          setState(() {
+            _currentAngle = _rotationAnimation.value % (2 * pi);
+          });
         }
       }
     });
@@ -54,8 +54,8 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
   }
 
   void _spinTheWheel() {
-    final RewardsData rewardsData = Provider.of<RewardsData>(context, listen: false);
-    if (rewardsData.isSpinning) return;
+    final rewardsData = Provider.of<RewardsData>(context, listen: false);
+    if (rewardsData.isSpinning || widget.spinsAvailable <= 0) return;
 
     rewardsData.startSpin();
 
@@ -63,14 +63,22 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
     final int selectedIndex = _random.nextInt(numRewards);
     _selectedIndexForSpin = selectedIndex;
 
-    final double segmentAngle = 2 * pi / numRewards;
-    final double targetRelativeRotation = selectedIndex * segmentAngle;
-    final double fullSpins = (_random.nextInt(5) + 5) * (2 * pi).toDouble();
-    final double finalRotation = fullSpins + targetRelativeRotation;
+    // 1. Calculate the final absolute angle for the middle of the winning segment.
+    final double targetAngle = (2 * pi * selectedIndex / numRewards);
+
+    // 2. Add a random number of full spins for effect.
+    final double randomSpins = (_random.nextInt(4) + 5) * 2 * pi;
+    
+    // 3. The final angle is the combination of spins and the target offset.
+    // We subtract the target so it lands under the top pointer.
+    final double endAngle = randomSpins - targetAngle;
+    
+    // Ensure the wheel always spins forward from its current position
+    final double beginAngle = _currentAngle;
 
     _rotationAnimation = Tween<double>(
-      begin: rewardsData.currentRotation,
-      end: rewardsData.currentRotation + finalRotation,
+      begin: beginAngle,
+      end: beginAngle + endAngle,
     ).animate(
       CurvedAnimation(
         parent: _animationController,
@@ -95,16 +103,19 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
               alignment: Alignment.center,
               clipBehavior: Clip.none,
               children: <Widget>[
-                Consumer<RewardsData>(
-                  builder: (BuildContext context, RewardsData rewards, Widget? child) {
+               // Using AnimatedBuilder to handle the rotation directly.
+                AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
                     return Transform.rotate(
-                      angle: rewards.currentRotation,
-                      child: CustomPaint(
-                        painter: WheelPainter(rewards.rewards),
-                        child: Container(),
-                      ),
+                      angle: _rotationAnimation.value,
+                      child: child,
                     );
                   },
+                  child: CustomPaint(
+                    painter: WheelPainter(context.read<RewardsData>().rewards),
+                    child: Container(),
+                  ),
                 ),
                 Positioned(
                   top: -40.0,
@@ -121,6 +132,7 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
         const SizedBox(height: 20),
         Consumer<RewardsData>(
           builder: (BuildContext context, RewardsData rewards, Widget? child) {
+            final bool canSpin = !rewards.isSpinning && widget.spinsAvailable > 0;
             return ElevatedButton.icon(
               icon: rewards.isSpinning
                   ? const SizedBox(
@@ -130,7 +142,7 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
                     )
                   : const Icon(Icons.refresh),
               label: Text(rewards.isSpinning ? "Spinning..." : "Spin for Reward"),
-              onPressed: rewards.isSpinning ? null : _spinTheWheel,
+              onPressed: canSpin ? _spinTheWheel : null,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 textStyle: const TextStyle(fontSize: 18),
@@ -162,8 +174,8 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
                       Text(
                         "You won: ${rewards.currentReward!.name}!",
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                     ],
                   ),
