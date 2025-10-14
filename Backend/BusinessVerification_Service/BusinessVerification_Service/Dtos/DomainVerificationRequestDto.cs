@@ -1,17 +1,17 @@
-﻿namespace BusinessVerification_Service.Dtos
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace BusinessVerification_Service.Dtos
 {
     public class DomainVerificationRequestDto
     {
-        // VerifyDomainMatch already contain these error checks and handles it gracefully,
-        // although this approach would probably be easier
-        // [Required(ErrorMessage = "Email address is required.")]
-        // [EmailAddress(ErrorMessage = "Email address must be a valid email address.")]
+        [Required(ErrorMessage = "Please ensure an email address is entered.")]
+        [EmailAddress(ErrorMessage = "Please ensure a complete and valid email address is entered.")]
         public string BusinessEmail { get; set; }
 
-        // VerifyDomainMatch already contain these error checks and handles it gracefully,
-        // although this approach would probably be easier
-        // [Required(ErrorMessage = "Website address is required.")]
-        // [Url(ErrorMessage = "Website address must be a valid URL.")]
+        [Required(ErrorMessage = "Please ensure a website address is entered.")]
         public string BusinessWebsite { get; set; }
+
+        [Required(ErrorMessage = "Please ensure a business name is entered.")]
+        public string BusinessName { get; set; }
     }
 }
