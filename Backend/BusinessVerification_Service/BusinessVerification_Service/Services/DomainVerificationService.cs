@@ -25,7 +25,7 @@ namespace BusinessVerification_Service.Services
 
         // Main verification method called by the controller
         // Implements all private methods and returns DTO of results
-        public VerificationResponseDto VerifyBusiness(string email, string website, string name)
+        public VerificationResponseDto VerifyBusiness(string email, string website, string name) // Or recieve DTO from controller?
         {
             // Wrapper safety try block for the entire method
             try
@@ -34,6 +34,10 @@ namespace BusinessVerification_Service.Services
                     "Service: Recieved email {email}, website {website} and business name {name}.", 
                     email, website, name
                 );
+
+                // Initialize response DTOs
+                var returnResponse = new VerificationResponseDto();
+                var firebaseResponse = new DomainVerificationFirebaseResponseDto();
 
                 // Normalize variables
                 email = email.Trim().ToLower();
