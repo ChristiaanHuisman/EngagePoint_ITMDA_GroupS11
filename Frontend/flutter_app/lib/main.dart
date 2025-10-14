@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+
 
 import 'services/auth_service.dart';
 import 'pages/login_page.dart';
@@ -21,13 +23,17 @@ void main() async {
   runApp(
     ChangeNotifierProvider(
       create: (context) => SettingsData(),
-      child: const MyApp(),
+      child: MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+
+  final FirebaseAnalytics analytics = FirebaseAnalytics.instance;//allows calls of the analytics.logEvent method.
+
+  MyApp({super.key});
+  
 
   @override
   Widget build(BuildContext context) {
