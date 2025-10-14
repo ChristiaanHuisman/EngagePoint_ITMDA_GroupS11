@@ -20,7 +20,7 @@ namespace BusinessVerification_Service.Controllers
             _domainVerificationService = domainVerificationService;
         }
 
-        // API call for veryfying the user input domains match,
+        // API call for veryfying the user input domains match, 
         // matches user input to DTO properties
         [HttpPost("verify")]
         public async Task<IActionResult> VerifyDomain([FromBody] DomainVerificationRequestDto requestDto)

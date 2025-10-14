@@ -12,7 +12,7 @@ namespace BusinessVerification_Service
             var builder = WebApplication.CreateBuilder(args);
 
             // Register IDomainParser as a Singleton
-            builder.Services.AddSingleton<IDomainParser>(sp =>
+            builder.Services.AddSingleton<IDomainParser>(serviceProvider =>
             {
                 // Use the real domain parser to download the newest public suffix list
                 var ruleProvider = new SimpleHttpRuleProvider();

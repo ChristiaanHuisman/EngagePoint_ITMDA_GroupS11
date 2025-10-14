@@ -1,8 +1,10 @@
-﻿namespace BusinessVerification_Service.Interfaces
+﻿using BusinessVerification_Service.Dtos;
+
+namespace BusinessVerification_Service.Interfaces
 {
     // Interface for dependency injection of the domain verification services
     public interface IDomainVerificationService
     {
-        bool VerifyDomainMatch(string email, string website);
+        VerificationResponseDto VerifyBusiness(string email, string website, string name)
     }
 }
