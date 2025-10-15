@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'firestore_service.dart'; // Import FirestoreService
 
 class NotificationService {
@@ -21,6 +22,6 @@ class NotificationService {
     }
     
     // For debugging purposes
-    print('FCM Token: $fcmToken');
+    debugPrint('FCM Token: $fcmToken');
   }
 }

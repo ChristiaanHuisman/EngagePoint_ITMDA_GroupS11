@@ -1,12 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import '../services/logging_service.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+ 
   final LoggingService _loggingService = LoggingService();
 
   // Creates a new post document in the 'posts' collection.
