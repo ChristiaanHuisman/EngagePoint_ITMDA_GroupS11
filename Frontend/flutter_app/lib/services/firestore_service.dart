@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:firebase_analytics/firebase_analytics.dart';
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   // Creates a new post document in the 'posts' collection.
   Future<void> createPost({
@@ -60,11 +61,22 @@ class FirestoreService {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
+  
+
     await _db.collection('follows').doc('${currentUser.uid}_$businessId').set({
       'customerId': currentUser.uid,
       'businessId': businessId,
       'followedAt': FieldValue.serverTimestamp(),
+
     });
+    print('Following business: $businessId by user: ${currentUser.uid}');
+
+       await _analytics.logEvent(name: 'follow_business', parameters: {
+      'customerId': currentUser.uid,
+      'businessId': businessId,
+    });
+    print('EVENT LOGGED: follow_business');
+
   }
 
   // Unfollows a business by deleting the corresponding document.

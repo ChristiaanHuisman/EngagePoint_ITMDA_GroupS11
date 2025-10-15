@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import '../services/firestore_service.dart';
 import 'full_screen_image_viewer.dart';
 import 'user_profile_page.dart';
@@ -12,12 +13,15 @@ class PostPage extends StatefulWidget {
 
   @override
   State<PostPage> createState() => _PostPageState();
-}
 
+
+}
 class _PostPageState extends State<PostPage> {
   final FirestoreService _firestoreService = FirestoreService();
+  final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
   DocumentSnapshot? _businessProfile;
   bool _isLoading = true;
+ 
 
   // ADDITION: State for handling "Read More" functionality
   bool _isExpanded = false;
@@ -41,6 +45,11 @@ class _PostPageState extends State<PostPage> {
             _businessProfile = profile;
             _isLoading = false;
           });
+          await analytics.logEvent(name: 'view_post', parameters: {
+            'postId': widget.post.id,
+            'businessId': businessId,
+          });
+          
         }
       } else {
         if (mounted) setState(() => _isLoading = false);

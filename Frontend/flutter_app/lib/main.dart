@@ -23,6 +23,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await NotificationService().initAndSaveToken();
+  await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
   
   // Request permission from the user to receive push notifications.
   
