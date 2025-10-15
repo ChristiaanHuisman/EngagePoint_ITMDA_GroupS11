@@ -11,8 +11,7 @@ public class Main {
         Interaction interaction = new Interaction();
         interaction.logInteraction("", "", "");
 
-        RecommendationEngine engine = new RecommendationEngine();
-        engine.getRecommendationsForUser(user); 
+        // run the recommendation engine here
 
         // display recommended postsb for the user
     }

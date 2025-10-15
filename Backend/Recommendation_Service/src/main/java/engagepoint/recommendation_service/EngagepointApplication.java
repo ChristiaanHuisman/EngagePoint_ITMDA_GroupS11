@@ -7,5 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class EngagepointApplication {
     public static void main(String[] args) {
         SpringApplication.run(EngagepointApplication.class, args);
+
+        // call main and run the recommendation engine here
     }
 }
