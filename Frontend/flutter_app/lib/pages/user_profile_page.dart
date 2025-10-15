@@ -44,7 +44,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 if (!mounted) return;
                 if (doc.exists) {
                   Navigator.push(
-                    context,
+                    context.mounted
+                        ? context
+                        : throw Exception("Context is not mounted"),
                     MaterialPageRoute(
                       builder: (_) => EditProfilePage(
                         userData: doc.data() as Map<String, dynamic>,
@@ -242,7 +244,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                               final Uri mapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}');
                               if (await canLaunchUrl(mapsUrl)) {
                                 await launchUrl(mapsUrl);
-                              } else if (mounted) {
+                              } else if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Could not open map.')),
                                 );

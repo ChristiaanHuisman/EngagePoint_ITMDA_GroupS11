@@ -2,16 +2,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart'; 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/services.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-
-
-import 'services/auth_service.dart';
-import 'pages/login_page.dart';
 import 'pages/home_page.dart';
 import 'firebase_options.dart';
 import 'models/settings_data.dart';
-import 'pages/home_page.dart';
 import 'services/notification_service.dart';
 
 void main() async {
