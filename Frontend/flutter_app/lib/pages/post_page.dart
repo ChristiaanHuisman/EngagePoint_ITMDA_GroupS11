@@ -5,7 +5,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import '../services/firestore_service.dart';
 import 'full_screen_image_viewer.dart';
 import 'user_profile_page.dart';
-
+import '../services/logging_service.dart';
 class PostPage extends StatefulWidget {
   final QueryDocumentSnapshot post;
 
@@ -19,6 +19,7 @@ class PostPage extends StatefulWidget {
 class _PostPageState extends State<PostPage> {
   final FirestoreService _firestoreService = FirestoreService();
   final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
+  final LoggingService _loggingService = LoggingService();
   DocumentSnapshot? _businessProfile;
   bool _isLoading = true;
  
@@ -31,11 +32,21 @@ class _PostPageState extends State<PostPage> {
   void initState() {
     super.initState();
     _fetchBusinessProfile();
+
+    final postData = widget.post.data() as Map<String, dynamic>;
+    _loggingService.logAnalyticsEvent(
+      eventName: 'post_view',
+      parameters: {
+        'post_id': widget.post.id,
+        'business_id': postData['businessId'] ?? 'unknown',
+      },
+    );
   }
 
   Future<void> _fetchBusinessProfile() async {
     try {
       final postData = widget.post.data() as Map<String, dynamic>;
+      
       final String? businessId = postData['businessId'];
       
       if (businessId != null) {
@@ -45,10 +56,7 @@ class _PostPageState extends State<PostPage> {
             _businessProfile = profile;
             _isLoading = false;
           });
-          await analytics.logEvent(name: 'view_post', parameters: {
-            'postId': widget.post.id,
-            'businessId': businessId,
-          });
+          
           
         }
       } else {
