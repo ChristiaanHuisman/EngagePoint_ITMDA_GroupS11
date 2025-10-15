@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../models/rewards_data.dart';
+import '../models/rewards_model.dart';
 
 class WheelPainter extends CustomPainter {
   final List<RewardItem> rewards;

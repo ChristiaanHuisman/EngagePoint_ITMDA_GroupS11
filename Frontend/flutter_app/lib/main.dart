@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pages/home_page.dart';
 import 'firebase_options.dart';
-import 'models/settings_data.dart';
+import 'models/settings_model.dart';
 import 'services/notification_service.dart';
 
 void main() async {

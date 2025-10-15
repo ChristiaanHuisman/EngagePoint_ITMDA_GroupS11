@@ -3,7 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/rewards_data.dart';
+import '../models/rewards_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/reward_wheel.dart';
 
