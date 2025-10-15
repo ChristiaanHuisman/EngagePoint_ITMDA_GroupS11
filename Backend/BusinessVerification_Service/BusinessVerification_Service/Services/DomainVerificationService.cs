@@ -25,21 +25,31 @@ namespace BusinessVerification_Service.Services
 
         // Main verification method called by the controller
         // Implements all private methods and returns DTO of results
-        public VerificationResponseDto VerifyBusiness(string email, string website, string name) // Or recieve DTO from controller?
+        public VerificationResponseDto VerifyBusiness(DomainVerificationRequestDto verificationRequestDto)
         {
-            // Wrapper safety try block for the entire method
+            // Initialize response DTOs
+            var firebaseResponse = new DomainVerificationFirebaseResponseDto();
+            var returnResponse = new VerificationResponseDto();
+
+            // Extract variables from request DTO
+            string userId = verificationRequestDto.UserId;
+            string email = verificationRequestDto.BusinessEmail;
+            string website = verificationRequestDto.BusinessWebsite;
+            string name = verificationRequestDto.BusinessName;
+
+            // Wrapper safety try catch block for the entire method
             try
             {
                 _logger.LogInformation(
-                    "Service: Recieved email {email}, website {website} and business name {name}.", 
-                    email, website, name
+                    "Service: Recieved email {email}, website {website} and business name {name} " + 
+                    "from user {user}.", 
+                    email, website, name, userId
                 );
 
-                // Initialize response DTOs
-                var returnResponse = new VerificationResponseDto();
-                var firebaseResponse = new DomainVerificationFirebaseResponseDto();
+                // Link Firebase response DTO to user
+                firebaseResponse.UserId = userId;
 
-                // Normalize variables
+                // Normalize variables used for processing
                 email = email.Trim().ToLower();
                 website = website.Trim().ToLower();
                 name = name.Trim().ToLower();
@@ -50,10 +60,14 @@ namespace BusinessVerification_Service.Services
                     || string.IsNullOrEmpty(name))
                 {
                     _logger.LogWarning(
-                        "Service: Empty email {email}, website {website} or business name {name}.", 
-                        email, website, name
+                        "Service: Empty email {email}, website {website} or business name {name} " + 
+                        "from user {user}.", 
+                        email, website, name, userId
                     );
-                    throw new ArgumentException(errorMessageEnd);
+                    returnResponse.Message = errorMessageEnd;
+
+                    // Return response DTO with appropriate error message
+                    return returnResponse;
                 }
 
                 // Checking and building URI for the website address
@@ -70,28 +84,38 @@ namespace BusinessVerification_Service.Services
                 // Handle errors
                 catch (UriFormatException exception)
                 {
-                    _logger.LogWarning("Service: Invalid or incomplete website {website} format " + 
-                        "for email {email} and business name {name}.", 
-                        website, email, name
+                    _logger.LogWarning(exception, 
+                        "Service: Invalid or incomplete website {website} format for user {user}.", 
+                        website, userId
                     );
-                    throw new ArgumentException(
-                        "Invalid or incomplete website format entered. " + 
-                        errorMessageEnd, exception
-                    );
+                    returnResponse.Message = "Invalid or incomplete website format entered. " + 
+                        errorMessageEnd;
+
+                    // Return response DTO with appropriate error message
+                    return returnResponse;
                 }
 
-                // Final result of business being verified
-                bool completelyVerified = false;
+                // Wrapper safety try catch block for main verification logic
+                // Also catches custom error messages thrown by private methods
+                try
+                {
+                    // Determine if business can be verified
 
-                // Determine if business can be verified
-                if (VerifyDomainMatch(email, website, name))
+                }
+                // Handle errors
+                catch
+                {
+
+                }
+
+                /*if (VerifyDomainMatch(email, website, userId))
                 {
                     // Determine if busniness name matches domains
-                    int fuzzyMatchResult = FuzzyMatch(email, website, name);
+                    int fuzzyMatchResult = FuzzyMatch(website, name, userId);
 
-                    // Currently in .NET 8 if statements are needed for checking thresholds
-                    // Would prefer to use switch case for checking thresholds, 
-                    // but need to move to .NET 9 then
+                    // Currently in .NET 8 if else statements are needed for checking thresholds
+                    // Would prefer to use a switch case for checking thresholds, 
+                    // but need to move to .NET 9 then which is not LTS
                     // For a score of >= 80 the business name can be automatically verified
                     if (fuzzyMatchResult >= 80)
                     {
@@ -103,52 +127,51 @@ namespace BusinessVerification_Service.Services
                         // Admin verification logic
                     }
                     // For a score of <= 59 the business name cannot be verified
-                }
+                }*/
 
                 // Continue with returning result
             }
             // Handle errors
-            catch (ArgumentException)
-            {
-                throw;
-            }
             catch (HttpRequestException exception)
             {
                 _logger.LogError(exception,
-                    "Service: Network issue during business verification for email {email}, " + 
-                    "website {website} and business name {name}.", 
-                    email, website, name
+                    "Service: Network issue during business verification for user {user}.", 
+                    userId
                 );
-                throw new ApplicationException(
-                    "Network issue while verifying business. " + 
-                    errorMessageEnd, exception
-                );
+                returnResponse.Message = "Network issue while verifying business. " + 
+                    errorMessageEnd;
+
+                // Return response DTO with appropriate error message
+                return returnResponse;
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception,
-                    "Service: Unexpected error during business verification for email {email}, " + 
-                    "website {website} and business name {name}.", 
-                    email, website, name
+                    "Service: Unexpected error during business verification for user {user}.", 
+                    userId
                 );
-                throw new ApplicationException(
-                    "Business verification failed unexpectedly. " + 
-                    errorMessageEnd, exception
-                );
+                returnResponse.Message = "Business verification failed unexpectedly. " + 
+                    errorMessageEnd;
+
+                // Return response DTO with appropriate error message
+                return returnResponse;
             }
+
+            // Return correct response DTO based on verification results
+            return returnResponse;
         }
 
         // Verifies if the domain of the provided email matches the domain of the provided website
         // Returns true if they match, false and error messages otherwise
-        private bool VerifyDomainMatch(string email, string website, string name)
+        private bool VerifyDomainMatch(string email, string website, string userId)
         {
-            // Wrapper safety try block for the entire method
+            // Wrapper safety try catch block for the entire method
             try
             {
                 _logger.LogInformation(
-                    "Service: Domain verification for email {email}, " +
-                    "website {website} and business name {name} started.", 
-                    email, website, name
+                    "Service: Domain verification for user {user} between email {email} " + 
+                    "and website {website} started.", 
+                    userId, email, website
                 );
 
                 // Get domain only from email address
@@ -170,8 +193,8 @@ namespace BusinessVerification_Service.Services
                 {
                     _logger.LogWarning(
                         "Service: Failed to parse email {email} or website {website} domain " + 
-                        "for business name {name}.", 
-                        email, website, name
+                        "for user {user}.", 
+                        email, website, userId
                     );
                     throw new ArgumentException(
                         "Invalid or incomplete email or website format entered. " + 
@@ -183,8 +206,8 @@ namespace BusinessVerification_Service.Services
                 bool isMatch = emailDomainInfo.RegistrableDomain == websiteDomainInfo.RegistrableDomain;
                 _logger.LogInformation(
                     "Service: Domain verification between email {email} and " +
-                    "website {website} completed with a result of {match} for business name {name}.", 
-                    email, website, isMatch, name
+                    "website {website} completed with a result of {match} for user {user}.", 
+                    email, website, isMatch, userId
                 );
                 return isMatch;
             }
@@ -196,12 +219,12 @@ namespace BusinessVerification_Service.Services
             catch (FormatException exception)
             {
                 _logger.LogWarning(exception,
-                    "Service: Invalid format while verifying domain between email {email} and " + 
-                    "website {website} for business name {name}.", 
-                    email, website, name
+                    "Service: Invalid email format while verifying domain between email {email} and " + 
+                    "website {website} for user {user}.", 
+                    email, website, userId
                 );
                 throw new ArgumentException(
-                    "Invalid email or website format. " + 
+                    "Invalid or incomplete email format entered. " + 
                     errorMessageEnd, exception
                 );
             }
@@ -209,8 +232,8 @@ namespace BusinessVerification_Service.Services
             {
                 _logger.LogError(exception,
                     "Service: Network issue while verifying domain between email {email} and " + 
-                    "website {website} for business name {name}.", 
-                    email, website, name
+                    "website {website} for user {user}.", 
+                    email, website, userId
                 );
                 throw new ApplicationException(
                     "Network issue while verifying business. " + 
@@ -221,8 +244,8 @@ namespace BusinessVerification_Service.Services
             {
                 _logger.LogError(exception,
                     "Service: Unexpected error while verifying domain match between email {email} and " + 
-                    "website {website} for business name {name}.", 
-                    email, website, name
+                    "website {website} for user {user}.", 
+                    email, website, userId
                 );
                 throw new ApplicationException(
                     "Business verification failed unexpectedly. " + 
@@ -233,15 +256,15 @@ namespace BusinessVerification_Service.Services
 
         // Fuzzy comparison between website domain and business name using FuzzySharp
         // Returns a score between 0 and 100
-        private int FuzzyMatch(string email, string website, string name)
+        private int FuzzyMatch(string website, string name, string userId)
         {
-            // Wrapper safety try block for the entire method
+            // Wrapper safety try catch block for the entire method
             try
             {
                 _logger.LogInformation(
-                    "Service: Fuzzy comparison for email {email} between website {website} " + 
+                    "Service: Fuzzy comparison for user {user} between website {website} " + 
                     "and business name {name} started.", 
-                    email, website, name
+                    userId, website, name
                 );
 
                 // Get domain only from website
@@ -255,13 +278,13 @@ namespace BusinessVerification_Service.Services
                 int score = Fuzz.PartialTokenSetRatio(websiteDomainOnly, name);
 
                 _logger.LogInformation(
-                    "Service: Fuzzy comparison for email {email} between website {website} " + 
+                    "Service: Fuzzy comparison for user {user} between website {website} " + 
                     "and business name {name} completed with a score of {score}.\n" + 
                     "Thresholds:\n" + 
-                    ">= 80 - auto verified\n" + 
+                    ">= 80 - automatically verified\n" + 
                     ">= 60 and <= 79 - admin must verify\n" + 
-                    "<= 59 - can't verify", 
-                    email, website, name, score
+                    "<= 59 - cannot verify", 
+                    userId, website, name, score
                 );
 
                 // Return fuzzy comparison result
@@ -271,9 +294,8 @@ namespace BusinessVerification_Service.Services
             catch (HttpRequestException exception)
             {
                 _logger.LogError(exception,
-                    "Service: Network issue during fuzzy comparison for email {email} between " + 
-                    "website {website} and business name {name}.", 
-                    email, website, name
+                    "Service: Network issue during fuzzy comparison for user {user}.", 
+                    userId
                 );
                 throw new ApplicationException(
                     "Network issue while verifying business. " + 
@@ -283,9 +305,8 @@ namespace BusinessVerification_Service.Services
             catch (Exception exception)
             {
                 _logger.LogError(exception,
-                    "Service: Unexpected error during fuzzy comparison for email {email} between " +
-                    "website {website} and business name {name}.", 
-                    email, website, name
+                    "Service: Unexpected error during fuzzy comparison for user {user}.", 
+                    userId
                 );
                 throw new ApplicationException(
                     "Business verification failed unexpectedly. " + 

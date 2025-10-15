@@ -2,9 +2,8 @@
 {
     public class DomainVerificationModel
     {
-        public string BusinessId { get; set; }
-        public string BusinessEmail { get; set; }
-        public string BusinessWebsite { get; set; }
-        public string BusinessName { get; set; }
+        // Can be used in later versions to move model property methods from service to model, 
+        // this will technically make it more modular, maintainable, testable, reusable,
+        // and cleaner with separation of concerns
     }
 }

@@ -25,7 +25,7 @@ namespace BusinessVerification_Service.Controllers
         [HttpPost("verify")]
         public async Task<IActionResult> VerifyDomain([FromBody] DomainVerificationRequestDto requestDto)
         {
-            // Wrapper safety try block for the entire action
+            // Wrapper safety try catch block for the entire action
             try
             {
                 // Check if model binded to DTO successfully
