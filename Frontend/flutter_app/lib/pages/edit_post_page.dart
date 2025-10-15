@@ -1,11 +1,13 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+// ADDED: For decodeImageFromList
+import '../models/post_model.dart'; // ADDED: Import the PostModel
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 
 class EditPostPage extends StatefulWidget {
-  final QueryDocumentSnapshot post;
+  // CHANGED: This now requires a PostModel.
+  final PostModel post;
 
   const EditPostPage({super.key, required this.post});
 
@@ -17,23 +19,22 @@ class _EditPostPageState extends State<EditPostPage> {
   final FirestoreService _firestoreService = FirestoreService();
   final StorageService _storageService = StorageService();
   final _formKey = GlobalKey<FormState>();
-  
+
   late TextEditingController _titleController;
   late TextEditingController _contentController;
-  
+
   bool _isLoading = false;
   File? _imageFile;
   String? _existingImageUrl;
-  // ADDITION: Variable to hold aspect ratio of a new image
-  double? _newImageAspectRatio; 
+  double? _newImageAspectRatio;
 
   @override
   void initState() {
     super.initState();
-    final data = widget.post.data() as Map<String, dynamic>;
-    _titleController = TextEditingController(text: data['title'] ?? '');
-    _contentController = TextEditingController(text: data['content'] ?? '');
-    _existingImageUrl = data['imageUrl'];
+    // CHANGED: Initializing controllers from the PostModel.
+    _titleController = TextEditingController(text: widget.post.title);
+    _contentController = TextEditingController(text: widget.post.content);
+    _existingImageUrl = widget.post.imageUrl;
   }
 
   @override
@@ -43,7 +44,6 @@ class _EditPostPageState extends State<EditPostPage> {
     super.dispose();
   }
 
-  // ADDITION: Helper function to get the aspect ratio from an image file.
   Future<double> _getImageAspectRatio(File imageFile) async {
     final image = await decodeImageFromList(imageFile.readAsBytesSync());
     return image.width / image.height;
@@ -52,7 +52,6 @@ class _EditPostPageState extends State<EditPostPage> {
   Future<void> _pickImage() async {
     final file = await _storageService.pickImage();
     if (file != null) {
-      // ADDITION: Calculate aspect ratio when new image is picked
       _newImageAspectRatio = await _getImageAspectRatio(file);
       setState(() {
         _imageFile = file;
@@ -70,21 +69,21 @@ class _EditPostPageState extends State<EditPostPage> {
 
     try {
       String? imageUrl = _existingImageUrl;
-      double? imageAspectRatio = (widget.post.data() as Map<String, dynamic>)['imageAspectRatio'];
-      
+      // CHANGED: Get aspect ratio from the PostModel.
+      double? imageAspectRatio = widget.post.imageAspectRatio;
+
       if (_imageFile != null) {
         final path = 'post_images/${widget.post.id}.jpg';
         imageUrl = await _storageService.uploadFile(path, _imageFile!);
-        // FIX: Use the aspect ratio we calculated when picking the image
         imageAspectRatio = _newImageAspectRatio;
       }
-      
+
       await _firestoreService.updatePost(
         postId: widget.post.id,
         title: _titleController.text,
         content: _contentController.text,
         imageUrl: imageUrl,
-        imageAspectRatio: imageAspectRatio, // FIX: Pass the aspect ratio
+        imageAspectRatio: imageAspectRatio,
       );
 
       if (mounted) {

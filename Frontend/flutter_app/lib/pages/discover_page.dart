@@ -1,13 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import '../models/post_model.dart'; // ADDED: Import the PostModel
 import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
-import 'admin_page.dart';
-import 'settings_page.dart';
 import 'user_profile_page.dart';
-import 'home_page.dart'; // Needed for MainAppNavigatorState
+import '../widgets/app_drawer.dart';
+
 
 class DiscoverPage extends StatefulWidget {
   const DiscoverPage({super.key});
@@ -40,10 +39,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
     super.dispose();
   }
 
-  Future<void> _signOut() async {
-    await GoogleSignIn().signOut();
-    await FirebaseAuth.instance.signOut();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,13 +49,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance.collection('users').doc(_user.uid).snapshots(),
       builder: (context, userSnapshot) {
-        String role = 'customer';
-        Map<String, dynamic> userData = {};
         if (userSnapshot.hasData && userSnapshot.data!.exists) {
-          userData = userSnapshot.data!.data() as Map<String, dynamic>;
-          role = userData['role'] ?? 'customer';
         }
-        String photoUrl = userData['photoUrl'] ?? _user.photoURL ?? 'https://via.placeholder.com/150';
 
         return Scaffold(
           appBar: AppBar(
@@ -83,82 +73,23 @@ class _DiscoverPageState extends State<DiscoverPage> {
                           icon: const Icon(Icons.clear, color: Colors.white, size: 20),
                           onPressed: () {
                             _searchController.clear();
-                            FocusScope.of(context).unfocus(); 
+                            FocusScope.of(context).unfocus();
                           },
                         )
                       : null,
                   hintText: 'Search Businesses...',
                   hintStyle: TextStyle(color: Colors.white.withAlpha(179)),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(0),
+                  contentPadding: const EdgeInsets.all(10),
                 ),
               ),
             ),
           ),
-          drawer: Drawer(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                UserAccountsDrawerHeader(
-                  accountName: Text(userData['name'] ?? _user.displayName ?? 'User'),
-                  accountEmail: Text(_user.email ?? 'No email'),
-                  currentAccountPicture: CircleAvatar(backgroundImage: NetworkImage(photoUrl)),
-                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.home),
-                  title: const Text('Home'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    
-                    context.findAncestorStateOfType<MainAppNavigatorState>()?.onItemTapped(0);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.explore),
-                  title: const Text('Discover'),
-                  onTap: () => Navigator.pop(context),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.person),
-                  title: const Text('Profile'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    
-                    context.findAncestorStateOfType<MainAppNavigatorState>()?.onItemTapped(2);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: const Text('Settings'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()));
-                  },
-                ),
-                const Divider(),
-                if (role == 'admin')
-                  ListTile(
-                    leading: const Icon(Icons.admin_panel_settings),
-                    title: const Text('Admin Panel'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPage()));
-                    },
-                  ),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.red),
-                  title: const Text('Logout', style: TextStyle(color: Colors.red)),
-                  onTap: _signOut,
-                ),
-              ],
-            ),
-          ),
+          drawer: const AppDrawer(),
           body: Stack(
             children: [
               _buildDiscoverFeed(),
-              if (_searchQuery.trim().isNotEmpty)
-                _buildSearchResults(),
+              if (_searchQuery.trim().isNotEmpty) _buildSearchResults(),
             ],
           ),
         );
@@ -167,26 +98,39 @@ class _DiscoverPageState extends State<DiscoverPage> {
   }
 
   Widget _buildDiscoverFeed() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestoreService.getAllPosts(),
-      builder: (context, postSnapshot) {
-        if (postSnapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (postSnapshot.hasError) {
-          return const Center(child: Text("Something went wrong."));
-        }
-        if (!postSnapshot.hasData || postSnapshot.data!.docs.isEmpty) {
-          return const Center(child: Text("No posts to discover yet."));
-        }
-        final posts = postSnapshot.data!.docs;
-        return ListView.builder(
-          itemCount: posts.length,
-          itemBuilder: (context, index) => PostCard(post: posts[index]),
-        );
-      },
-    );
-  }
+  final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+  return StreamBuilder<List<PostModel>>(
+    stream: _firestoreService.getAllPosts(),
+    builder: (context, postSnapshot) {
+      if (postSnapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      if (postSnapshot.hasError) {
+        return const Center(child: Text("Something went wrong."));
+      }
+
+      if (!postSnapshot.hasData || postSnapshot.data!.isEmpty) {
+        return const Center(child: Text("No posts to discover yet."));
+      }
+      
+      final posts = postSnapshot.data!
+          .where((post) => post.businessId != currentUserId)
+          .toList();
+
+      if (posts.isEmpty) {
+        return const Center(child: Text("No posts to discover yet."));
+      }
+
+      return ListView.builder(
+        itemCount: posts.length,
+        itemBuilder: (context, index) => PostCard(post: posts[index]),
+      );
+    },
+  );
+}
+
 
   Widget _buildSearchResults() {
     return Container(

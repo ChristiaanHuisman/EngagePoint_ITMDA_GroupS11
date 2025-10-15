@@ -1,7 +1,5 @@
-// lib/models/post_model.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
 
 class PostModel {
   final String id;
@@ -11,6 +9,7 @@ class PostModel {
   final String? imageUrl;
   final double? imageAspectRatio;
   final Timestamp createdAt;
+  final String status;
 
   PostModel({
     required this.id,
@@ -20,6 +19,7 @@ class PostModel {
     this.imageUrl,
     this.imageAspectRatio,
     required this.createdAt,
+    required this.status,
   });
 
   factory PostModel.fromFirestore(DocumentSnapshot doc) {
@@ -27,14 +27,12 @@ class PostModel {
     return PostModel(
       id: doc.id,
       businessId: data['businessId'] ?? '',
-      title: data['title'] ?? 'No Title',
-      content: data['content'] ?? 'No Content',
+      title: data['title'] ?? '',
+      content: data['content'] ?? '',
       imageUrl: data['imageUrl'],
-      imageAspectRatio: data['imageAspectRatio'],
+      imageAspectRatio: (data['imageAspectRatio'] as num?)?.toDouble(),
       createdAt: data['createdAt'] ?? Timestamp.now(),
+      status: data['status'] ?? 'published',
     );
   }
-
-  // Helper getter to handle date formatting cleanly
-  String get formattedDate => DateFormat('MMM dd, yyyy').format(createdAt.toDate());
 }

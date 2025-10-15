@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/post_model.dart'; // ADDED
+import '../models/review_model.dart'; // ADDED
 import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
 import '../widgets/review_card.dart';
@@ -10,6 +12,8 @@ import 'edit_profile_page.dart';
 import 'manage_locations_page.dart';
 import 'write_review_page.dart';
 import '../services/logging_service.dart';
+import '../widgets/app_drawer.dart';
+
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -32,33 +36,43 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isOwnProfile ? "Your Profile" : "Profile"),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        actions: [
-          if (isOwnProfile)
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () async {
-                final doc = await _firestoreService.getUserProfile(widget.userId);
-                
-                if (doc.exists) {
-                  Navigator.push(
-                    context.mounted
-                        ? context
-                        : throw Exception("Context is not mounted"),
-                    MaterialPageRoute(
-                      builder: (_) => EditProfilePage(
-                        userData: doc.data() as Map<String, dynamic>,
-                        userId: widget.userId,
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
-        ],
+  title: Text(isOwnProfile ? "My Profile" : "Profile"),
+  backgroundColor: Theme.of(context).colorScheme.primary,
+  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+
+  automaticallyImplyLeading: Navigator.canPop(context),
+  leading: Navigator.canPop(context)
+      ? IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        )
+      : null,
+
+  actions: [
+    if (isOwnProfile)
+      IconButton(
+        icon: const Icon(Icons.edit_outlined),
+        onPressed: () async {
+          final doc = await _firestoreService.getUserProfile(widget.userId);
+
+          if (doc.exists && context.mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EditProfilePage(
+                  userData: doc.data() as Map<String, dynamic>,
+                  userId: widget.userId,
+                ),
+              ),
+            );
+          }
+        },
       ),
+  ],
+),
+
+      drawer: isOwnProfile ? const AppDrawer() : null,
+
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('users').doc(widget.userId).snapshots(),
         builder: (context, snapshot) {
@@ -79,14 +93,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
           final String? description = userData['description'];
           final String? businessType = userData['businessType'];
 
-          _loggingService.logAnalyticsEvent(  //analytics logging
-          eventName: 'View_business_profile',
+          _loggingService.logAnalyticsEvent( //analytics logging
+            eventName: 'View_business_profile',
             parameters: {
               'viewer_id': currentUserId ?? 'unknown',
               'viewed_business_id': widget.userId,
-              
-        },
-    );
+            },
+          );
 
           return CustomScrollView(
             slivers: [
@@ -106,8 +119,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
-                      
-                      // Description is now before the business type
                       if (description != null && description.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0),
@@ -117,8 +128,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
                           ),
                         ),
-                      
-                      // THE FIX IS HERE: The business type Chip is now after the description.
                       if (role == 'business' && businessType != null && businessType.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0),
@@ -126,14 +135,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             label: Text(businessType),
                             labelStyle: TextStyle(
                               fontSize: 12,
-                              color: Theme.of(context).colorScheme.onSecondaryContainer
+                              color: Theme.of(context).colorScheme.onSecondaryContainer,
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 8.0),
                             backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
                             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                         ),
-
                       const SizedBox(height: 16),
                       if (role == 'business')
                         Column(
@@ -144,7 +152,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                               children: [
                                 _buildStatColumn("Followers", _firestoreService.getFollowerCount(widget.userId)),
                                 _buildReviewStatColumn(widget.userId),
-                                
                                 if (isOwnProfile)
                                   ElevatedButton.icon(
                                     onPressed: () {
@@ -156,7 +163,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                     icon: const Icon(Icons.dashboard_outlined, size: 16),
                                     label: const Text('Dashboard'),
                                   )
-                                else 
+                                else
                                   _buildFollowButton(widget.userId),
                               ],
                             ),
@@ -172,7 +179,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   ),
                 ),
               ),
-              
               SliverToBoxAdapter(
                 child: Column(
                   children: [
@@ -182,7 +188,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   ],
                 ),
               ),
-              
               _buildContentBody(role, isOwnProfile),
             ],
           );
@@ -213,9 +218,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const SizedBox.shrink();
         }
-        
+
         final locations = snapshot.data!.docs;
-        
+
         return OutlinedButton.icon(
           onPressed: () {
             showModalBottomSheet(
@@ -241,7 +246,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             title: Text(name),
                             subtitle: Text(address),
                             onTap: () async {
-                              final Uri mapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}');
+                              final Uri mapsUrl = Uri.parse('https://maps.google.com/?q=${Uri.encodeComponent(address)}');
                               if (await canLaunchUrl(mapsUrl)) {
                                 await launchUrl(mapsUrl);
                               } else if (context.mounted) {
@@ -294,7 +299,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         padding: const EdgeInsets.all(16.0),
         child: Text(
           isOwnProfile ? "Your Reviews" : "Reviews Written",
-          style: Theme.of(context).textTheme.titleLarge
+          style: Theme.of(context).textTheme.titleLarge,
         ),
       );
     }
@@ -377,21 +382,20 @@ class _UserProfilePageState extends State<UserProfilePage> {
           },
           icon: Icon(isFollowing ? Icons.check : Icons.add, size: 16),
           label: Text(isFollowing ? "Following" : "Follow"),
-          style: null,
         );
       },
     );
-    
   }
 
+  // CHANGED: This StreamBuilder now handles a List<PostModel>.
   Widget _buildPostsList() {
-    return StreamBuilder<QuerySnapshot>(
+    return StreamBuilder<List<PostModel>>(
       stream: _firestoreService.getPostsForBusiness(widget.userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator())));
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(20.0), child: Text("No posts yet."))));
-        
-        final posts = snapshot.data!.docs;
+        if (!snapshot.hasData || snapshot.data!.isEmpty) return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(20.0), child: Text("No posts yet."))));
+
+        final posts = snapshot.data!;
         return SliverList(
           delegate: SliverChildBuilderDelegate((context, index) => PostCard(post: posts[index]), childCount: posts.length),
         );
@@ -399,10 +403,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
+  // CHANGED: This StreamBuilder now handles a List<ReviewModel>.
   Widget _buildReviewsList({required bool isOwnProfile, required String role}) {
     final bool isCustomerView = role == 'customer';
     final bool canWriteReview = !isOwnProfile && role == 'business';
-  
+
     return SliverMainAxisGroup(
       slivers: [
         SliverToBoxAdapter(
@@ -411,8 +416,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if(role == 'business')
-                  Text( "Customer Reviews", style: Theme.of(context).textTheme.titleLarge),
+                if (role == 'business')
+                  Text("Customer Reviews", style: Theme.of(context).textTheme.titleLarge),
                 if (canWriteReview)
                   TextButton(
                     onPressed: () {
@@ -429,7 +434,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             ),
           ),
         ),
-        StreamBuilder<QuerySnapshot>(
+        StreamBuilder<List<ReviewModel>>(
           stream: isCustomerView
               ? _firestoreService.getReviewsForCustomer(widget.userId)
               : _firestoreService.getReviewsForBusiness(widget.userId),
@@ -441,7 +446,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               debugPrint("Error loading reviews: ${snapshot.error}");
               return const SliverToBoxAdapter(child: Center(child: Text("Error loading reviews.")));
             }
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return SliverToBoxAdapter(
                 child: Center(
                   child: Padding(
@@ -452,7 +457,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               );
             }
 
-            final reviews = snapshot.data!.docs;
+            final reviews = snapshot.data!;
             return SliverList.builder(
               itemCount: reviews.length,
               itemBuilder: (context, index) {
