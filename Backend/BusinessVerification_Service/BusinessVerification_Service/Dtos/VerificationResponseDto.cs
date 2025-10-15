@@ -15,6 +15,8 @@
     {
         Rejected,
         Pending,
-        Accepted // To be removed in future versions using email link verification
+
+        // To be removed in future versions that uses email link verification
+        Accepted
     }
 }

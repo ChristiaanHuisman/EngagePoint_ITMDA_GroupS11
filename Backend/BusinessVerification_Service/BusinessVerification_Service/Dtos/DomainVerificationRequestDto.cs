@@ -14,6 +14,8 @@ namespace BusinessVerification_Service.Dtos
         public string BusinessEmail { get; set; }
 
         // Website address from flutter app
+        // URL attribute not used so users have more flexibility,
+        // as many users do not include https:// when entering a website address
         [Required(ErrorMessage = "Please ensure a website address is entered.")]
         public string BusinessWebsite { get; set; }
 

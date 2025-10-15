@@ -27,9 +27,24 @@ namespace BusinessVerification_Service.Services
         // Implements all private methods and returns DTO of results
         public VerificationResponseDto VerifyBusiness(DomainVerificationRequestDto verificationRequestDto)
         {
-            // Initialize response DTOs
-            var firebaseResponse = new DomainVerificationFirebaseResponseDto();
-            var returnResponse = new VerificationResponseDto();
+            // Initialize response DTO
+            VerificationResponseDto returnResponse = new VerificationResponseDto();
+
+            // Verify the request DTO is not null
+            if (verificationRequestDto == null)
+            {
+                _logger.LogWarning(
+                    "Service: Request DTO received for business verification is null."
+                );
+
+                // Return response DTO with appropriate error message
+                returnResponse.Message = "Business verification failed unexpectedly. " +
+                    errorMessageEnd;
+                return returnResponse;
+            }
+            
+            // Initialize Firebase DTOs
+            DomainVerificationFirebaseResponseDto firebaseResponse = new DomainVerificationFirebaseResponseDto();
 
             // Extract variables from request DTO
             string userId = verificationRequestDto.UserId;
@@ -37,18 +52,18 @@ namespace BusinessVerification_Service.Services
             string website = verificationRequestDto.BusinessWebsite;
             string name = verificationRequestDto.BusinessName;
 
-            // Wrapper safety try catch block for the entire method
+            _logger.LogInformation(
+                "Service: Recieved email {email}, website {website} and business name {name} " +
+                "from user {user}.",
+                email, website, name, userId
+            );
+
+            // Link Firebase response DTO to user
+            firebaseResponse.UserId = userId;
+
+            // Wrapper safety try catch block for the method logic
             try
             {
-                _logger.LogInformation(
-                    "Service: Recieved email {email}, website {website} and business name {name} " + 
-                    "from user {user}.", 
-                    email, website, name, userId
-                );
-
-                // Link Firebase response DTO to user
-                firebaseResponse.UserId = userId;
-
                 // Normalize variables used for processing
                 email = email.Trim().ToLower();
                 website = website.Trim().ToLower();
@@ -64,9 +79,9 @@ namespace BusinessVerification_Service.Services
                         "from user {user}.", 
                         email, website, name, userId
                     );
-                    returnResponse.Message = errorMessageEnd;
 
                     // Return response DTO with appropriate error message
+                    returnResponse.Message = errorMessageEnd;
                     return returnResponse;
                 }
 
@@ -75,7 +90,7 @@ namespace BusinessVerification_Service.Services
                 {
                     // Ensure website is a fully complete URL, 
                     // ftp is also supported
-                    UriBuilder uriBuilder = new UriBuilder(
+                    UriBuilder validateUri = new UriBuilder(
                         website.StartsWith("http", StringComparison.OrdinalIgnoreCase)
                         || website.StartsWith("ftp", StringComparison.OrdinalIgnoreCase)
                         ? website : $"https://{website}"
@@ -88,48 +103,61 @@ namespace BusinessVerification_Service.Services
                         "Service: Invalid or incomplete website {website} format for user {user}.", 
                         website, userId
                     );
-                    returnResponse.Message = "Invalid or incomplete website format entered. " + 
-                        errorMessageEnd;
 
                     // Return response DTO with appropriate error message
+                    returnResponse.Message = "Invalid or incomplete website format entered. " + 
+                        errorMessageEnd;
                     return returnResponse;
                 }
 
-                // Wrapper safety try catch block for main verification logic
-                // Also catches custom error messages thrown by private methods
+                // Determine if business can be verified
+                // Wrapper safety try catch block for main verification logic, 
+                // catches custom error messages thrown by private methods
                 try
                 {
-                    // Determine if business can be verified
+                    // Determine if the email and website domains do not match
+                    if (!VerifyDomainMatch(email, website, userId))
+                    {
+                        // Return response DTO with appropriate message
+                        returnResponse.Message = "Email and website domains entered do not match. " +  
+                            errorMessageEnd;
+                        return returnResponse;
+                    }
 
+                    // Determine how closely the busniness name matches the domains
+                    int fuzzyMatchResult = FuzzyMatch(website, name, userId);
+                    firebaseResponse.FuzzyScore = fuzzyMatchResult;
+
+                    // For a score of >= 80 the business name can be automatically verified
+                    // For a score of >= 60 and <= 79 an admin needs to verify the business name
+                    // For a score of <= 59 the business name cannot be verified
+                    switch (fuzzyMatchResult)
+                    {
+                        case >= 80:
+                            // To be removed in future versions that uses email link verification
+                            returnResponse.VerificationStatus = Status.Accepted;
+
+                            returnResponse.Message = "Business successfully verified.";
+                        break;
+                        case >= 60:
+                            firebaseResponse.RequiresAdmin = true;
+                            returnResponse.VerificationStatus = Status.Pending;
+                            returnResponse.Message = "Business name does not match email and " + 
+                                "website domain names entered clearly enough. Admin review required.";
+                        break;
+                        default:
+                            returnResponse.Message = "Business name does not match email and " + 
+                                "website domains entered. " + errorMessageEnd;
+                        break;
+                    }
                 }
                 // Handle errors
-                catch
+                catch (Exception exception)
                 {
-
+                    // Return response DTO with appropriate error message
+                    returnResponse.Message = exception.Message;
+                    return returnResponse;
                 }
-
-                /*if (VerifyDomainMatch(email, website, userId))
-                {
-                    // Determine if busniness name matches domains
-                    int fuzzyMatchResult = FuzzyMatch(website, name, userId);
-
-                    // Currently in .NET 8 if else statements are needed for checking thresholds
-                    // Would prefer to use a switch case for checking thresholds, 
-                    // but need to move to .NET 9 then which is not LTS
-                    // For a score of >= 80 the business name can be automatically verified
-                    if (fuzzyMatchResult >= 80)
-                    {
-                        completelyVerified = true;
-                    }
-                    // For a score of >= 60 and <= 79 an admin needs to verify the business name
-                    else if (fuzzyMatchResult >= 60)
-                    {
-                        // Admin verification logic
-                    }
-                    // For a score of <= 59 the business name cannot be verified
-                }*/
-
-                // Continue with returning result
             }
             // Handle errors
             catch (HttpRequestException exception)
@@ -138,10 +166,10 @@ namespace BusinessVerification_Service.Services
                     "Service: Network issue during business verification for user {user}.", 
                     userId
                 );
-                returnResponse.Message = "Network issue while verifying business. " + 
-                    errorMessageEnd;
 
                 // Return response DTO with appropriate error message
+                returnResponse.Message = "Network issue while verifying business. " + 
+                    errorMessageEnd;
                 return returnResponse;
             }
             catch (Exception exception)
@@ -150,12 +178,28 @@ namespace BusinessVerification_Service.Services
                     "Service: Unexpected error during business verification for user {user}.", 
                     userId
                 );
-                returnResponse.Message = "Business verification failed unexpectedly. " + 
-                    errorMessageEnd;
 
                 // Return response DTO with appropriate error message
+                returnResponse.Message = "Business verification failed unexpectedly. " + 
+                    errorMessageEnd;
                 return returnResponse;
             }
+
+            // To be edited for later verions of the microservice that uses email link verification
+            // Using the Firebase response DTO to log verification request to Firebase
+            firebaseResponse.ErrorOccurred = false;
+            if (!firebaseResponse.RequiresAdmin)
+            {
+                firebaseResponse.OfficiallyVerified = true;
+                firebaseResponse.VerifiedAt = DateTime.UtcNow;
+            }
+            // Add way of passing firebase DTO to Firebase
+
+            _logger.LogInformation(
+                "Service: Business verification for user {user} with email {email}, " + 
+                "website {website} and business name {name} completed without errors.", 
+                userId, email, website, name
+            );
 
             // Return correct response DTO based on verification results
             return returnResponse;
@@ -165,15 +209,15 @@ namespace BusinessVerification_Service.Services
         // Returns true if they match, false and error messages otherwise
         private bool VerifyDomainMatch(string email, string website, string userId)
         {
+            _logger.LogInformation(
+                "Service: Domain verification for user {user} between email {email} " +
+                "and website {website} started.",
+                userId, email, website
+            );
+
             // Wrapper safety try catch block for the entire method
             try
             {
-                _logger.LogInformation(
-                    "Service: Domain verification for user {user} between email {email} " + 
-                    "and website {website} started.", 
-                    userId, email, website
-                );
-
                 // Get domain only from email address
                 var emailDomain = new MailAddress(email).Host;
                 var emailDomainInfo = _domainParser.Parse(emailDomain);
@@ -196,6 +240,8 @@ namespace BusinessVerification_Service.Services
                         "for user {user}.", 
                         email, website, userId
                     );
+
+                    // Throw appropriate custom error message
                     throw new ArgumentException(
                         "Invalid or incomplete email or website format entered. " + 
                         errorMessageEnd
@@ -211,7 +257,7 @@ namespace BusinessVerification_Service.Services
                 );
                 return isMatch;
             }
-            // Handle errors
+            // Handle errors throwing appropriate custom error message
             catch (ArgumentException)
             {
                 throw;
@@ -258,15 +304,15 @@ namespace BusinessVerification_Service.Services
         // Returns a score between 0 and 100
         private int FuzzyMatch(string website, string name, string userId)
         {
+            _logger.LogInformation(
+                "Service: Fuzzy comparison for user {user} between website {website} " +
+                "and business name {name} started.",
+                userId, website, name
+            );
+
             // Wrapper safety try catch block for the entire method
             try
             {
-                _logger.LogInformation(
-                    "Service: Fuzzy comparison for user {user} between website {website} " + 
-                    "and business name {name} started.", 
-                    userId, website, name
-                );
-
                 // Get domain only from website
                 var websiteDomainTld = new UriBuilder(website).Uri.Host;
                 var websiteDomainInfo = _domainParser.Parse(websiteDomainTld);
@@ -290,7 +336,7 @@ namespace BusinessVerification_Service.Services
                 // Return fuzzy comparison result
                 return score;
             }
-            // Handle errors
+            // Handle errors throwing appropriate custom error message
             catch (HttpRequestException exception)
             {
                 _logger.LogError(exception,
