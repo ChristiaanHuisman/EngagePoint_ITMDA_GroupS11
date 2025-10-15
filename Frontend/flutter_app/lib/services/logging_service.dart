@@ -64,5 +64,7 @@ class LoggingService {
       logError(error: "Failed to log analytics event: $e");
     }
   }
+
+  
 }
 

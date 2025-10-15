@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import '../services/logging_service.dart';
+
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  final LoggingService _loggingService = LoggingService();
 
   // Creates a new post document in the 'posts' collection.
   Future<void> createPost({
@@ -69,13 +72,15 @@ class FirestoreService {
       'followedAt': FieldValue.serverTimestamp(),
 
     });
-    print('Following business: $businessId by user: ${currentUser.uid}');
 
-       await _analytics.logEvent(name: 'follow_business', parameters: {
-      'customerId': currentUser.uid,
-      'businessId': businessId,
-    });
-    print('EVENT LOGGED: follow_business');
+    _loggingService.logAnalyticsEvent( //analytics logging
+      eventName: 'business_follow',
+      parameters: {
+        'customer_id': currentUser.uid,
+        'business_id': businessId,
+      },
+    );
+
 
   }
 

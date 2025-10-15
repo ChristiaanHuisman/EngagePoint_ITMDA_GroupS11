@@ -9,6 +9,7 @@ import 'business_dashboard_page.dart';
 import 'edit_profile_page.dart';
 import 'manage_locations_page.dart';
 import 'write_review_page.dart';
+import '../services/logging_service.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -22,6 +23,7 @@ class UserProfilePage extends StatefulWidget {
 class _UserProfilePageState extends State<UserProfilePage> {
   final FirestoreService _firestoreService = FirestoreService();
   final List<bool> _isSelected = [true, false];
+  final LoggingService _loggingService = LoggingService();
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +76,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
           final String role = userData['role'] ?? 'customer';
           final String? description = userData['description'];
           final String? businessType = userData['businessType'];
+
+          _loggingService.logAnalyticsEvent(  //analytics logging
+          eventName: 'View_business_profile',
+            parameters: {
+              'viewer_id': currentUserId ?? 'unknown',
+              'viewed_business_id': widget.userId,
+              
+        },
+    );
 
           return CustomScrollView(
             slivers: [
@@ -368,6 +379,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         );
       },
     );
+    
   }
 
   Widget _buildPostsList() {

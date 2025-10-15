@@ -3,12 +3,14 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'notification_service.dart'; 
+import '../services/logging_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final NotificationService _notificationService = NotificationService();
+  final LoggingService _loggingService = LoggingService();
 
   Future<void> _createUserDocument(User user, {String? name, bool isBusiness = false}) async {
     final userRef = _firestore.collection('users').doc(user.uid);
@@ -43,6 +45,13 @@ class AuthService {
       if (result.user != null) {
         await _notificationService.initAndSaveToken();
       }
+      _loggingService.logAnalyticsEvent(  //analytics logging
+      eventName: 'user_login',
+      parameters: {
+        'method': 'email',
+        'user_id': result.user?.uid ?? 'unknown',
+      },
+    );
       return result.user;
     } catch (e) {
       debugPrint("Email login error: $e");
