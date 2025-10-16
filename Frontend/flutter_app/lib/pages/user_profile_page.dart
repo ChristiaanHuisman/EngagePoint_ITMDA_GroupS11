@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../models/post_model.dart'; // ADDED
-import '../models/review_model.dart'; // ADDED
+import '../models/post_model.dart';
+import '../models/review_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
 import '../widgets/review_card.dart';
@@ -14,7 +14,17 @@ import 'write_review_page.dart';
 import '../services/logging_service.dart';
 import '../widgets/app_drawer.dart';
 
+// ------------------- LEVEL STRUCT -------------------
+class Level {
+  final int level;
+  final String name;
+  final int pointsRequired;
 
+  Level(
+      {required this.level, required this.name, required this.pointsRequired});
+}
+
+// ------------------- MAIN PAGE -------------------
 class UserProfilePage extends StatefulWidget {
   final String userId;
 
@@ -26,190 +36,298 @@ class UserProfilePage extends StatefulWidget {
 
 class _UserProfilePageState extends State<UserProfilePage> {
   final FirestoreService _firestoreService = FirestoreService();
-  final List<bool> _isSelected = [true, false];
   final LoggingService _loggingService = LoggingService();
+
+  // Level setup for Rewards tab
+  final List<Level> _levels = [
+    Level(level: 1, name: 'Bronze', pointsRequired: 0),
+    Level(level: 2, name: 'Silver', pointsRequired: 500),
+    Level(level: 3, name: 'Gold', pointsRequired: 1500),
+    Level(level: 4, name: 'Platinum', pointsRequired: 3000),
+    Level(level: 5, name: 'Diamond', pointsRequired: 5000),
+  ];
+
+  Map<String, dynamic> _getLevelData(int points) {
+    Level currentLevel = _levels.first;
+    for (var level in _levels.reversed) {
+      if (points >= level.pointsRequired) {
+        currentLevel = level;
+        break;
+      }
+    }
+
+    int nextLevelIndex = currentLevel.level;
+    Level? nextLevel =
+        (nextLevelIndex < _levels.length) ? _levels[nextLevelIndex] : null;
+
+    if (nextLevel == null) {
+      return {
+        'currentLevel': currentLevel,
+        'nextLevel': null,
+        'progress': 1.0,
+        'pointsToNextLevel': 0,
+      };
+    }
+
+    final int pointsInCurrent = points - currentLevel.pointsRequired;
+    final int pointsForNext =
+        nextLevel.pointsRequired - currentLevel.pointsRequired;
+    final double progress =
+        pointsForNext == 0 ? 1.0 : pointsInCurrent / pointsForNext;
+
+    return {
+      'currentLevel': currentLevel,
+      'nextLevel': nextLevel,
+      'progress': progress.clamp(0.0, 1.0),
+      'pointsToNextLevel': nextLevel.pointsRequired - points,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final bool isOwnProfile = currentUserId == widget.userId;
 
-    return Scaffold(
-      appBar: AppBar(
-  title: Text(isOwnProfile ? "My Profile" : "Profile"),
-  backgroundColor: Theme.of(context).colorScheme.primary,
-  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
+        }
+        if (snapshot.hasError) {
+          return const Scaffold(
+              body: Center(child: Text("Error loading profile.")));
+        }
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Scaffold(
+              body: Center(child: Text("User profile not found.")));
+        }
 
-  automaticallyImplyLeading: Navigator.canPop(context),
-  leading: Navigator.canPop(context)
-      ? IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        )
-      : null,
+        final userData = snapshot.data!.data() as Map<String, dynamic>;
+        _loggingService.logAnalyticsEvent(
+          eventName: 'View_user_profile',
+          parameters: {
+            'viewer_id': currentUserId ?? 'unknown',
+            'viewed_user_id': widget.userId,
+          },
+        );
+        final String role = userData['role'] ?? 'customer';
 
-  actions: [
-    if (isOwnProfile)
-      IconButton(
-        icon: const Icon(Icons.edit_outlined),
-        onPressed: () async {
-          final doc = await _firestoreService.getUserProfile(widget.userId);
+        // Determine if we show 2 tabs for business or customer (both will have 2 tabs now)
+        final bool isBusiness = role == 'business';
 
-          if (doc.exists && context.mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => EditProfilePage(
-                  userData: doc.data() as Map<String, dynamic>,
-                  userId: widget.userId,
-                ),
-              ),
-            );
-          }
-        },
-      ),
-  ],
-),
-
-      drawer: isOwnProfile ? const AppDrawer() : null,
-
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').doc(widget.userId).snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return const Center(child: Text("Error loading profile."));
-          }
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text("User profile not found."));
-          }
-
-          final userData = snapshot.data!.data() as Map<String, dynamic>;
-          final String name = userData['name'] ?? 'Unnamed User';
-          final String? photoUrl = userData['photoUrl'];
-          final String role = userData['role'] ?? 'customer';
-          final String? description = userData['description'];
-          final String? businessType = userData['businessType'];
-
-          _loggingService.logAnalyticsEvent( //analytics logging
-            eventName: 'View_business_profile',
-            parameters: {
-              'viewer_id': currentUserId ?? 'unknown',
-              'viewed_business_id': widget.userId,
-            },
-          );
-
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-                        child: photoUrl == null ? Icon(role == 'business' ? Icons.store : Icons.person, size: 60) : null,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        name,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (description != null && description.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            description,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(isOwnProfile ? "My Profile" : "Profile"),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              automaticallyImplyLeading: Navigator.canPop(context),
+              leading: Navigator.canPop(context)
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.pop(context),
+                    )
+                  : null,
+              actions: [
+                if (isOwnProfile)
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () async {
+                      final doc =
+                          await _firestoreService.getUserProfile(widget.userId);
+                      if (doc.exists && context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EditProfilePage(
+                              userData: doc.data() as Map<String, dynamic>,
+                              userId: widget.userId,
+                            ),
                           ),
-                        ),
-                      if (role == 'business' && businessType != null && businessType.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Chip(
-                            label: Text(businessType),
-                            labelStyle: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.onSecondaryContainer,
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        ),
-                      const SizedBox(height: 16),
-                      if (role == 'business')
-                        Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildStatColumn("Followers", _firestoreService.getFollowerCount(widget.userId)),
-                                _buildReviewStatColumn(widget.userId),
-                                if (isOwnProfile)
-                                  ElevatedButton.icon(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (context) => const BusinessDashboardPage()),
-                                      );
-                                    },
-                                    icon: const Icon(Icons.dashboard_outlined, size: 16),
-                                    label: const Text('Dashboard'),
-                                  )
-                                else
-                                  _buildFollowButton(widget.userId),
-                              ],
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 16.0),
-                              child: isOwnProfile
-                                  ? _buildManageLocationsButton(context)
-                                  : _buildLocationsButton(context, widget.userId),
-                            ),
-                          ],
-                        ),
-                    ],
+                        );
+                      }
+                    },
                   ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    const Divider(height: 1),
-                    _buildContentHeader(context, role, isOwnProfile),
-                    Divider(height: 1, color: Colors.grey.shade300),
-                  ],
-                ),
-              ),
-              _buildContentBody(role, isOwnProfile),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  // --- Helper Widgets ---
-
-  Widget _buildManageLocationsButton(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ManageLocationsPage()),
+              ],
+            ),
+            drawer: isOwnProfile ? const AppDrawer() : null,
+            body: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return <Widget>[
+                  SliverToBoxAdapter(
+                      child:
+                          _buildProfileHeader(context, userData, isOwnProfile)),
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _TabBarHeaderDelegate(
+                      TabBar(
+                        tabs: isBusiness
+                            ? const [
+                                Tab(
+                                    icon: Icon(Icons.post_add_outlined),
+                                    text: 'Posts'),
+                                Tab(
+                                    icon: Icon(Icons.reviews_outlined),
+                                    text: 'Reviews'),
+                              ]
+                            : const [
+                                Tab(
+                                    icon: Icon(Icons.reviews_outlined),
+                                    text: 'Reviews'),
+                                Tab(
+                                    icon: Icon(Icons.emoji_events_outlined),
+                                    text: 'Rewards'),
+                              ],
+                        indicatorColor: Theme.of(context).colorScheme.primary,
+                        labelColor: Theme.of(context).colorScheme.primary,
+                        unselectedLabelColor: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ];
+              },
+              body: isBusiness
+                  ? TabBarView(
+                      children: [
+                        _PostsTab(
+                            userId: widget.userId,
+                            firestoreService: _firestoreService),
+                        _ReviewsTab(
+                            userId: widget.userId,
+                            isCustomerView: false,
+                            firestoreService: _firestoreService),
+                      ],
+                    )
+                  : TabBarView(
+                      children: [
+                        _ReviewsTab(
+                            userId: widget.userId,
+                            isCustomerView: true,
+                            firestoreService: _firestoreService),
+                        _RewardsTab(
+                            userId: widget.userId, getLevelData: _getLevelData),
+                      ],
+                    ),
+            ),
+          ),
         );
       },
-      icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
-      label: const Text('Manage Store Locations'),
     );
   }
+
+  Widget _buildProfileHeader(
+      BuildContext context, Map<String, dynamic> userData, bool isOwnProfile) {
+    final String name = userData['name'] ?? 'Unnamed User';
+    final String? photoUrl = userData['photoUrl'];
+    final String role = userData['role'] ?? 'customer';
+    final String? description = userData['description'];
+    final String? businessType = userData['businessType'];
+
+    final String userId = widget.userId;
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 60,
+            backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+            child: photoUrl == null
+                ? Icon(role == 'business' ? Icons.store : Icons.person,
+                    size: 60)
+                : null,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            name,
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          if (description != null && description.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                description,
+                textAlign: TextAlign.center,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(color: Colors.grey[600]),
+              ),
+            ),
+          if (role == 'business' &&
+              businessType != null &&
+              businessType.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Chip(
+                label: Text(businessType),
+                labelStyle: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                backgroundColor:
+                    Theme.of(context).colorScheme.secondaryContainer,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          const SizedBox(height: 16),
+          if (role == 'business')
+            Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildStatColumn("Followers",
+                        _firestoreService.getFollowerCount(userId)),
+                    _buildReviewStatColumn(userId),
+                    isOwnProfile
+                        ? ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const BusinessDashboardPage()));
+                            },
+                            icon:
+                                const Icon(Icons.dashboard_outlined, size: 16),
+                            label: const Text('Dashboard'),
+                          )
+                        : _buildFollowButton(userId),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: isOwnProfile
+                      ? _buildManageLocationsButton(context)
+                      : _buildLocationsButton(context, userId),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Reused helper widgets from your version
+  Widget _buildManageLocationsButton(BuildContext context) =>
+      OutlinedButton.icon(
+        onPressed: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const ManageLocationsPage())),
+        icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
+        label: const Text('Manage Store Locations'),
+      );
 
   Widget _buildLocationsButton(BuildContext context, String businessId) {
     return StreamBuilder<QuerySnapshot>(
@@ -220,48 +338,46 @@ class _UserProfilePageState extends State<UserProfilePage> {
         }
 
         final locations = snapshot.data!.docs;
-
         return OutlinedButton.icon(
           onPressed: () {
             showModalBottomSheet(
               context: context,
-              builder: (context) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text('Store Locations', style: Theme.of(context).textTheme.titleLarge),
+              builder: (_) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('Store Locations')),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: locations.length,
+                      itemBuilder: (context, index) {
+                        final location = locations[index];
+                        final String name = location['name'];
+                        final String address = location['address'];
+                        return ListTile(
+                          leading:
+                              const Icon(Icons.store_mall_directory_outlined),
+                          title: Text(name),
+                          subtitle: Text(address),
+                          onTap: () async {
+                            final Uri mapsUrl = Uri.parse(
+                                'https://maps.google.com/?q=${Uri.encodeComponent(address)}');
+                            if (await canLaunchUrl(mapsUrl)) {
+                              await launchUrl(mapsUrl);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('Could not open map.')));
+                            }
+                          },
+                        );
+                      },
                     ),
-                    Flexible(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: locations.length,
-                        itemBuilder: (context, index) {
-                          final location = locations[index];
-                          final String name = location['name'];
-                          final String address = location['address'];
-                          return ListTile(
-                            leading: const Icon(Icons.store_mall_directory_outlined),
-                            title: Text(name),
-                            subtitle: Text(address),
-                            onTap: () async {
-                              final Uri mapsUrl = Uri.parse('https://maps.google.com/?q=${Uri.encodeComponent(address)}');
-                              if (await canLaunchUrl(mapsUrl)) {
-                                await launchUrl(mapsUrl);
-                              } else if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Could not open map.')),
-                                );
-                              }
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
+                  ),
+                ],
+              ),
             );
           },
           icon: const Icon(Icons.store_outlined, size: 16),
@@ -271,57 +387,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  Widget _buildContentHeader(BuildContext context, String role, bool isOwnProfile) {
-    if (role == 'business') {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleButtons(
-            isSelected: _isSelected,
-            onPressed: (int index) {
-              setState(() {
-                _isSelected[0] = index == 0;
-                _isSelected[1] = index == 1;
-              });
-            },
-            borderRadius: BorderRadius.circular(30.0),
-            constraints: const BoxConstraints(minHeight: 38.0, minWidth: 100.0),
-            selectedColor: Colors.white,
-            fillColor: Theme.of(context).colorScheme.primary,
-            borderColor: Colors.grey.shade300,
-            selectedBorderColor: Theme.of(context).colorScheme.primary,
-            children: const [Text('Posts'), Text('Reviews')],
-          ),
-        ),
-      );
-    } else {
-      return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Text(
-          isOwnProfile ? "Your Reviews" : "Reviews Written",
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-      );
-    }
-  }
-
-  Widget _buildContentBody(String role, bool isOwnProfile) {
-    if (role == 'business') {
-      return _isSelected[0] ? _buildPostsList() : _buildReviewsList(isOwnProfile: isOwnProfile, role: role);
-    } else {
-      return _buildReviewsList(isOwnProfile: isOwnProfile, role: role);
-    }
-  }
-
   Widget _buildStatColumn(String label, Stream<int> stream) {
     return StreamBuilder<int>(
       stream: stream,
       builder: (context, snapshot) {
         final count = snapshot.data ?? 0;
         return Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(count.toString(), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text(count.toString(),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             Text(label),
           ],
         );
@@ -335,18 +412,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const SizedBox.shrink();
         final count = snapshot.data?['count']?.toInt() ?? 0;
-        final average = snapshot.data?['average'] ?? 0.0;
+        final avg = snapshot.data?['average'] ?? 0.0;
         return Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.star, color: Colors.amber, size: 24),
-                const SizedBox(width: 4),
-                Text(average.toStringAsFixed(1), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              ],
-            ),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              const Icon(Icons.star, color: Colors.amber, size: 24),
+              const SizedBox(width: 4),
+              Text(avg.toStringAsFixed(1),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold)),
+            ]),
             Text("$count Reviews"),
           ],
         );
@@ -358,20 +435,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     return StreamBuilder<bool>(
       stream: _firestoreService.isFollowing(businessId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return ElevatedButton.icon(
-            onPressed: null,
-            icon: const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            label: const Text("Loading"),
-          );
-        }
-
-        final isFollowing = snapshot.data!;
-
+        final isFollowing = snapshot.data ?? false;
         return ElevatedButton.icon(
           onPressed: () {
             if (isFollowing) {
@@ -386,90 +450,199 @@ class _UserProfilePageState extends State<UserProfilePage> {
       },
     );
   }
+}
 
-  // CHANGED: This StreamBuilder now handles a List<PostModel>.
-  Widget _buildPostsList() {
+// ------------------- TAB DELEGATE -------------------
+class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar _tabBar;
+  _TabBarHeaderDelegate(this._tabBar);
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+          BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      Container(
+          color: Theme.of(context).scaffoldBackgroundColor, child: _tabBar);
+
+  @override
+  bool shouldRebuild(covariant _TabBarHeaderDelegate oldDelegate) => false;
+}
+
+// ------------------- POSTS TAB -------------------
+class _PostsTab extends StatelessWidget {
+  final String userId;
+  final FirestoreService firestoreService;
+  const _PostsTab({required this.userId, required this.firestoreService});
+
+  @override
+  Widget build(BuildContext context) {
     return StreamBuilder<List<PostModel>>(
-      stream: _firestoreService.getPostsForBusiness(widget.userId),
+      stream: firestoreService.getPostsForBusiness(userId),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator())));
-        if (!snapshot.hasData || snapshot.data!.isEmpty) return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(20.0), child: Text("No posts yet."))));
-
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text("No posts yet."));
+        }
         final posts = snapshot.data!;
-        return SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) => PostCard(post: posts[index]), childCount: posts.length),
+        return ListView.builder(
+          padding: const EdgeInsets.all(0),
+          itemCount: posts.length,
+          itemBuilder: (context, index) => PostCard(post: posts[index]),
         );
       },
     );
   }
+}
 
-  // CHANGED: This StreamBuilder now handles a List<ReviewModel>.
-  Widget _buildReviewsList({required bool isOwnProfile, required String role}) {
-    final bool isCustomerView = role == 'customer';
-    final bool canWriteReview = !isOwnProfile && role == 'business';
+// ------------------- REVIEWS TAB -------------------
+class _ReviewsTab extends StatelessWidget {
+  final String userId;
+  final bool isCustomerView;
+  final FirestoreService firestoreService;
+  const _ReviewsTab(
+      {required this.userId,
+      required this.isCustomerView,
+      required this.firestoreService});
 
-    return SliverMainAxisGroup(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
+  @override
+  Widget build(BuildContext context) {
+    final bool canWriteReview =
+        FirebaseAuth.instance.currentUser?.uid != userId;
+
+    return Column(
+      children: [
+        if (!isCustomerView)
+          Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if (role == 'business')
-                  Text("Customer Reviews", style: Theme.of(context).textTheme.titleLarge),
+                Text("Customer Reviews",
+                    style: Theme.of(context).textTheme.titleLarge),
                 if (canWriteReview)
                   TextButton(
                     onPressed: () {
                       Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => WriteReviewPage(businessId: widget.userId),
-                        ),
-                      );
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  WriteReviewPage(businessId: userId)));
                     },
                     child: const Text("Write a Review"),
                   ),
               ],
             ),
           ),
-        ),
-        StreamBuilder<List<ReviewModel>>(
-          stream: isCustomerView
-              ? _firestoreService.getReviewsForCustomer(widget.userId)
-              : _firestoreService.getReviewsForBusiness(widget.userId),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator()));
-            }
-            if (snapshot.hasError) {
-              debugPrint("Error loading reviews: ${snapshot.error}");
-              return const SliverToBoxAdapter(child: Center(child: Text("Error loading reviews.")));
-            }
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Text(isCustomerView ? "This user hasn't written any reviews." : "No reviews yet."),
-                  ),
+        Expanded(
+          child: StreamBuilder<List<ReviewModel>>(
+            stream: isCustomerView
+                ? firestoreService.getReviewsForCustomer(userId)
+                : firestoreService.getReviewsForBusiness(userId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return const Center(child: Text("Error loading reviews."));
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Center(
+                  child: Text(isCustomerView
+                      ? "This user hasn't written any reviews."
+                      : "No reviews yet."),
+                );
+              }
+
+              final reviews = snapshot.data!;
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                itemCount: reviews.length,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 8.0),
+                  child: ReviewCard(
+                      review: reviews[index], showBusinessName: isCustomerView),
                 ),
               );
-            }
-
-            final reviews = snapshot.data!;
-            return SliverList.builder(
-              itemCount: reviews.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: ReviewCard(review: reviews[index], showBusinessName: isCustomerView),
-                );
-              },
-            );
-          },
+            },
+          ),
         ),
       ],
+    );
+  }
+}
+
+// ------------------- REWARDS TAB -------------------
+class _RewardsTab extends StatelessWidget {
+  final String userId;
+  final Map<String, dynamic> Function(int) getLevelData;
+  const _RewardsTab({required this.userId, required this.getLevelData});
+
+  @override
+  Widget build(BuildContext context) {
+    final firestore = FirebaseFirestore.instance;
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: firestore.collection('users').doc(userId).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Center(child: Text("Could not load rewards."));
+        }
+        final userData = snapshot.data!.data() as Map<String, dynamic>;
+        final int points = userData['points'] ?? 0;
+
+        final levelData = getLevelData(points);
+        final Level currentLevel = levelData['currentLevel'];
+        final double progress = levelData['progress'];
+        final Level? nextLevel = levelData['nextLevel'];
+        final int pointsToNext = levelData['pointsToNextLevel'];
+
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text("Current Rank",
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Text(
+                  currentLevel.name,
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                LinearProgressIndicator(
+                  value: progress,
+                  borderRadius: BorderRadius.circular(10),
+                  minHeight: 12,
+                  backgroundColor: Colors.grey[300],
+                  valueColor: AlwaysStoppedAnimation(
+                      Theme.of(context).colorScheme.primary),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  nextLevel == null
+                      ? "Max Level Achieved!"
+                      : "Level ${currentLevel.level} → ${nextLevel.level} ($pointsToNext pts to next)",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

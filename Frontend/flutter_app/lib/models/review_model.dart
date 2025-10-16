@@ -1,4 +1,3 @@
-// lib/models/review_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ReviewModel {
@@ -23,18 +22,39 @@ class ReviewModel {
   });
 
   factory ReviewModel.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+
+    Timestamp parseTimestamp(dynamic value) {
+      if (value == null) return Timestamp.now();
+      if (value is Timestamp) return value;
+      if (value is String) {
+        final parsed = DateTime.tryParse(value);
+        return Timestamp.fromDate(parsed ?? DateTime.now());
+      }
+      return Timestamp.now();
+    }
+
     return ReviewModel(
       id: doc.id,
       businessId: data['businessId'] ?? '',
       customerId: data['customerId'] ?? '',
       rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
       comment: data['comment'] ?? '',
-      createdAt: data['createdAt'] ?? Timestamp.now(),
+      createdAt: parseTimestamp(data['createdAt']),
       response: data['response'],
-      respondedAt: data['respondedAt'],
+      respondedAt: parseTimestamp(data['respondedAt']),
     );
   }
 
-  toMap() {}
+  Map<String, dynamic> toMap() {
+    return {
+      'businessId': businessId,
+      'customerId': customerId,
+      'rating': rating,
+      'comment': comment,
+      'createdAt': createdAt,
+      'response': response,
+      'respondedAt': respondedAt,
+    };
+  }
 }
