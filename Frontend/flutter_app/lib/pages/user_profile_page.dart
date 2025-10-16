@@ -14,7 +14,7 @@ import 'write_review_page.dart';
 import '../services/logging_service.dart';
 import '../widgets/app_drawer.dart';
 
-// LEVEL STRUCT 
+// LEVEL STRUCT
 class Level {
   final int level;
   final String name;
@@ -24,7 +24,7 @@ class Level {
       {required this.level, required this.name, required this.pointsRequired});
 }
 
-// MAIN PAGE 
+// MAIN PAGE
 class UserProfilePage extends StatefulWidget {
   final String userId;
 
@@ -108,17 +108,20 @@ class _UserProfilePageState extends State<UserProfilePage> {
         }
 
         final userData = snapshot.data!.data() as Map<String, dynamic>;
-        _loggingService.logAnalyticsEvent(
-          eventName: 'View_user_profile',
-          parameters: {
-            'viewer_id': currentUserId ?? 'unknown',
-            'viewed_user_id': widget.userId,
-          },
-        );
         final String role = userData['role'] ?? 'customer';
-
-        
         final bool isBusiness = role == 'business';
+       
+        if (role == 'business') {
+          _loggingService.logAnalyticsEvent(
+            
+            eventName: 'View_business_profile',
+            parameters: {
+              'viewer_id': currentUserId ?? 'unknown',
+              'viewed_business_id': widget.userId,
+            },
+          );
+        }
+        
 
         return DefaultTabController(
           length: 2,
@@ -367,7 +370,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             if (await canLaunchUrl(mapsUrl)) {
                               await launchUrl(mapsUrl);
                             } else {
-                              if (context.mounted) { 
+                              if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                         content: Text('Could not open map.')));
@@ -454,7 +457,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 }
 
-//  TAB DELEGATE 
+//  TAB DELEGATE
 class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
   final TabBar _tabBar;
   _TabBarHeaderDelegate(this._tabBar);
@@ -502,7 +505,7 @@ class _PostsTab extends StatelessWidget {
   }
 }
 
-//  REVIEWS TAB 
+//  REVIEWS TAB
 class _ReviewsTab extends StatelessWidget {
   final String userId;
   final bool isCustomerView;
@@ -580,7 +583,7 @@ class _ReviewsTab extends StatelessWidget {
   }
 }
 
-// REWARDS TAB 
+// REWARDS TAB
 class _RewardsTab extends StatelessWidget {
   final String userId;
   final Map<String, dynamic> Function(int) getLevelData;
