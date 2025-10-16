@@ -1,10 +1,11 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart'; 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'firebase_options.dart';
-import 'models/settings_data.dart';
 import 'pages/home_page.dart';
+import 'firebase_options.dart';
+import 'models/settings_model.dart';
 import 'services/notification_service.dart';
 
 void main() async {
@@ -16,7 +17,8 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await NotificationService().initAndSaveToken();
-  
+  await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+
   // Request permission from the user to receive push notifications.
   
   try {
@@ -40,13 +42,17 @@ void main() async {
   runApp(
     ChangeNotifierProvider(
       create: (context) => SettingsData(),
-      child: const MyApp(),
+      child: MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+
+  final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
+
+  MyApp({super.key});
+  
 
   @override
   Widget build(BuildContext context) {

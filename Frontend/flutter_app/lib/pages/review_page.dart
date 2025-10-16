@@ -1,10 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../models/review_model.dart'; 
 import '../services/firestore_service.dart';
 import 'user_profile_page.dart';
 
 class ReviewPage extends StatefulWidget {
-  final DocumentSnapshot review;
+  final ReviewModel review;
 
   const ReviewPage({super.key, required this.review});
 
@@ -26,25 +27,20 @@ class _ReviewPageState extends State<ReviewPage> {
 
   Future<void> _fetchProfiles() async {
     try {
-      final reviewData = widget.review.data() as Map<String, dynamic>;
-      final String? customerId = reviewData['customerId'];
-      final String? businessId = reviewData['businessId'];
+      // Getting IDs directly from the model.
+      final String customerId = widget.review.customerId;
+      final String businessId = widget.review.businessId;
 
-      if (customerId != null && businessId != null) {
-        // Fetch both profiles concurrently for better performance
-        final profiles = await Future.wait([
-          _firestoreService.getUserProfile(customerId),
-          _firestoreService.getUserProfile(businessId),
-        ]);
-        if (mounted) {
-          setState(() {
-            _customerProfile = profiles[0];
-            _businessProfile = profiles[1];
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _isLoading = false);
+      final profiles = await Future.wait([
+        _firestoreService.getUserProfile(customerId),
+        _firestoreService.getUserProfile(businessId),
+      ]);
+      if (mounted) {
+        setState(() {
+          _customerProfile = profiles[0];
+          _businessProfile = profiles[1];
+          _isLoading = false;
+        });
       }
     } catch (e) {
       debugPrint("Error fetching profiles for review page: $e");
@@ -54,12 +50,6 @@ class _ReviewPageState extends State<ReviewPage> {
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> data = widget.review.data() as Map<String, dynamic>;
-    final String comment = data['comment'] ?? 'No comment provided.';
-    final double rating = (data['rating'] as num?)?.toDouble() ?? 0.0;
-    final String? response = data['response'];
-    final String customerId = data['customerId'] ?? '';
-    
 
     String customerName = 'Anonymous';
     String businessName = 'The Business';
@@ -90,10 +80,10 @@ class _ReviewPageState extends State<ReviewPage> {
             else
               GestureDetector(
                 onTap: () {
-                  if (customerId.isNotEmpty) {
+                  if (widget.review.customerId.isNotEmpty) {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => UserProfilePage(userId: customerId)),
+                      MaterialPageRoute(builder: (context) => UserProfilePage(userId: widget.review.customerId)),
                     );
                   }
                 },
@@ -119,7 +109,7 @@ class _ReviewPageState extends State<ReviewPage> {
             Row(
               children: List.generate(5, (index) {
                 return Icon(
-                  index < rating ? Icons.star : Icons.star_border,
+                  index < widget.review.rating ? Icons.star : Icons.star_border,
                   color: Colors.amber,
                   size: 24,
                 );
@@ -127,13 +117,10 @@ class _ReviewPageState extends State<ReviewPage> {
             ),
             const Divider(height: 32),
             Text(
-              comment,
+              widget.review.comment, 
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6, fontSize: 16),
             ),
-            
             const SizedBox(height: 24),
-          
-            // This Row contains the simplified like button and counter.
             Row(
               children: [
                 StreamBuilder<bool>(
@@ -163,8 +150,7 @@ class _ReviewPageState extends State<ReviewPage> {
                 ),
               ],
             ),
-
-            if (response != null && response.isNotEmpty) ...[
+            if (widget.review.response != null && widget.review.response!.isNotEmpty) ...[ 
               const SizedBox(height: 24),
               Container(
                 width: double.infinity,
@@ -182,7 +168,7 @@ class _ReviewPageState extends State<ReviewPage> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    Text(response),
+                    Text(widget.review.response!), 
                   ],
                 ),
               ),
@@ -193,4 +179,3 @@ class _ReviewPageState extends State<ReviewPage> {
     );
   }
 }
-

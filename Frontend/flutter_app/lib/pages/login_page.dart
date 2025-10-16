@@ -94,8 +94,8 @@ class LoginPageState extends State<LoginPage> {
             children: [
              
               Image.asset(
-                'assets/icon.png', // Path to your logo
-                height: 150,       // Adjust the size as needed
+                'assets/icon.png', 
+                height: 150,       
               ),
               const SizedBox(height: 40),
 
@@ -122,7 +122,7 @@ class LoginPageState extends State<LoginPage> {
                 ),
               ),
               
-              // 6. "Remember Me" Checkbox
+              // "Remember Me" Checkbox
               CheckboxListTile(
                 title: const Text("Remember Me"),
                 value: _rememberMe,
@@ -157,8 +157,8 @@ class LoginPageState extends State<LoginPage> {
 
               // Google login
               OutlinedButton.icon(
-                icon: Image.network(
-                  'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+                icon: Image.asset(
+                  'assets/google_logo.svg.png', 
                   height: 20,
                 ),
                 label: const Text("Continue with Google"),
