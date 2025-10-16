@@ -1,15 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/services/logging_service.dart';
 import 'package:intl/intl.dart';
+import '../models/post_model.dart'; 
 import '../services/firestore_service.dart';
 import '../pages/user_profile_page.dart';
 import '../pages/post_page.dart';
 import '../pages/edit_post_page.dart';
 
 class PostCard extends StatelessWidget {
-  final QueryDocumentSnapshot post;
+  final PostModel post;
   final FirestoreService _firestoreService = FirestoreService();
+  final LoggingService _loggingService = LoggingService();
 
   PostCard({super.key, required this.post});
 
@@ -42,13 +45,8 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> data = post.data() as Map<String, dynamic>;
-    final String title = data['title'] ?? 'No Title';
-    final String content = data['content'] ?? 'No Content';
-    final Timestamp timestamp = data['createdAt'] ?? Timestamp.now();
-    final String formattedDate = DateFormat('MMM dd, yyyy').format(timestamp.toDate());
-    final String? imageUrl = data['imageUrl'];
-    final String businessId = data['businessId'] ?? '';
+    // access properties directly from the `post` object.
+    final String formattedDate = DateFormat('MMM dd, yyyy').format(post.createdAt.toDate());
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -69,10 +67,9 @@ class PostCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              
               PostHeader(
-                businessId: businessId,
-                onDelete: () => _showDeleteConfirmation(context, post.id),
+                businessId: post.businessId, 
+                onDelete: () => _showDeleteConfirmation(context, post.id), 
                 onEdit: () {
                   Navigator.push(
                     context,
@@ -83,8 +80,6 @@ class PostCard extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 12),
-
-              //  This Row holds the text and image.
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -93,7 +88,7 @@ class PostCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          title,
+                          post.title, 
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -102,7 +97,7 @@ class PostCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          content,
+                          post.content,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: Colors.grey[700],
                               ),
@@ -112,13 +107,13 @@ class PostCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (imageUrl != null)
+                  if (post.imageUrl != null)
                     Padding(
                       padding: const EdgeInsets.only(left: 16.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
                         child: Image.network(
-                          imageUrl,
+                          post.imageUrl!,
                           width: 90,
                           height: 90,
                           fit: BoxFit.cover,
@@ -144,8 +139,6 @@ class PostCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              
-              
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -163,7 +156,16 @@ class PostCard extends StatelessWidget {
                               hasReacted ? Icons.favorite : Icons.favorite_border,
                               color: hasReacted ? Colors.red : Colors.grey,
                             ),
-                            onPressed: () => _firestoreService.togglePostReaction(post.id),
+                            onPressed: () => {
+                              _firestoreService.togglePostReaction(post.id),
+                              _loggingService.logAnalyticsEvent(
+                                eventName: hasReacted ? 'post_reaction_removed' : 'post_reaction_added',
+                                parameters: {
+                                  'post_id': post.id,
+                                  'business_id': post.businessId,
+                                },
+                              ),
+                            }
                           );
                         },
                       ),
@@ -195,8 +197,6 @@ class PostCard extends StatelessWidget {
     );
   }
 }
-
-
 
 class PostHeader extends StatelessWidget {
   final String businessId;
@@ -265,7 +265,6 @@ class PostHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              
               if (isOwner)
                 Row(
                   mainAxisSize: MainAxisSize.min,
