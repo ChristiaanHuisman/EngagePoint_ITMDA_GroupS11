@@ -1,8 +1,13 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+<<<<<<< HEAD
 import 'package:flutter_app/models/review_model.dart';
 import '../services/logging_service.dart';
 import '../models/post_model.dart';
+=======
+import 'package:http/http.dart' as http;
+>>>>>>> d4a9738 (Update Firestore functions, main.py, and add new backend/frontend files)
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -171,9 +176,81 @@ class FirestoreService {
         .snapshots();
   }
 
+<<<<<<< HEAD
   // Returns a stream of ReviewModels.
   // Returns a stream of reviews for a specific business.
   Stream<List<ReviewModel>> getReviewsForBusiness(String businessId) {
+=======
+  // --- PATCHED REVIEW METHODS TO USE PYTHON API ---
+
+  // Adds a new review or updates an existing one for a business using Python API.
+  Future<void> addOrUpdateReview({
+    required String businessId,
+    required double rating,
+    required String comment,
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception("You must be logged in to leave a review.");
+    }
+
+    final url = Uri.parse('http://10.143.93.64:5000/reviews');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'businessId': businessId,
+        'customerId': currentUser.uid,
+        'rating': rating,
+        'comment': comment,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to submit review: ${response.body}');
+    }
+    // Return type is Future<void>, so nothing to return.
+  }
+
+  // Gets all reviews for a business using Python API (for non-stream use).
+  Future<List<Map<String, dynamic>>> getReviewsForBusinessApi(String businessId) async {
+    final url = Uri.parse('http://10.143.93.64:5000/reviews/$businessId');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((item) => item as Map<String, dynamic>).toList();
+    } else {
+      throw Exception('Failed to load reviews: ${response.body}');
+    }
+  }
+
+  // Deletes a review using Python API.
+  Future<void> deleteReview(String businessId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    final url = Uri.parse('http://10.143.93.64:5000/reviews');
+    final response = await http.delete(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'businessId': businessId,
+        'customerId': currentUser.uid,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete review: ${response.body}');
+    }
+    // Return type is Future<void>, so nothing to return.
+  }
+
+  // --- END PATCHED REVIEW METHODS ---
+
+  // Returns a stream of reviews for a specific business (Firestore, for widgets expecting a stream).
+  Stream<QuerySnapshot<Object?>> getReviewsForBusiness(String businessId) {
+>>>>>>> d4a9738 (Update Firestore functions, main.py, and add new backend/frontend files)
     return _db
         .collection('reviews')
         .where('businessId', isEqualTo: businessId)
@@ -207,6 +284,7 @@ class FirestoreService {
       };
     });
   }
+<<<<<<< HEAD
 
   // Accepts a single ReviewModel object.
   // Adds a new review or updates an existing one for a business.
@@ -226,6 +304,9 @@ class FirestoreService {
     await reviewRef.set(reviewData, SetOptions(merge: true));
   }
 
+=======
+  
+>>>>>>> d4a9738 (Update Firestore functions, main.py, and add new backend/frontend files)
   // Returns a stream of all business users with a 'pending' status.
   Stream<QuerySnapshot<Object?>> getPendingBusinesses() {
     return _db
@@ -247,6 +328,7 @@ class FirestoreService {
     await _db.collection('posts').doc(postId).delete();
   }
 
+<<<<<<< HEAD
   // Deletes a review from the 'reviews' collection.
   Future<void> deleteReview(String businessId) async {
     final currentUser = _auth.currentUser;
@@ -257,6 +339,8 @@ class FirestoreService {
         .delete();
   }
 
+=======
+>>>>>>> d4a9738 (Update Firestore functions, main.py, and add new backend/frontend files)
   // Adds a response from a business to a review document.
   Future<void> addResponseToReview(String reviewId, String response) async {
     await _db.collection('reviews').doc(reviewId).update({
@@ -412,9 +496,13 @@ class FirestoreService {
         .get();
 
     int totalLikes = 0;
+<<<<<<< HEAD
 
     // This is inefficient for large numbers of posts. For a production app,
     // you would use a Cloud Function to update a counter. But for this project, it's fine.
+=======
+    
+>>>>>>> d4a9738 (Update Firestore functions, main.py, and add new backend/frontend files)
     for (final postDoc in postsQuery.docs) {
       final reactionsQuery =
           await postDoc.reference.collection('reactions').get();
@@ -449,8 +537,6 @@ class FirestoreService {
 
     for (var doc in querySnapshot.docs) {
       final data = doc.data();
-      // This assumes your Python microservice saves a field named 'sentiment'
-      // with values like 'positive', 'negative', or 'neutral'.
       final String? sentiment = data['sentiment'];
 
       switch (sentiment) {
