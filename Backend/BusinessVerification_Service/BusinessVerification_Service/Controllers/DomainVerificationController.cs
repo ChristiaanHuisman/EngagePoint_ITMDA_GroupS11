@@ -1,4 +1,4 @@
-﻿using BusinessVerification_Service.Dtos;
+﻿/*using BusinessVerification_Service.Dtos;
 using BusinessVerification_Service.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,7 +30,7 @@ namespace BusinessVerification_Service.Controllers
             {
                 // Check if model binded to DTO successfully
                 // Should not be needed as no attributes are used in the DTO
-                /*if (!ModelState.IsValid)
+                if (!ModelState.IsValid)
                 {
                     // Get all errors from the ModelState
                     var errors = string.Join("; ", 
@@ -53,7 +53,7 @@ namespace BusinessVerification_Service.Controllers
                         "Please ensure all details are entered correctly and try again, " +
                         "or contact support if the issue persists."
                     });
-                }*/
+                }
 
                 _logger.LogInformation(
                     "Controller: Domain verification request for email {email} and website {website} recieved.",
@@ -114,4 +114,4 @@ namespace BusinessVerification_Service.Controllers
             }
         }
     }
-}
+}*/

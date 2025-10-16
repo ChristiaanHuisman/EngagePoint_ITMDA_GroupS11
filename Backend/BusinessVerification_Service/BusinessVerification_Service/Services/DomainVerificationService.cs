@@ -33,7 +33,7 @@ namespace BusinessVerification_Service.Services
             // Verify the request DTO is not null
             if (verificationRequestDto == null)
             {
-                _logger.LogWarning(
+                _logger.LogError(
                     "Service: Request DTO received for business verification is null."
                 );
 
@@ -193,6 +193,7 @@ namespace BusinessVerification_Service.Services
                 firebaseResponse.OfficiallyVerified = true;
                 firebaseResponse.VerifiedAt = DateTime.UtcNow;
             }
+
             // Add way of passing firebase DTO to Firebase
 
             _logger.LogInformation(
