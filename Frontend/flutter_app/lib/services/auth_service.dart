@@ -44,16 +44,14 @@ class AuthService {
       // Save the FCM token on successful login.
       if (result.user != null) {
         await _notificationService.initAndSaveToken();
-
-        _loggingService.logAnalyticsEvent(  //analytics logging
+      }
+      _loggingService.logAnalyticsEvent(  //analytics logging
       eventName: 'user_login',
       parameters: {
         'method': 'email',
         'user_id': result.user?.uid ?? 'unknown',
       },
     );
-      }
-      
       return result.user;
     } catch (e) {
       debugPrint("Email login error: $e");
@@ -78,16 +76,7 @@ class AuthService {
         await _createUserDocument(user, isBusiness: false);
         // ADDITION: Save the FCM token on successful login.
         await _notificationService.initAndSaveToken();
-
-        _loggingService.logAnalyticsEvent(  //analytics logging
-        eventName: 'user_login',
-        parameters: {
-        'method': 'google',
-        'user_id': result.user?.uid ?? 'unknown',
-          },
-        );
       }
-      
       return user;
     } catch (e) {
       debugPrint("Google login error: $e");

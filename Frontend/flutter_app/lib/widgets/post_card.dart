@@ -6,12 +6,10 @@ import '../services/firestore_service.dart';
 import '../pages/user_profile_page.dart';
 import '../pages/post_page.dart';
 import '../pages/edit_post_page.dart';
-import '../services/logging_service.dart';
 
 class PostCard extends StatelessWidget {
   final QueryDocumentSnapshot post;
   final FirestoreService _firestoreService = FirestoreService();
-  final LoggingService _loggingService = LoggingService();
 
   PostCard({super.key, required this.post});
 
@@ -165,16 +163,7 @@ class PostCard extends StatelessWidget {
                               hasReacted ? Icons.favorite : Icons.favorite_border,
                               color: hasReacted ? Colors.red : Colors.grey,
                             ),
-                            onPressed: () => {
-                              _firestoreService.togglePostReaction(post.id),
-                              _loggingService.logAnalyticsEvent(  // Log reaction event
-                                eventName: hasReacted ? 'post_reaction_removed' : 'post_reaction_added',
-                                parameters: {
-                                  'post_id': post.id,
-                                  'business_id': businessId,
-                                },
-                              ),
-                            }
+                            onPressed: () => _firestoreService.togglePostReaction(post.id),
                           );
                         },
                       ),
