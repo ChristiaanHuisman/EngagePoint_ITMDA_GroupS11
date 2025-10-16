@@ -107,5 +107,22 @@ def delete_review():
         return jsonify({"message": "Invalid request"}), 400
     return jsonify({"message": "Invalid request"}), 400
 
+@app.route('/reviews/analytics/<businessId>', methods = ["GET"])
+def getReviewSentimentStats(businessId):
+    reviews = ReviewModel.read_all(businessId)
+    positive = 0
+    negative = 0
+    neutral = 0
+    for i in reviews:
+        sentiment = i.get("sentiment")
+        if sentiment.lower() == "positive":
+            positive += 1
+        elif sentiment.lower() == "negative":
+            negative += 1
+        elif sentiment.lower() == "neutral":
+            neutral += 1
+    return jsonify({"positive": positive, "negative": negative, "neutral": neutral}), 200            
+            
+    
 if __name__ == "__main__":
-    app.run(host="10.143.93.64")
+    app.run(host="192.168.8.131")

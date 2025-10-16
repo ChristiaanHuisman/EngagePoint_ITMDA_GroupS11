@@ -82,24 +82,57 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
     );
   }
 
-  Widget _buildSentimentView() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Review Sentiment Analysis',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          _buildStatCard(icon: Icons.thumb_up, label: 'Positive Reviews', future: Future.value(0), color: Colors.green),
-          const SizedBox(height: 12),
-          _buildStatCard(icon: Icons.thumb_down, label: 'Negative Reviews', future: Future.value(0), color: Colors.red),
-          const SizedBox(height: 12),
-          _buildStatCard(icon: Icons.remove, label: 'Neutral Reviews', future: Future.value(0), color: Colors.grey),
-        ],
-      ),
-    );
-  }
+Widget _buildSentimentView() {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  final businessId = currentUser?.uid ?? '';
+  final statsFuture = FirestoreService().getReviewSentimentStats(businessId);
+
+  return SingleChildScrollView(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Review Sentiment Analysis',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        FutureBuilder<Map<String, int>>(
+          future: statsFuture,
+          builder: (context, snapshot) {
+            final stats = snapshot.data ?? {'positive': 0, 'negative': 0, 'neutral': 0};
+
+            return Column(
+              children: [
+                _buildStatCard(
+                  icon: Icons.thumb_up,
+                  label: 'Positive Reviews',
+                  future: Future.value(stats['positive']),
+                  color: Colors.green,
+                ),
+                const SizedBox(height: 12),
+                _buildStatCard(
+                  icon: Icons.thumb_down,
+                  label: 'Negative Reviews',
+                  future: Future.value(stats['negative']),
+                  color: Colors.red,
+                ),
+                const SizedBox(height: 12),
+                _buildStatCard(
+                  icon: Icons.remove,
+                  label: 'Neutral Reviews',
+                  future: Future.value(stats['neutral']),
+                  color: Colors.grey,
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildStatCard({
     required IconData icon,

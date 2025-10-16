@@ -183,7 +183,7 @@ class FirestoreService {
       throw Exception("You must be logged in to leave a review.");
     }
 
-    final url = Uri.parse('http://10.143.93.64:5000/reviews');
+    final url = Uri.parse('http://192.168.8.131:5000/reviews');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -202,7 +202,7 @@ class FirestoreService {
 
   // Gets all reviews for a business using Python API (for non-stream use).
   Future<List<Map<String, dynamic>>> getReviewsForBusinessApi(String businessId) async {
-    final url = Uri.parse('http://10.143.93.64:5000/reviews/$businessId');
+    final url = Uri.parse('http://192.168.8.131:5000/reviews/$businessId');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -218,7 +218,7 @@ class FirestoreService {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    final url = Uri.parse('http://10.143.93.64:5000/reviews');
+    final url = Uri.parse('http://192.168.8.131:5000/reviews');
     final response = await http.delete(
       url,
       headers: {'Content-Type': 'application/json'},
@@ -467,43 +467,21 @@ class FirestoreService {
     return reviewsQuery.size;
   }
 
-  Future<Map<String, int>> getReviewSentimentStats(String businessId) async {
-    final querySnapshot = await _db
-        .collection('reviews')
-        .where('businessId', isEqualTo: businessId)
-        .get();
+Future<Map<String, int>> getReviewSentimentStats(String businessId) async {
+  final url = Uri.parse('http://192.168.8.131:5000/reviews/analytics/$businessId');
+  final response = await http.get(url);
 
-    if (querySnapshot.docs.isEmpty) {
-      return {'positive': 0, 'negative': 0, 'neutral': 0};
-    }
-
-    int positiveCount = 0;
-    int negativeCount = 0;
-    int neutralCount = 0;
-
-    for (var doc in querySnapshot.docs) {
-      final data = doc.data();
-      final String? sentiment = data['sentiment'];
-
-      switch (sentiment) {
-        case 'positive':
-          positiveCount++;
-          break;
-        case 'negative':
-          negativeCount++;
-          break;
-        case 'neutral':
-          neutralCount++;
-          break;
-      }
-    }
-
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
     return {
-      'positive': positiveCount,
-      'negative': negativeCount,
-      'neutral': neutralCount,
+      'positive': data['positive'] ?? 0,
+      'negative': data['negative'] ?? 0,
+      'neutral': data['neutral'] ?? 0,
     };
+  } else {
+    throw Exception('Failed to fetch sentiment stats: ${response.body}');
   }
+}
 
   Future<void> addLocation(
       {required String name, required String address}) async {
