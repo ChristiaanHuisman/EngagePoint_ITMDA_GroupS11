@@ -85,6 +85,33 @@ namespace BusinessVerification_Service.Services
                     return returnResponse;
                 }
 
+                // Checking for supported schemes in website address
+                if (website.Contains("://"))
+                {
+                    // Get first part of website address before ://
+                    var scheme = website.Split("://")[0].ToLower();
+
+                    // Count number of schemes in website address
+                    int schemeCount = website.Split("://").Length - 1;
+
+                    // There should not be more that 1 scheme
+                    // Only http, https and ftp are supported
+                    if (schemeCount > 1 || 
+                        (scheme != "http" && scheme != "https" && scheme != "ftp"))
+                    {
+                        _logger.LogWarning(
+                            "Service: Invalid, unsupported or more than one scheme in of website {website} " + 
+                            "for user {user}.", 
+                            website, userId
+                        );
+
+                        // Return response DTO with appropriate error message
+                        returnResponse.Message = "Invalid or incomplete website format entered. " + 
+                            errorMessageEnd;
+                        return returnResponse;
+                    }
+                }
+
                 // Checking and building URI for the website address
                 try
                 {
@@ -93,7 +120,8 @@ namespace BusinessVerification_Service.Services
                     UriBuilder validateUri = new UriBuilder(
                         website.StartsWith("http", StringComparison.OrdinalIgnoreCase)
                         || website.StartsWith("ftp", StringComparison.OrdinalIgnoreCase)
-                        ? website : $"https://{website}"
+                        ? website 
+                        : $"https://{website}"
                     );
                 }
                 // Handle errors
@@ -127,24 +155,25 @@ namespace BusinessVerification_Service.Services
                     // Determine how closely the busniness name matches the domains
                     int fuzzyMatchResult = FuzzyMatch(website, name, userId);
                     firebaseResponse.FuzzyScore = fuzzyMatchResult;
-
-                    // For a score of >= 80 the business name can be automatically verified
-                    // For a score of >= 60 and <= 79 an admin needs to verify the business name
-                    // For a score of <= 59 the business name cannot be verified
                     switch (fuzzyMatchResult)
                     {
-                        case >= 80:
+                        // For a score of >= 90 the business name can be automatically verified
+                        case >= 90:
                             // To be removed in future versions that uses email link verification
                             returnResponse.VerificationStatus = Status.Accepted;
 
                             returnResponse.Message = "Business successfully verified.";
                         break;
-                        case >= 60:
+
+                        // For a score of >= 65 and <= 89 an admin needs to verify the business name
+                        case >= 65:
                             firebaseResponse.RequiresAdmin = true;
                             returnResponse.VerificationStatus = Status.Pending;
                             returnResponse.Message = "Business name does not match email and " + 
                                 "website domain names entered clearly enough. Admin review required.";
                         break;
+
+                        // For a score of <= 64 the business name cannot be verified
                         default:
                             returnResponse.Message = "Business name does not match email and " + 
                                 "website domains entered. " + errorMessageEnd;
@@ -321,16 +350,16 @@ namespace BusinessVerification_Service.Services
 
                 // Do a fuzzy comparison using FuzzySharp
                 // Various algorithms can be used,
-                // PartialTokenSetRatio is a good balance for this use case
-                int score = Fuzz.PartialTokenSetRatio(websiteDomainOnly, name);
+                // WeightedRatio is a good balance for this use case
+                int score = Fuzz.WeightedRatio(websiteDomainOnly, name);
 
                 _logger.LogInformation(
                     "Service: Fuzzy comparison for user {user} between website {website} " + 
                     "and business name {name} completed with a score of {score}.\n" + 
                     "Thresholds:\n" + 
-                    ">= 80 - automatically verified\n" + 
-                    ">= 60 and <= 79 - admin must verify\n" + 
-                    "<= 59 - cannot verify", 
+                    ">= 90 - automatically verified\n" + 
+                    ">= 65 and <= 89 - admin must verify\n" + 
+                    "<= 64 - cannot verify", 
                     userId, website, name, score
                 );
 
