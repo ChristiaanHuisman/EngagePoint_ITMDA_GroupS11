@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/services/logging_service.dart';
 import 'package:intl/intl.dart';
 import '../models/post_model.dart'; 
 import '../services/firestore_service.dart';
@@ -11,6 +12,7 @@ import '../pages/edit_post_page.dart';
 class PostCard extends StatelessWidget {
   final PostModel post;
   final FirestoreService _firestoreService = FirestoreService();
+  final LoggingService _loggingService = LoggingService();
 
   PostCard({super.key, required this.post});
 
@@ -154,7 +156,16 @@ class PostCard extends StatelessWidget {
                               hasReacted ? Icons.favorite : Icons.favorite_border,
                               color: hasReacted ? Colors.red : Colors.grey,
                             ),
-                            onPressed: () => _firestoreService.togglePostReaction(post.id),
+                            onPressed: () => {
+                              _firestoreService.togglePostReaction(post.id),
+                              _loggingService.logAnalyticsEvent(
+                                eventName: hasReacted ? 'post_reaction_removed' : 'post_reaction_added',
+                                parameters: {
+                                  'post_id': post.id,
+                                  'business_id': post.businessId,
+                                },
+                              ),
+                            }
                           );
                         },
                       ),

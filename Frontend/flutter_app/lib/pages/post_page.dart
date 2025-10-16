@@ -234,6 +234,13 @@ class _PostPageState extends State<PostPage> {
                               ),
                               onPressed: () {
                                 _firestoreService.togglePostReaction(widget.post.id);
+                                _loggingService.logAnalyticsEvent(
+                                eventName: hasReacted ? 'post_reaction_removed' : 'post_reaction_added',
+                                parameters: {
+                                  'post_id': widget.post.id,
+                                  'business_id': widget.post.businessId,
+                                },
+                              );
                               },
                             );
                           },
