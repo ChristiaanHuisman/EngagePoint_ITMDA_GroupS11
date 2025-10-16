@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/rewards_model.dart';
+import '../models/rewards_data.dart';
 import 'wheel_painter.dart';
 
 class RewardWheel extends StatefulWidget {

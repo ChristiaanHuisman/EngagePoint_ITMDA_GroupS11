@@ -82,7 +82,7 @@ class _ManageLocationsPageState extends State<ManageLocationsPage> {
       body: _businessId == null
           ? const Center(child: Text('Not logged in.'))
           : StreamBuilder<QuerySnapshot>(
-              // Pass the businessId to the getLocations method
+              // THE FIX IS HERE: Pass the businessId to the getLocations method.
               stream: _firestoreService.getLocations(_businessId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {

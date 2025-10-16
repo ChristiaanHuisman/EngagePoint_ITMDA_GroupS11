@@ -1,14 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../models/post_model.dart'; 
+import 'package:google_sign_in/google_sign_in.dart';
 import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
 import 'login_page.dart';
 import 'discover_page.dart';
 import 'create_post_page.dart';
+import 'rewards_page.dart';
+import 'settings_page.dart';
+import 'admin_page.dart';
 import 'user_profile_page.dart';
-import '../widgets/app_drawer.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -38,11 +40,11 @@ class MainAppNavigator extends StatefulWidget {
   const MainAppNavigator({super.key});
 
   @override
-  // Return the new public state class name.
+  // FIX 1/3: Return the new public state class name.
   State<MainAppNavigator> createState() => MainAppNavigatorState();
 }
 
-// The state class is now public (no leading underscore).
+// FIX 2/3: The state class is now public (no leading underscore).
 class MainAppNavigatorState extends State<MainAppNavigator> {
   int _selectedIndex = 0;
 
@@ -55,7 +57,9 @@ class MainAppNavigatorState extends State<MainAppNavigator> {
     _pages = <Widget>[
       FollowingFeed(user: _user),
       const DiscoverPage(),
+      
       if (_user != null) UserProfilePage(userId: _user.uid) else const Center(child: Text("Not Logged In")),
+      
     ];
   }
 
@@ -106,6 +110,10 @@ class FollowingFeed extends StatefulWidget {
 class _FollowingFeedState extends State<FollowingFeed> {
   final FirestoreService _firestoreService = FirestoreService();
 
+  Future<void> _signOut() async {
+    await GoogleSignIn().signOut();
+    await FirebaseAuth.instance.signOut();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +131,9 @@ class _FollowingFeedState extends State<FollowingFeed> {
           userData = userSnapshot.data!.data() as Map<String, dynamic>;
           role = userData['role'] ?? 'customer';
         }
-
+        
+        String photoUrl = userData['photoUrl'] ?? widget.user!.photoURL ??
+            'https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg';
 
         return Scaffold(
           appBar: AppBar(
@@ -131,8 +141,75 @@ class _FollowingFeedState extends State<FollowingFeed> {
             foregroundColor: Theme.of(context).colorScheme.onPrimary,
             title: const Text('Home'),
           ),
-          drawer: const AppDrawer(),
-
+          drawer: Drawer(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                UserAccountsDrawerHeader(
+                  accountName: Text(userData['name'] ?? widget.user!.displayName ?? 'User'),
+                  accountEmail: Text(widget.user!.email ?? 'No email'),
+                  currentAccountPicture: CircleAvatar(
+                    backgroundImage: NetworkImage(photoUrl),
+                  ),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
+                ),
+                ListTile(leading: const Icon(Icons.home), title: const Text('Home'), onTap: () => Navigator.pop(context)),
+                ListTile(
+                  leading: const Icon(Icons.explore),
+                  title: const Text('Discover'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // FIX 3/3: Use the public state type here.
+                    final navState = context.findAncestorStateOfType<MainAppNavigatorState>();
+                    navState?.onItemTapped(1);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: const Text('Profile'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // FIX 3/3: Use the public state type here.
+                    final navState = context.findAncestorStateOfType<MainAppNavigatorState>();
+                    navState?.onItemTapped(2);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.leaderboard),
+                  title: const Text('Rewards & Progression'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsAndProgressionPage()));
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.settings),
+                  title: const Text('Settings'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()));
+                  },
+                ),
+                const Divider(),
+                
+                if (role == 'admin')
+                  ListTile(
+                    leading: const Icon(Icons.admin_panel_settings),
+                    title: const Text('Admin Panel'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPage()));
+                    },
+                  ),
+                
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: const Text('Logout', style: TextStyle(color: Colors.red)),
+                  onTap: _signOut,
+                ),
+              ],
+            ),
+          ),
           floatingActionButton: role == 'business'
               ? FloatingActionButton(
                   onPressed: () {
@@ -144,7 +221,39 @@ class _FollowingFeedState extends State<FollowingFeed> {
                   child: const Icon(Icons.add),
                 )
               : null,
-          body: _buildFollowedFeed(),
+          body: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Center(
+                  child: ToggleButtons(
+                    isSelected: [true, false],
+                    onPressed: (int index) {
+                      if (index == 1) {
+                         final navState = context.findAncestorStateOfType<MainAppNavigatorState>();
+                         navState?.onItemTapped(1);
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(30.0),
+                    borderColor: Colors.grey.shade300,
+                    selectedBorderColor: Theme.of(context).colorScheme.primary,
+                    constraints: const BoxConstraints(minHeight: 38.0, minWidth: 100.0),
+                    selectedColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.primary,
+                    color: Theme.of(context).colorScheme.primary,
+                    children: const [
+                      Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('Following')),
+                      Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text('Discover')),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: _buildFollowedFeed(),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -173,8 +282,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
           );
         }
         final followedBusinessIds = followedSnapshot.data!;
-        // The StreamBuilder now expects a List of PostModels.
-        return StreamBuilder<List<PostModel>>(
+        return StreamBuilder<QuerySnapshot>(
           stream: _firestoreService.getFollowedPosts(followedBusinessIds),
           builder: (context, postSnapshot) {
             if (postSnapshot.connectionState == ConnectionState.waiting) {
@@ -184,8 +292,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
               debugPrint("Error fetching followed posts: ${postSnapshot.error}");
               return const Center(child: Text("Something went wrong loading posts."));
             }
-            // The check uses .isEmpty on the list directly.
-            if (!postSnapshot.hasData || postSnapshot.data!.isEmpty) {
+            if (!postSnapshot.hasData || postSnapshot.data!.docs.isEmpty) {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
@@ -197,8 +304,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
                 ),
               );
             }
-            // The data is  list of PostModels.
-            final posts = postSnapshot.data!;
+            final posts = postSnapshot.data!.docs;
             return ListView.builder(
               itemCount: posts.length,
               itemBuilder: (context, index) => PostCard(post: posts[index]),

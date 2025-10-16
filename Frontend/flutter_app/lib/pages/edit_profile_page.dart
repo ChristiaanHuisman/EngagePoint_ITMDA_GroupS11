@@ -20,7 +20,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
-  //  Controller for the new text field
+  // ADDITION: Controller for the new text field
   late final TextEditingController _businessTypeController;
   File? _imageFile;
   bool _isLoading = false;
@@ -30,7 +30,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.initState();
     _nameController = TextEditingController(text: widget.userData['name'] ?? '');
     _descriptionController = TextEditingController(text: widget.userData['description'] ?? '');
-    // Initialize the controller with existing data
+    // ADDITION: Initialize the controller with existing data
     _businessTypeController = TextEditingController(text: widget.userData['businessType'] ?? '');
   }
 
@@ -38,7 +38,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    //  Dispose of the new controller
+    // ADDITION: Dispose of the new controller
     _businessTypeController.dispose();
     super.dispose();
   }
@@ -71,7 +71,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'name': _nameController.text.trim(),
         'searchName': _nameController.text.trim().toLowerCase(),
         'description': _descriptionController.text.trim(),
-        // Get the business type from the text controller
+        // ADDITION: Get the business type from the text controller
         'businessType': _businessTypeController.text.trim(),
       };
       
@@ -152,7 +152,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 validator: (value) => value == null || value.isEmpty ? 'Please enter a name' : null,
               ),
               const SizedBox(height: 16),
-              // Show this field only for business users
+              
+              // THE FIX IS HERE: The dropdown is replaced with a standard text field.
               if (role == 'business')
                 TextFormField(
                   controller: _businessTypeController,
