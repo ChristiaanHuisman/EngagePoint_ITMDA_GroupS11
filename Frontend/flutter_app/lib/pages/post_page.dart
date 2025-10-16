@@ -2,14 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import '../models/post_model.dart'; // ADDED: Import the PostModel
+import '../models/post_model.dart'; 
 import '../services/firestore_service.dart';
 import 'full_screen_image_viewer.dart';
 import 'user_profile_page.dart';
 import '../services/logging_service.dart';
 
 class PostPage extends StatefulWidget {
-  // CHANGED: This now requires a PostModel.
+  
   final PostModel post;
 
   const PostPage({super.key, required this.post});
@@ -33,7 +33,7 @@ class _PostPageState extends State<PostPage> {
     super.initState();
     _fetchBusinessProfile();
 
-    // CHANGED: Logging now uses the PostModel directly.
+    // Logging now uses the PostModel directly.
     _loggingService.logAnalyticsEvent(
       eventName: 'post_view',
       parameters: {
@@ -45,7 +45,7 @@ class _PostPageState extends State<PostPage> {
 
   Future<void> _fetchBusinessProfile() async {
     try {
-      // CHANGED: Business ID is accessed from the PostModel.
+      // Business ID is accessed from the PostModel.
       final String businessId = widget.post.businessId;
 
       if (businessId.isNotEmpty) {
@@ -67,8 +67,7 @@ class _PostPageState extends State<PostPage> {
 
   @override
   Widget build(BuildContext context) {
-    // REMOVED: Manual data extraction is no longer needed.
-    // We now use widget.post properties directly.
+    // use widget.post properties directly.
     final String formattedDate = DateFormat('MMM dd, yyyy').format(widget.post.createdAt.toDate());
 
     String businessName = '...';
@@ -82,12 +81,11 @@ class _PostPageState extends State<PostPage> {
       businessId = _businessProfile!.id;
     }
 
-    // CHANGED: content is accessed directly from the model.
+    // content is accessed directly from the model.
     final bool isLongText = widget.post.content.length > _characterLimit;
 
     return Scaffold(
       appBar: AppBar(
-        // CHANGED
         title: Text(widget.post.title, overflow: TextOverflow.ellipsis),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -136,12 +134,12 @@ class _PostPageState extends State<PostPage> {
 
               // Title
               Text(
-                widget.post.title, // CHANGED
+                widget.post.title, 
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
               ),
 
               // Image
-              if (widget.post.imageUrl != null) // CHANGED
+              if (widget.post.imageUrl != null) 
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 16.0),
@@ -155,7 +153,7 @@ class _PostPageState extends State<PostPage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => FullScreenImageViewer(
-                                  imageUrl: widget.post.imageUrl!, // CHANGED
+                                  imageUrl: widget.post.imageUrl!, 
                                   tag: widget.post.id,
                                 ),
                               ),
@@ -164,9 +162,9 @@ class _PostPageState extends State<PostPage> {
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxHeight: 300),
                             child: AspectRatio(
-                              aspectRatio: widget.post.imageAspectRatio ?? 16 / 9, // CHANGED
+                              aspectRatio: widget.post.imageAspectRatio ?? 16 / 9, 
                               child: Image.network(
-                                widget.post.imageUrl!, // CHANGED
+                                widget.post.imageUrl!,
                                 fit: BoxFit.cover,
                                 loadingBuilder: (context, child, loadingProgress) {
                                   if (loadingProgress == null) return child;
@@ -190,8 +188,8 @@ class _PostPageState extends State<PostPage> {
                 children: [
                   Text(
                     isLongText && !_isExpanded
-                        ? '${widget.post.content.substring(0, _characterLimit)}...' // CHANGED
-                        : widget.post.content, // CHANGED
+                        ? '${widget.post.content.substring(0, _characterLimit)}...' 
+                        : widget.post.content,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6, fontSize: 16),
                   ),
                   if (isLongText)

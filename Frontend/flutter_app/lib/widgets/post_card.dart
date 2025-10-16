@@ -2,14 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/post_model.dart'; // ADDED: Import the PostModel
+import '../models/post_model.dart'; 
 import '../services/firestore_service.dart';
 import '../pages/user_profile_page.dart';
 import '../pages/post_page.dart';
 import '../pages/edit_post_page.dart';
 
 class PostCard extends StatelessWidget {
-  // CHANGED: The post is now a PostModel, not a QueryDocumentSnapshot.
   final PostModel post;
   final FirestoreService _firestoreService = FirestoreService();
 
@@ -44,8 +43,7 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // REMOVED: Manual data extraction is no longer needed.
-    // We can now access properties directly from the `post` object.
+    // access properties directly from the `post` object.
     final String formattedDate = DateFormat('MMM dd, yyyy').format(post.createdAt.toDate());
 
     return Card(
@@ -58,7 +56,6 @@ class PostCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              // NOTE: PostPage will need to be updated to accept a PostModel.
               builder: (context) => PostPage(post: post),
             ),
           );
@@ -69,13 +66,12 @@ class PostCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               PostHeader(
-                businessId: post.businessId, // CHANGED
-                onDelete: () => _showDeleteConfirmation(context, post.id), // CHANGED
+                businessId: post.businessId, 
+                onDelete: () => _showDeleteConfirmation(context, post.id), 
                 onEdit: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      // NOTE: EditPostPage will need to be updated to accept a PostModel.
                       builder: (context) => EditPostPage(post: post),
                     ),
                   );
@@ -90,7 +86,7 @@ class PostCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.title, // CHANGED
+                          post.title, 
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -99,7 +95,7 @@ class PostCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          post.content, // CHANGED
+                          post.content,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: Colors.grey[700],
                               ),
@@ -109,13 +105,13 @@ class PostCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (post.imageUrl != null) // CHANGED
+                  if (post.imageUrl != null)
                     Padding(
                       padding: const EdgeInsets.only(left: 16.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8.0),
                         child: Image.network(
-                          post.imageUrl!, // CHANGED
+                          post.imageUrl!,
                           width: 90,
                           height: 90,
                           fit: BoxFit.cover,
@@ -148,7 +144,7 @@ class PostCard extends StatelessWidget {
                   Row(
                     children: [
                       StreamBuilder<bool>(
-                        stream: _firestoreService.hasUserReacted(post.id), // CHANGED
+                        stream: _firestoreService.hasUserReacted(post.id),
                         builder: (context, snapshot) {
                           final hasReacted = snapshot.data ?? false;
                           return IconButton(
@@ -158,13 +154,13 @@ class PostCard extends StatelessWidget {
                               hasReacted ? Icons.favorite : Icons.favorite_border,
                               color: hasReacted ? Colors.red : Colors.grey,
                             ),
-                            onPressed: () => _firestoreService.togglePostReaction(post.id), // CHANGED
+                            onPressed: () => _firestoreService.togglePostReaction(post.id),
                           );
                         },
                       ),
                       const SizedBox(width: 4),
                       StreamBuilder<int>(
-                        stream: _firestoreService.getPostReactionCount(post.id), // CHANGED
+                        stream: _firestoreService.getPostReactionCount(post.id),
                         builder: (context, snapshot) {
                           final count = snapshot.data ?? 0;
                           return Text(

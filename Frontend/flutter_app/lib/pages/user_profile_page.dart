@@ -14,7 +14,7 @@ import 'write_review_page.dart';
 import '../services/logging_service.dart';
 import '../widgets/app_drawer.dart';
 
-// ------------------- LEVEL STRUCT -------------------
+// LEVEL STRUCT 
 class Level {
   final int level;
   final String name;
@@ -24,7 +24,7 @@ class Level {
       {required this.level, required this.name, required this.pointsRequired});
 }
 
-// ------------------- MAIN PAGE -------------------
+// MAIN PAGE 
 class UserProfilePage extends StatefulWidget {
   final String userId;
 
@@ -117,7 +117,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         );
         final String role = userData['role'] ?? 'customer';
 
-        // Determine if we show 2 tabs for business or customer (both will have 2 tabs now)
+        
         final bool isBusiness = role == 'business';
 
         return DefaultTabController(
@@ -367,9 +367,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             if (await canLaunchUrl(mapsUrl)) {
                               await launchUrl(mapsUrl);
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Could not open map.')));
+                              if (context.mounted) { 
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Could not open map.')));
+                              }
                             }
                           },
                         );
@@ -452,7 +454,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 }
 
-// ------------------- TAB DELEGATE -------------------
+//  TAB DELEGATE 
 class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
   final TabBar _tabBar;
   _TabBarHeaderDelegate(this._tabBar);
@@ -472,7 +474,7 @@ class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(covariant _TabBarHeaderDelegate oldDelegate) => false;
 }
 
-// ------------------- POSTS TAB -------------------
+//  POSTS TAB
 class _PostsTab extends StatelessWidget {
   final String userId;
   final FirestoreService firestoreService;
@@ -500,7 +502,7 @@ class _PostsTab extends StatelessWidget {
   }
 }
 
-// ------------------- REVIEWS TAB -------------------
+//  REVIEWS TAB 
 class _ReviewsTab extends StatelessWidget {
   final String userId;
   final bool isCustomerView;
@@ -578,7 +580,7 @@ class _ReviewsTab extends StatelessWidget {
   }
 }
 
-// ------------------- REWARDS TAB -------------------
+// REWARDS TAB 
 class _RewardsTab extends StatelessWidget {
   final String userId;
   final Map<String, dynamic> Function(int) getLevelData;

@@ -36,7 +36,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
     }
   }
 
-  // ADDITION: Helper function to get the aspect ratio from an image file.
+  //  Helper function to get the aspect ratio from an image file.
   Future<double> _getImageAspectRatio(File imageFile) async {
     final image = await decodeImageFromList(imageFile.readAsBytesSync());
     return image.width / image.height;
@@ -51,7 +51,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     try {
       String? imageUrl;
-      double? imageAspectRatio; //  Variable for aspect ratio
+      double? imageAspectRatio; 
 
       if (_imageFile != null) {
         final path = 'post_images/${DateTime.now().millisecondsSinceEpoch}.jpg';

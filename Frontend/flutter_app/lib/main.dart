@@ -49,7 +49,7 @@ void main() async {
 
 class MyApp extends StatelessWidget {
 
-  final FirebaseAnalytics analytics = FirebaseAnalytics.instance;//allows calls of the analytics.logEvent method.
+  final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
   MyApp({super.key});
   

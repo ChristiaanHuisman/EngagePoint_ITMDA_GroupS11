@@ -171,7 +171,7 @@ class FirestoreService {
         .snapshots();
   }
 
-  // CHANGED: Returns a stream of ReviewModels.
+  // Returns a stream of ReviewModels.
   // Returns a stream of reviews for a specific business.
   Stream<List<ReviewModel>> getReviewsForBusiness(String businessId) {
     return _db
@@ -208,7 +208,7 @@ class FirestoreService {
     });
   }
 
-  // CHANGED: Accepts a single ReviewModel object.
+  // Accepts a single ReviewModel object.
   // Adds a new review or updates an existing one for a business.
   Future<void> addOrUpdateReview({required ReviewModel review}) async {
     final currentUser = _auth.currentUser;
@@ -273,7 +273,7 @@ class FirestoreService {
     await _db.collection('users').doc(uid).update(data);
   }
 
-  // CHANGED: Returns a stream of ReviewModels.
+  // Returns a stream of ReviewModels.
   /// Returns a stream of reviews written by a specific customer.
   Stream<List<ReviewModel>> getReviewsForCustomer(String customerId) {
     return _db
@@ -402,7 +402,7 @@ class FirestoreService {
     });
   }
 
-  // ADDITION: New methods for the business dashboard
+  // New methods for the business dashboard
 
   /// Gets the total number of likes across all posts for a business.
   Future<int> getTotalLikesForBusiness(String businessId) async {

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart'; // <-- FIX APPLIED: Import for debugPrint
+import 'package:flutter/foundation.dart'; 
 
 class StorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;

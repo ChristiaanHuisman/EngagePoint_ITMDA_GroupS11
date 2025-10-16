@@ -23,7 +23,7 @@ class AuthService {
 
       await userRef.set({
         'name': displayName,
-        'searchName': displayName.toLowerCase(), // A lowercase version of the name is saved for case-insensitive searching.
+        'searchName': displayName.toLowerCase(), // A lowercase version of the name is saved for  searching.
         'email': user.email,
         'role': role,
         'status': status,
@@ -74,7 +74,7 @@ class AuthService {
       final user = result.user;
       if (user != null) {
         await _createUserDocument(user, isBusiness: false);
-        // ADDITION: Save the FCM token on successful login.
+        //Save the FCM token on successful login.
         await _notificationService.initAndSaveToken();
       }
       return user;
@@ -95,7 +95,7 @@ class AuthService {
       if (user != null) {
         await user.updateDisplayName(name);
         await _createUserDocument(user, name: name, isBusiness: isBusiness);
-        //  Save the FCM token on successful sign-up.
+        // Save the FCM token on successful sign-up.
         await _notificationService.initAndSaveToken();
       }
       return user;
@@ -106,7 +106,7 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    //  don't delete the token on sign out.
+    // don't delete the token on sign out.
     // This allows the user to receive notifications even when logged out.
     // The token can be managed/deleted if it becomes invalid later.
     await _auth.signOut();

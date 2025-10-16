@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../models/post_model.dart'; // ADDED: Import the PostModel
+import '../models/post_model.dart'; 
 import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
 import 'login_page.dart';
@@ -38,11 +38,11 @@ class MainAppNavigator extends StatefulWidget {
   const MainAppNavigator({super.key});
 
   @override
-  // FIX 1/3: Return the new public state class name.
+  // Return the new public state class name.
   State<MainAppNavigator> createState() => MainAppNavigatorState();
 }
 
-// FIX 2/3: The state class is now public (no leading underscore).
+// The state class is now public (no leading underscore).
 class MainAppNavigatorState extends State<MainAppNavigator> {
   int _selectedIndex = 0;
 
@@ -173,7 +173,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
           );
         }
         final followedBusinessIds = followedSnapshot.data!;
-        // CHANGED: The StreamBuilder now expects a List of PostModels.
+        // The StreamBuilder now expects a List of PostModels.
         return StreamBuilder<List<PostModel>>(
           stream: _firestoreService.getFollowedPosts(followedBusinessIds),
           builder: (context, postSnapshot) {
@@ -184,7 +184,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
               debugPrint("Error fetching followed posts: ${postSnapshot.error}");
               return const Center(child: Text("Something went wrong loading posts."));
             }
-            // CHANGED: The check now uses .isEmpty on the list directly.
+            // The check uses .isEmpty on the list directly.
             if (!postSnapshot.hasData || postSnapshot.data!.isEmpty) {
               return const Center(
                 child: Padding(
@@ -197,7 +197,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
                 ),
               );
             }
-            // CHANGED: The data is now a clean list of PostModels.
+            // The data is  list of PostModels.
             final posts = postSnapshot.data!;
             return ListView.builder(
               itemCount: posts.length,

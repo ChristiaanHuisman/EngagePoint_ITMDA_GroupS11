@@ -1,12 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-// ADDED: For decodeImageFromList
-import '../models/post_model.dart'; // ADDED: Import the PostModel
+import '../models/post_model.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 
 class EditPostPage extends StatefulWidget {
-  // CHANGED: This now requires a PostModel.
   final PostModel post;
 
   const EditPostPage({super.key, required this.post});
@@ -31,7 +29,7 @@ class _EditPostPageState extends State<EditPostPage> {
   @override
   void initState() {
     super.initState();
-    // CHANGED: Initializing controllers from the PostModel.
+    //  Initializing controllers from the PostModel.
     _titleController = TextEditingController(text: widget.post.title);
     _contentController = TextEditingController(text: widget.post.content);
     _existingImageUrl = widget.post.imageUrl;
@@ -69,7 +67,7 @@ class _EditPostPageState extends State<EditPostPage> {
 
     try {
       String? imageUrl = _existingImageUrl;
-      // CHANGED: Get aspect ratio from the PostModel.
+      
       double? imageAspectRatio = widget.post.imageAspectRatio;
 
       if (_imageFile != null) {

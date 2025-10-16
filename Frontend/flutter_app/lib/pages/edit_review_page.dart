@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/review_model.dart'; // ADDED
+import '../models/review_model.dart'; 
 import '../services/firestore_service.dart';
 
 class EditReviewPage extends StatefulWidget {
-  // CHANGED: This now requires a ReviewModel.
+  
   final ReviewModel review;
 
   const EditReviewPage({super.key, required this.review});
@@ -24,7 +24,7 @@ class _EditReviewPageState extends State<EditReviewPage> {
   @override
   void initState() {
     super.initState();
-    // CHANGED: Initialize state directly from the ReviewModel.
+    
     _commentController = TextEditingController(text: widget.review.comment);
     _rating = widget.review.rating;
   }
@@ -43,15 +43,12 @@ class _EditReviewPageState extends State<EditReviewPage> {
       return;
     }
 
-    // Note: The form key isn't used here, but keeping it is fine.
-    // if (!_formKey.currentState!.validate()) {
-    //   return;
-    // }
+    
 
     setState(() => _isLoading = true);
 
     try {
-      // CHANGED: Create a new ReviewModel with the updated values.
+      // Create a new ReviewModel with the updated values.
       // We copy the old, unchanged values from the original model.
       final updatedReview = ReviewModel(
         id: widget.review.id,
@@ -137,7 +134,6 @@ class _EditReviewPageState extends State<EditReviewPage> {
                 maxLines: 6,
               ),
               const SizedBox(height: 24),
-              // ADDED: A clear submit button.
               ElevatedButton(
                 onPressed: _isLoading ? null : _updateReview,
                 style: ElevatedButton.styleFrom(

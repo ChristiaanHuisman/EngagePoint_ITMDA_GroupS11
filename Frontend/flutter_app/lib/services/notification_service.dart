@@ -1,6 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'firestore_service.dart'; // Import FirestoreService
+import 'firestore_service.dart'; 
 
 class NotificationService {
   // Create an instance of Firebase Messaging

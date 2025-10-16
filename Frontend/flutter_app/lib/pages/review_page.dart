@@ -1,11 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../models/review_model.dart'; // ADDED: Import the new model
+import '../models/review_model.dart'; 
 import '../services/firestore_service.dart';
 import 'user_profile_page.dart';
 
 class ReviewPage extends StatefulWidget {
-  // CHANGED: The review is now a ReviewModel.
   final ReviewModel review;
 
   const ReviewPage({super.key, required this.review});
@@ -28,7 +27,7 @@ class _ReviewPageState extends State<ReviewPage> {
 
   Future<void> _fetchProfiles() async {
     try {
-      // CHANGED: Getting IDs directly from the model.
+      // Getting IDs directly from the model.
       final String customerId = widget.review.customerId;
       final String businessId = widget.review.businessId;
 
@@ -51,7 +50,6 @@ class _ReviewPageState extends State<ReviewPage> {
 
   @override
   Widget build(BuildContext context) {
-    // REMOVED: Manual data extraction.
 
     String customerName = 'Anonymous';
     String businessName = 'The Business';
@@ -82,7 +80,6 @@ class _ReviewPageState extends State<ReviewPage> {
             else
               GestureDetector(
                 onTap: () {
-                  // CHANGED: Using model property.
                   if (widget.review.customerId.isNotEmpty) {
                     Navigator.push(
                       context,
@@ -112,7 +109,6 @@ class _ReviewPageState extends State<ReviewPage> {
             Row(
               children: List.generate(5, (index) {
                 return Icon(
-                  // CHANGED: Using model property.
                   index < widget.review.rating ? Icons.star : Icons.star_border,
                   color: Colors.amber,
                   size: 24,
@@ -121,7 +117,7 @@ class _ReviewPageState extends State<ReviewPage> {
             ),
             const Divider(height: 32),
             Text(
-              widget.review.comment, // CHANGED
+              widget.review.comment, 
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6, fontSize: 16),
             ),
             const SizedBox(height: 24),
@@ -154,7 +150,7 @@ class _ReviewPageState extends State<ReviewPage> {
                 ),
               ],
             ),
-            if (widget.review.response != null && widget.review.response!.isNotEmpty) ...[ // CHANGED
+            if (widget.review.response != null && widget.review.response!.isNotEmpty) ...[ 
               const SizedBox(height: 24),
               Container(
                 width: double.infinity,
@@ -172,7 +168,7 @@ class _ReviewPageState extends State<ReviewPage> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    Text(widget.review.response!), // CHANGED
+                    Text(widget.review.response!), 
                   ],
                 ),
               ),
