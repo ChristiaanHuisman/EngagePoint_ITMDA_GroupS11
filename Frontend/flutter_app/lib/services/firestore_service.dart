@@ -1,18 +1,14 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-<<<<<<< HEAD
 import 'package:flutter_app/models/review_model.dart';
-import '../services/logging_service.dart';
-import '../models/post_model.dart';
-=======
+import 'package:flutter_app/models/post_model.dart';
+import 'package:flutter_app/services/logging_service.dart';
 import 'package:http/http.dart' as http;
->>>>>>> d4a9738 (Update Firestore functions, main.py, and add new backend/frontend files)
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
   final LoggingService _loggingService = LoggingService();
 
   // Creates a new post document in the 'posts' collection.
@@ -28,7 +24,6 @@ class FirestoreService {
     }
 
     final userDoc = await _db.collection('users').doc(user.uid).get();
-
     if (!userDoc.exists) {
       throw Exception("User profile not found. Cannot verify role.");
     }
@@ -37,8 +32,7 @@ class FirestoreService {
     final String role = userData['role'] ?? 'customer';
 
     if (role != 'business') {
-      throw Exception(
-          "Permission denied. Only business users can create posts.");
+      throw Exception("Permission denied. Only business users can create posts.");
     }
 
     await _db.collection('posts').add({
@@ -176,12 +170,7 @@ class FirestoreService {
         .snapshots();
   }
 
-<<<<<<< HEAD
-  // Returns a stream of ReviewModels.
-  // Returns a stream of reviews for a specific business.
-  Stream<List<ReviewModel>> getReviewsForBusiness(String businessId) {
-=======
-  // --- PATCHED REVIEW METHODS TO USE PYTHON API ---
+  // REVIEW METHODS USING PYTHON API 
 
   // Adds a new review or updates an existing one for a business using Python API.
   Future<void> addOrUpdateReview({
@@ -209,7 +198,6 @@ class FirestoreService {
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception('Failed to submit review: ${response.body}');
     }
-    // Return type is Future<void>, so nothing to return.
   }
 
   // Gets all reviews for a business using Python API (for non-stream use).
@@ -243,14 +231,12 @@ class FirestoreService {
     if (response.statusCode != 200) {
       throw Exception('Failed to delete review: ${response.body}');
     }
-    // Return type is Future<void>, so nothing to return.
   }
 
-  // --- END PATCHED REVIEW METHODS ---
+  // END API REVIEW METHODS
 
-  // Returns a stream of reviews for a specific business (Firestore, for widgets expecting a stream).
-  Stream<QuerySnapshot<Object?>> getReviewsForBusiness(String businessId) {
->>>>>>> d4a9738 (Update Firestore functions, main.py, and add new backend/frontend files)
+  // Returns a stream of reviews for a specific business (from Firestore).
+  Stream<List<ReviewModel>> getReviewsForBusiness(String businessId) {
     return _db
         .collection('reviews')
         .where('businessId', isEqualTo: businessId)
@@ -284,29 +270,7 @@ class FirestoreService {
       };
     });
   }
-<<<<<<< HEAD
 
-  // Accepts a single ReviewModel object.
-  // Adds a new review or updates an existing one for a business.
-  Future<void> addOrUpdateReview({required ReviewModel review}) async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) {
-      throw Exception("You must be logged in to leave a review.");
-    }
-
-    final reviewRef = _db
-        .collection('reviews')
-        .doc('${currentUser.uid}_${review.businessId}');
-
-    final reviewData = review.toMap();
-    reviewData['createdAt'] = FieldValue.serverTimestamp();
-
-    await reviewRef.set(reviewData, SetOptions(merge: true));
-  }
-
-=======
-  
->>>>>>> d4a9738 (Update Firestore functions, main.py, and add new backend/frontend files)
   // Returns a stream of all business users with a 'pending' status.
   Stream<QuerySnapshot<Object?>> getPendingBusinesses() {
     return _db
@@ -328,19 +292,6 @@ class FirestoreService {
     await _db.collection('posts').doc(postId).delete();
   }
 
-<<<<<<< HEAD
-  // Deletes a review from the 'reviews' collection.
-  Future<void> deleteReview(String businessId) async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) return;
-    await _db
-        .collection('reviews')
-        .doc('${currentUser.uid}_$businessId')
-        .delete();
-  }
-
-=======
->>>>>>> d4a9738 (Update Firestore functions, main.py, and add new backend/frontend files)
   // Adds a response from a business to a review document.
   Future<void> addResponseToReview(String reviewId, String response) async {
     await _db.collection('reviews').doc(reviewId).update({
@@ -357,8 +308,7 @@ class FirestoreService {
     await _db.collection('users').doc(uid).update(data);
   }
 
-  // Returns a stream of ReviewModels.
-  /// Returns a stream of reviews written by a specific customer.
+  // Returns a stream of reviews written by a specific customer.
   Stream<List<ReviewModel>> getReviewsForCustomer(String customerId) {
     return _db
         .collection('reviews')
@@ -415,7 +365,7 @@ class FirestoreService {
         .map((snapshot) => snapshot.exists);
   }
 
-  /// Gets the real-time count of reactions for a post.
+  // Gets the real-time count of reactions for a post.
   Stream<int> getPostReactionCount(String postId) {
     return _db
         .collection('posts')
@@ -444,7 +394,7 @@ class FirestoreService {
     }
   }
 
-  /// Checks if the current user has liked a specific review.
+  // Checks if the current user has liked a specific review.
   Stream<bool> hasUserReactedToReview(String reviewId) {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return Stream.value(false);
@@ -458,7 +408,7 @@ class FirestoreService {
         .map((snapshot) => snapshot.exists);
   }
 
-  /// Gets the real-time count of likes for a review.
+  // Gets the real-time count of likes for a review.
   Stream<int> getReviewReactionCount(String reviewId) {
     return _db
         .collection('reviews')
@@ -486,9 +436,9 @@ class FirestoreService {
     });
   }
 
-  // New methods for the business dashboard
+  // --- New methods for the business dashboard ---
 
-  /// Gets the total number of likes across all posts for a business.
+  // Gets the total number of likes across all posts for a business.
   Future<int> getTotalLikesForBusiness(String businessId) async {
     final postsQuery = await _db
         .collection('posts')
@@ -496,13 +446,9 @@ class FirestoreService {
         .get();
 
     int totalLikes = 0;
-<<<<<<< HEAD
 
     // This is inefficient for large numbers of posts. For a production app,
     // you would use a Cloud Function to update a counter. But for this project, it's fine.
-=======
-    
->>>>>>> d4a9738 (Update Firestore functions, main.py, and add new backend/frontend files)
     for (final postDoc in postsQuery.docs) {
       final reactionsQuery =
           await postDoc.reference.collection('reactions').get();
@@ -512,7 +458,7 @@ class FirestoreService {
     return totalLikes;
   }
 
-  /// Gets the total number of reviews for a business.
+  // Gets the total number of reviews for a business.
   Future<int> getTotalReviewsForBusiness(String businessId) async {
     final reviewsQuery = await _db
         .collection('reviews')
@@ -573,7 +519,7 @@ class FirestoreService {
     });
   }
 
-  /// Gets a real-time stream of locations for a specific business.
+  // Gets a real-time stream of locations for a specific business.
   Stream<QuerySnapshot> getLocations(String businessId) {
     return _db
         .collection('users')
@@ -582,7 +528,7 @@ class FirestoreService {
         .snapshots();
   }
 
-  /// Updates an existing location document for the current business.
+  // Updates an existing location document for the current business.
   Future<void> updateLocation({
     required String locationId,
     required String name,
@@ -601,7 +547,7 @@ class FirestoreService {
     });
   }
 
-  /// Deletes a location document for the current business.
+  // Deletes a location document for the current business.
   Future<void> deleteLocation({required String locationId}) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
@@ -619,7 +565,7 @@ class FirestoreService {
     return _db.collection('users').doc(currentUser.uid).snapshots();
   }
 
-  /// Updates the current user's points by a given amount.
+  // Updates the current user's points by a given amount.
   Future<void> updateUserPoints(int pointsToAdd) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;

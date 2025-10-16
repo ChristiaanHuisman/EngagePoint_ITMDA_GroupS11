@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/review_model.dart'; 
+import '../models/review_model.dart';
 import '../services/firestore_service.dart';
 
 class EditReviewPage extends StatefulWidget {
-  
   final ReviewModel review;
 
   const EditReviewPage({super.key, required this.review});
@@ -24,7 +23,6 @@ class _EditReviewPageState extends State<EditReviewPage> {
   @override
   void initState() {
     super.initState();
-    
     _commentController = TextEditingController(text: widget.review.comment);
     _rating = widget.review.rating;
   }
@@ -43,25 +41,20 @@ class _EditReviewPageState extends State<EditReviewPage> {
       return;
     }
 
-    
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      // Create a new ReviewModel with the updated values.
-      // We copy the old, unchanged values from the original model.
-      final updatedReview = ReviewModel(
-        id: widget.review.id,
-        businessId: widget.review.businessId,
-        customerId: widget.review.customerId,
-        createdAt: widget.review.createdAt,
-        // These are the new values from the form.
-        rating: _rating,
-        comment: _commentController.text,
+      
+      await _firestoreService.addOrUpdateReview(
+        businessId: widget.review.businessId, // Get businessId from the original review
+        rating: _rating, // Use the updated rating
+        comment: _commentController.text, // Use the updated comment
       );
-
-      // Pass the single, updated model to the service.
-      await _firestoreService.addOrUpdateReview(review: updatedReview);
+      
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -87,6 +80,8 @@ class _EditReviewPageState extends State<EditReviewPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Review'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         actions: [
           IconButton(
             onPressed: _isLoading ? null : _updateReview,
@@ -132,6 +127,12 @@ class _EditReviewPageState extends State<EditReviewPage> {
                   alignLabelWithHint: true,
                 ),
                 maxLines: 6,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a comment.';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -155,5 +156,6 @@ class _EditReviewPageState extends State<EditReviewPage> {
         ),
       ),
     );
+ 
   }
 }
