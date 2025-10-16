@@ -37,9 +37,9 @@ namespace BusinessVerification_Service.Tests.Services
         // If following tests need more explanation, 
         // it will be commented accordingly
         // Test when request DTO is null
-        // Should return Rejected status with an error message
+        // Should return NotStarted status with an error message
         [Fact]
-        public void VerifyBusiness_NullRequest_ReturnsRejected()
+        public void VerifyBusiness_NullRequest_ReturnsNotStarted()
         {
             // Arrange
             // Create a service instance with a mock logger
@@ -54,7 +54,7 @@ namespace BusinessVerification_Service.Tests.Services
             Assert.Contains("failed unexpectedly", result.Message, 
                 StringComparison.OrdinalIgnoreCase);
             // Compare the response status
-            Assert.Equal(Status.Rejected, result.VerificationStatus);
+            Assert.Equal(Status.NotStarted, result.VerificationStatus);
             // Verify that an error was logged
             mockLogger.Verify(logger => logger.Log(
                 LogLevel.Error, // Expect a log level of Error 
@@ -68,9 +68,9 @@ namespace BusinessVerification_Service.Tests.Services
         }
 
         // Test when required fields are empty
-        // Should return Rejected status with an error message
+        // Should return NotStarted status with an error message
         [Fact]
-        public void VerifyBusiness_EmptyFieldsRequest_ReturnsRejected()
+        public void VerifyBusiness_EmptyFieldsRequest_ReturnsNotStarted()
         {
             // Arrange
             var service = CreateService(out var mockLogger);
@@ -88,7 +88,7 @@ namespace BusinessVerification_Service.Tests.Services
 
             // Assert
             Assert.Contains("ensure all details", result.Message);
-            Assert.Equal(Status.Rejected, result.VerificationStatus);
+            Assert.Equal(Status.NotStarted, result.VerificationStatus);
             mockLogger.Verify(logger => logger.Log(
                 LogLevel.Warning, 
                 It.IsAny<EventId>(), 
@@ -100,9 +100,9 @@ namespace BusinessVerification_Service.Tests.Services
         }
 
         // Test when email format is invalid
-        // Should return Rejected status with an error message
+        // Should return NotStarted status with an error message
         [Fact]
-        public void VerifyBusiness_InvalidEmailFormat_ReturnsRejected()
+        public void VerifyBusiness_InvalidEmailFormat_ReturnsNotStarted()
         {
             // Arrange
             var service = CreateService(out var mockLogger);
@@ -119,7 +119,7 @@ namespace BusinessVerification_Service.Tests.Services
 
             // Assert
             Assert.Contains("incomplete email format", result.Message);
-            Assert.Equal(Status.Rejected, result.VerificationStatus);
+            Assert.Equal(Status.NotStarted, result.VerificationStatus);
             mockLogger.Verify(logger => logger.Log(
                 LogLevel.Warning, 
                 It.IsAny<EventId>(), 
@@ -131,10 +131,10 @@ namespace BusinessVerification_Service.Tests.Services
         }
 
         // Test when website format is invalid
-        // Should return Rejected status with an error message
+        // Should return NotStarted status with an error message
         [Theory]
         [InlineData("invalid")]
-        public void VerifyBusiness_InvalidWebsiteFormat_ReturnsRejected(
+        public void VerifyBusiness_InvalidWebsiteFormat_ReturnsNotStarted(
             string website)
         {
             // Arrange
@@ -152,7 +152,7 @@ namespace BusinessVerification_Service.Tests.Services
 
             // Assert
             Assert.Contains("incomplete email or website format", result.Message);
-            Assert.Equal(Status.Rejected, result.VerificationStatus);
+            Assert.Equal(Status.NotStarted, result.VerificationStatus);
             mockLogger.Verify(logger => logger.Log(
                 LogLevel.Warning, 
                 It.IsAny<EventId>(), 
@@ -164,7 +164,7 @@ namespace BusinessVerification_Service.Tests.Services
         }
 
         // Test when website format or scheme is invalid for UriBuilder
-        // Should return Rejected status with an error message
+        // Should return NotStarted status with an error message
         [Theory]
         [InlineData("https://<completely invalid>.com")]
         [InlineData("https://tps://test.com")]
@@ -173,7 +173,7 @@ namespace BusinessVerification_Service.Tests.Services
         [InlineData(":/test.com")]
         [InlineData(":test.com")]
         [InlineData("/test.com")]
-        public void VerifyBusiness_InvalidWebsiteShemeOrUriFormat_ReturnsRejected(
+        public void VerifyBusiness_InvalidWebsiteShemeOrUriFormat_ReturnsNotStarted(
             string website)
         {
             // Arrange
@@ -191,7 +191,7 @@ namespace BusinessVerification_Service.Tests.Services
 
             // Assert
             Assert.Contains("incomplete website format", result.Message);
-            Assert.Equal(Status.Rejected, result.VerificationStatus);
+            Assert.Equal(Status.NotStarted, result.VerificationStatus);
             mockLogger.Verify(logger => logger.Log(
                 LogLevel.Warning, 
                 It.IsAny<EventId>(), 
@@ -326,9 +326,9 @@ namespace BusinessVerification_Service.Tests.Services
         }
 
         // Test when unexpected exception is thrown
-        // Should return Rejected status with an error message
+        // Should return NotStarted status with an error message
         [Fact]
-        public void VerifyBusiness_ThrowsUnexpectedException_ReturnsRejected()
+        public void VerifyBusiness_ThrowsUnexpectedException_ReturnsNotStarted()
         {
             // Arrange
             // Mock the domain parser to throw an exception
@@ -351,7 +351,7 @@ namespace BusinessVerification_Service.Tests.Services
 
             // Assert
             Assert.Contains("failed unexpectedly", result.Message, StringComparison.OrdinalIgnoreCase);
-            Assert.Equal(Status.Rejected, result.VerificationStatus);
+            Assert.Equal(Status.NotStarted, result.VerificationStatus);
             mockLogger.Verify(logger => logger.Log(
                 LogLevel.Error, 
                 It.IsAny<EventId>(), 

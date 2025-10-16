@@ -7,18 +7,15 @@ namespace BusinessVerification_Service
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Register IDomainParser as a Singleton
-            builder.Services.AddSingleton<IDomainParser>(serviceProvider =>
-            {
-                // Use the real domain parser to download the newest public suffix list
-                var ruleProvider = new SimpleHttpRuleProvider();
-                ruleProvider.BuildAsync().GetAwaiter().GetResult();
-                return new DomainParser(ruleProvider);
-            });
+            // Register IDomainParser as a Singleton asynchronously
+            var ruleProvider = new SimpleHttpRuleProvider();
+            await ruleProvider.BuildAsync();
+            var domainParser = new DomainParser(ruleProvider);
+            builder.Services.AddSingleton<IDomainParser>(domainParser);
 
             // Register interface services
             builder.Services.AddScoped<IDomainVerificationService, DomainVerificationService>();

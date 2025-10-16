@@ -2,8 +2,8 @@
 {
     public class VerificationResponseDto
     {
-        // Assign Rejected enum option as defualt
-        public Status VerificationStatus { get; set; } = Status.Rejected;
+        // Assign NotStarted enum option as defualt
+        public Status VerificationStatus { get; set; } = Status.NotStarted;
 
         // Success or error messages stored here
         // Assign empty as default
@@ -13,6 +13,7 @@
     // Status of business verification process
     public enum Status
     {
+        NotStarted,
         Rejected,
         Pending,
         Accepted // To be removed in future versions that uses email link verification

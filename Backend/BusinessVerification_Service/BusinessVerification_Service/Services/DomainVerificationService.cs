@@ -46,16 +46,17 @@ namespace BusinessVerification_Service.Services
             // Initialize Firebase DTOs
             DomainVerificationFirebaseResponseDto firebaseResponse = new DomainVerificationFirebaseResponseDto();
 
-            // Extract variables from request DTO
+            // Extract variables from request DTO, 
+            // just for easier usage in the method
             string userId = verificationRequestDto.UserId;
             string email = verificationRequestDto.BusinessEmail;
             string website = verificationRequestDto.BusinessWebsite;
             string name = verificationRequestDto.BusinessName;
 
             _logger.LogInformation(
-                "Service: Recieved email {email}, website {website} and business name {name} " +
-                "from user {user}.",
-                email, website, name, userId
+                "Service: Recieved user {user} email {email}, website {website} " +
+                "and business name {name}.",
+                userId, email, website, name
             );
 
             // Link Firebase response DTO to user
@@ -100,9 +101,9 @@ namespace BusinessVerification_Service.Services
                         (scheme != "http" && scheme != "https" && scheme != "ftp"))
                     {
                         _logger.LogWarning(
-                            "Service: Invalid, unsupported or more than one scheme in of website {website} " + 
-                            "for user {user}.", 
-                            website, userId
+                            "Service: Invalid, unsupported or more than one scheme in " + 
+                            "user {user} website {website}.", 
+                            userId, website
                         );
 
                         // Return response DTO with appropriate error message
@@ -115,8 +116,7 @@ namespace BusinessVerification_Service.Services
                 // Checking and building URI for the website address
                 try
                 {
-                    // Ensure website is a fully complete URL, 
-                    // ftp is also supported
+                    // Ensure website is a fully complete URL for later domain parsing
                     UriBuilder validateUri = new UriBuilder(
                         website.StartsWith("http", StringComparison.OrdinalIgnoreCase)
                         || website.StartsWith("ftp", StringComparison.OrdinalIgnoreCase)
@@ -124,12 +124,12 @@ namespace BusinessVerification_Service.Services
                         : $"https://{website}"
                     );
                 }
-                // Handle errors
+                // Handle errors throwing appropriate custom error message
                 catch (UriFormatException exception)
                 {
-                    _logger.LogWarning(exception, 
-                        "Service: Invalid or incomplete website {website} format for user {user}.", 
-                        website, userId
+                    _logger.LogWarning(exception,
+                        "Service: Invalid or incomplete user {user} website {website} format.", 
+                        userId, website
                     );
 
                     // Return response DTO with appropriate error message
@@ -147,6 +147,7 @@ namespace BusinessVerification_Service.Services
                     if (!VerifyDomainMatch(email, website, userId))
                     {
                         // Return response DTO with appropriate message
+                        returnResponse.VerificationStatus = Status.Rejected;
                         returnResponse.Message = "Email and website domains entered do not match. " +  
                             errorMessageEnd;
                         return returnResponse;
@@ -155,13 +156,14 @@ namespace BusinessVerification_Service.Services
                     // Determine how closely the busniness name matches the domains
                     int fuzzyMatchResult = FuzzyMatch(website, name, userId);
                     firebaseResponse.FuzzyScore = fuzzyMatchResult;
+
+                    // Switch case used for thresholds
                     switch (fuzzyMatchResult)
                     {
                         // For a score of >= 90 the business name can be automatically verified
                         case >= 90:
-                            // To be removed in future versions that uses email link verification
+                            // To be edited in future versions that uses email link verification
                             returnResponse.VerificationStatus = Status.Accepted;
-
                             returnResponse.Message = "Business successfully verified.";
                         break;
 
@@ -175,12 +177,13 @@ namespace BusinessVerification_Service.Services
 
                         // For a score of <= 64 the business name cannot be verified
                         default:
+                            returnResponse.VerificationStatus = Status.Rejected;
                             returnResponse.Message = "Business name does not match email and " + 
                                 "website domains entered. " + errorMessageEnd;
                         break;
                     }
                 }
-                // Handle errors
+                // Handle errors throwing appropriate custom error message
                 catch (Exception exception)
                 {
                     // Return response DTO with appropriate error message
@@ -188,19 +191,7 @@ namespace BusinessVerification_Service.Services
                     return returnResponse;
                 }
             }
-            // Handle errors
-            catch (HttpRequestException exception)
-            {
-                _logger.LogError(exception,
-                    "Service: Network issue during business verification for user {user}.", 
-                    userId
-                );
-
-                // Return response DTO with appropriate error message
-                returnResponse.Message = "Network issue while verifying business. " + 
-                    errorMessageEnd;
-                return returnResponse;
-            }
+            // Handle errors throwing appropriate custom error message
             catch (Exception exception)
             {
                 _logger.LogError(exception,
@@ -214,7 +205,7 @@ namespace BusinessVerification_Service.Services
                 return returnResponse;
             }
 
-            // To be edited for later verions of the microservice that uses email link verification
+            // To be edited in future versions that uses email link verification
             // Using the Firebase response DTO to log verification request to Firebase
             firebaseResponse.ErrorOccurred = false;
             if (!firebaseResponse.RequiresAdmin)
@@ -266,25 +257,26 @@ namespace BusinessVerification_Service.Services
                     || websiteDomainInfo.RegistrableDomain == websiteDomainInfo.TopLevelDomain)
                 {
                     _logger.LogWarning(
-                        "Service: Failed to parse email {email} or website {website} domain " + 
-                        "for user {user}.", 
-                        email, website, userId
+                        "Service: Failed to parse user {user} email {email} or website {website} domain.", 
+                        userId, email, website
                     );
 
-                    // Throw appropriate custom error message
                     throw new ArgumentException(
                         "Invalid or incomplete email or website format entered. " + 
                         errorMessageEnd
                     );
                 }
 
-                // Return whether the email and website domains match
+                // Determine whether the email and website domains match
                 bool isMatch = emailDomainInfo.RegistrableDomain == websiteDomainInfo.RegistrableDomain;
+
                 _logger.LogInformation(
-                    "Service: Domain verification between email {email} and " +
-                    "website {website} completed with a result of {match} for user {user}.", 
-                    email, website, isMatch, userId
+                    "Service: Domain verification for user {user} between email {email} and " +
+                    "website {website} completed with a result of {match}.",
+                    userId, email, website, isMatch
                 );
+
+                // Return whether the email and website domains match
                 return isMatch;
             }
             // Handle errors throwing appropriate custom error message
@@ -295,34 +287,23 @@ namespace BusinessVerification_Service.Services
             catch (FormatException exception)
             {
                 _logger.LogWarning(exception,
-                    "Service: Invalid email format while verifying domain between email {email} and " + 
-                    "website {website} for user {user}.", 
-                    email, website, userId
+                    "Service: Invalid email format while verifying for user {user} domain between " + 
+                    "email {email} and website {website}.", 
+                    userId, email, website
                 );
+
                 throw new ArgumentException(
                     "Invalid or incomplete email format entered. " + 
-                    errorMessageEnd, exception
-                );
-            }
-            catch (HttpRequestException exception)
-            {
-                _logger.LogError(exception,
-                    "Service: Network issue while verifying domain between email {email} and " + 
-                    "website {website} for user {user}.", 
-                    email, website, userId
-                );
-                throw new ApplicationException(
-                    "Network issue while verifying business. " + 
                     errorMessageEnd, exception
                 );
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception,
-                    "Service: Unexpected error while verifying domain match between email {email} and " + 
-                    "website {website} for user {user}.", 
-                    email, website, userId
+                    "Service: Unexpected error during domain verification for user {user}.", 
+                    userId
                 );
+
                 throw new ApplicationException(
                     "Business verification failed unexpectedly. " + 
                     errorMessageEnd, exception
@@ -367,23 +348,13 @@ namespace BusinessVerification_Service.Services
                 return score;
             }
             // Handle errors throwing appropriate custom error message
-            catch (HttpRequestException exception)
-            {
-                _logger.LogError(exception,
-                    "Service: Network issue during fuzzy comparison for user {user}.", 
-                    userId
-                );
-                throw new ApplicationException(
-                    "Network issue while verifying business. " + 
-                    errorMessageEnd, exception
-                );
-            }
             catch (Exception exception)
             {
                 _logger.LogError(exception,
                     "Service: Unexpected error during fuzzy comparison for user {user}.", 
                     userId
                 );
+
                 throw new ApplicationException(
                     "Business verification failed unexpectedly. " + 
                     errorMessageEnd, exception

@@ -11,7 +11,7 @@
         // by default
         public bool RequiresAdmin { get; set; } = false;
 
-        // To be added for later verions of the microservice that uses email link verification
+        // To be added in future versions that uses email link verification
         // If the user verified through email link
         // public bool EmailVerified { get; set; } = false;
 

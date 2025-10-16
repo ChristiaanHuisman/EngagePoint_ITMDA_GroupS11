@@ -5,7 +5,8 @@ namespace BusinessVerification_Service.Dtos
     public class DomainVerificationRequestDto
     {
         // Automatically passed via flutter app
-        [Required(ErrorMessage = "Something went wrong, please try again.")]
+        [Required(ErrorMessage = "Something went wrong, please try again, " + 
+            "or contact support if the issue persists.")]
         public string UserId { get; set; }
 
         // Email address from flutter app
