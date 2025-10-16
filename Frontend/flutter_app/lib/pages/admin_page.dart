@@ -22,7 +22,6 @@ class _AdminPageState extends State<AdminPage> {
           title: const Text("Admin Dashboard"),
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          //  Adding the TabBar to the AppBar
           bottom: const TabBar(
             tabs: [
               Tab(icon: Icon(Icons.verified_user_outlined), text: 'Verification'),
@@ -39,7 +38,7 @@ class _AdminPageState extends State<AdminPage> {
             // Content for the "Business Verification" tab
             _buildBusinessVerificationView(),
             
-            // Content for the "Content Moderation" tab (currently a placeholder)
+            // Content for the "Content Moderation" tab 
             _buildContentModerationView(),
           ],
         ),
@@ -122,8 +121,8 @@ class _AdminPageState extends State<AdminPage> {
 
   /// Builds the placeholder UI for the content moderation queue.
   Widget _buildContentModerationView() {
-    // This is currently a placeholder. When you implement the microservice,
-    // you will replace this with a StreamBuilder that listens for posts
+    // This is currently a placeholder. 
+    // replace this with a StreamBuilder that listens for posts
     // with a status of 'needs_moderation'.
     return Center(
       child: Padding(

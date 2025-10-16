@@ -3,11 +3,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/rewards_data.dart';
+import '../models/rewards_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/reward_wheel.dart';
 
-// A simple class to define a level in the progression system.
+// class to define a level in the progression system.
 class Level {
   final int level;
   final String name;
@@ -26,7 +26,7 @@ class RewardsAndProgressionPage extends StatefulWidget {
 class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
   final FirestoreService _firestoreService = FirestoreService();
 
-  // Define the level progression data.
+  // Define level progression data
   final List<Level> _levels = [
     Level(level: 1, name: 'Bronze', pointsRequired: 0),
     Level(level: 2, name: 'Silver', pointsRequired: 500),
@@ -35,9 +35,9 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
     Level(level: 5, name: 'Diamond', pointsRequired: 5000),
   ];
 
-  // This function handles all levels, including the max level.
+  // This function handles all levels, including the max level
   Map<String, dynamic> _getLevelData(int points) {
-    // Find the user's current level by iterating backwards through the levels list.
+    // get the user's current level by iterating backwards through the levels list
     Level currentLevel = _levels.first;
     for (var level in _levels.reversed) {
       if (points >= level.pointsRequired) {
@@ -46,11 +46,11 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
       }
     }
 
-    // Determine the next level.
-    int nextLevelIndex = currentLevel.level; // Note: level is 1-based, list index is 0-based.
+    
+    int nextLevelIndex = currentLevel.level; 
     Level? nextLevel = (nextLevelIndex < _levels.length) ? _levels[nextLevelIndex] : null;
 
-    // Handle the case where the user is at the maximum level.
+    // if user is max level
     if (nextLevel == null) {
       return {
         'currentLevel': currentLevel,
@@ -60,7 +60,7 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
       };
     }
 
-    // Calculate progress towards the next level.
+    //  progress towards the next level.
     final int pointsInCurrentLevel = points - currentLevel.pointsRequired;
     final int pointsForNextLevel = nextLevel.pointsRequired - currentLevel.pointsRequired;
     final double progress = (pointsForNextLevel == 0) ? 1.0 : (pointsInCurrentLevel / pointsForNextLevel);
@@ -132,7 +132,7 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
   }
 }
 
-// This widget displays the level, rank, and EXP bar.
+// This widget displays the level, rank, and XP bar
 class LevelProgressBar extends StatelessWidget {
   final String levelName;
   final int levelNumber;

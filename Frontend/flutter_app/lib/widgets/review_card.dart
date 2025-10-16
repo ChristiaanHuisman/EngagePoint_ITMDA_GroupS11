@@ -1,18 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../models/review_model.dart';
 import '../services/firestore_service.dart';
 import '../pages/review_page.dart';
 import '../pages/user_profile_page.dart';
 import '../pages/edit_review_page.dart';
 
-/// A widget that displays a single review in a styled format.
 class ReviewCard extends StatefulWidget {
-  final DocumentSnapshot review;
+  final ReviewModel review;
   final bool showBusinessName;
 
   const ReviewCard({
-    super.key, 
+    super.key,
     required this.review,
     this.showBusinessName = false,
   });
@@ -35,28 +35,21 @@ class _ReviewCardState extends State<ReviewCard> {
 
   Future<void> _fetchProfiles() async {
     try {
-      final reviewData = widget.review.data() as Map<String, dynamic>;
-      final String? customerId = reviewData['customerId'];
-      final String? businessId = reviewData['businessId'];
-      
+      final String customerId = widget.review.customerId;
+      final String businessId = widget.review.businessId;
+
       final futures = <Future<DocumentSnapshot?>>[];
-      if (customerId != null) {
-        futures.add(_firestoreService.getUserProfile(customerId));
-      }
-      if (businessId != null) {
+      futures.add(_firestoreService.getUserProfile(customerId));
+      if (widget.showBusinessName) {
         futures.add(_firestoreService.getUserProfile(businessId));
       }
 
       final profiles = await Future.wait(futures);
-      
+
       if (mounted) {
         setState(() {
-          if (customerId != null) {
-            _customerProfile = profiles.firstWhere((p) => p?.id == customerId, orElse: () => null);
-          }
-          if (businessId != null) {
-            _businessProfile = profiles.firstWhere((p) => p?.id == businessId, orElse: () => null);
-          }
+          _customerProfile = profiles.isNotEmpty ? profiles[0] : null;
+          _businessProfile = profiles.length > 1 ? profiles[1] : null;
           _isLoading = false;
         });
       }
@@ -65,7 +58,7 @@ class _ReviewCardState extends State<ReviewCard> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-  
+
   void _showDeleteConfirmation(BuildContext context, String businessId) {
     showDialog(
       context: context,
@@ -129,19 +122,14 @@ class _ReviewCardState extends State<ReviewCard> {
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> data = widget.review.data() as Map<String, dynamic>;
-    final String comment = data['comment'] ?? 'No comment provided.';
-    final double rating = (data['rating'] as num?)?.toDouble() ?? 0.0;
-    final String customerId = data['customerId'] ?? '';
-    final String businessId = data['businessId'] ?? '';
-    final String? response = data['response'];
-
     String customerName = 'Anonymous';
+    String? customerPhotoUrl;
     if (_customerProfile != null && _customerProfile!.exists) {
       final customerData = _customerProfile!.data() as Map<String, dynamic>;
       customerName = customerData['name'] ?? 'Anonymous';
+      customerPhotoUrl = customerData['photoUrl'];
     }
-    
+
     String businessName = 'A Business';
     if (_businessProfile != null && _businessProfile!.exists) {
       final businessData = _businessProfile!.data() as Map<String, dynamic>;
@@ -149,8 +137,8 @@ class _ReviewCardState extends State<ReviewCard> {
     }
 
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final bool isReviewOwner = currentUserId != null && currentUserId == customerId;
-    final bool isBusinessOwner = currentUserId != null && currentUserId == businessId;
+    final bool isReviewOwner = currentUserId != null && currentUserId == widget.review.customerId;
+    final bool isBusinessOwner = currentUserId != null && currentUserId == widget.review.businessId;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -160,64 +148,88 @@ class _ReviewCardState extends State<ReviewCard> {
         side: BorderSide(color: Colors.grey.shade300),
       ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ReviewPage(review: widget.review),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ReviewPage(review: widget.review)),
+            );
+          },
+          borderRadius: BorderRadius.circular(8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header: avatar, name, stars
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  GestureDetector(
+                    onTap: () {
+                      if (!widget.showBusinessName && widget.review.customerId.isNotEmpty) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => UserProfilePage(userId: widget.review.customerId)),
+                        );
+                      }
+                    },
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.grey.shade300,
+                      backgroundImage:
+                          customerPhotoUrl != null ? NetworkImage(customerPhotoUrl) : null,
+                      child: customerPhotoUrl == null
+                          ? const Icon(Icons.person, color: Colors.white)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () {
-                        final id = widget.showBusinessName ? businessId : customerId;
-                        if (id.isNotEmpty) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => UserProfilePage(userId: id),
-                            ),
-                          );
-                        }
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_isLoading)
-                            Text('Loading...', style: TextStyle(color: Colors.grey.shade500))
-                          else if (widget.showBusinessName)
-                            Text(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_isLoading)
+                          Text('Loading...', style: TextStyle(color: Colors.grey.shade500))
+                        else if (widget.showBusinessName)
+                          GestureDetector(
+                            onTap: () {
+                              if (widget.review.businessId.isNotEmpty) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        UserProfilePage(userId: widget.review.businessId),
+                                  ),
+                                );
+                              }
+                            },
+                            child: Text(
                               'Review for: $businessName',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            )
-                          else
-                            Text(
-                              customerName,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black, // ✅ normal color
+                                decoration: TextDecoration.none, // ✅ no underline
+                              ),
                             ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: List.generate(5, (index) {
-                              return Icon(
-                                index < rating ? Icons.star : Icons.star_border,
-                                color: Colors.amber,
-                                size: 16,
-                              );
-                            }),
+                          )
+                        else
+                          Text(
+                            customerName,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
-                        ],
-                      ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: List.generate(5, (index) {
+                            return Icon(
+                              index < widget.review.rating ? Icons.star : Icons.star_border,
+                              color: Colors.amber,
+                              size: 16,
+                            );
+                          }),
+                        ),
+                      ],
                     ),
                   ),
                   if (isReviewOwner)
@@ -231,9 +243,7 @@ class _ReviewCardState extends State<ReviewCard> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (context) => EditReviewPage(review: widget.review),
-                              ),
+                              MaterialPageRoute(builder: (context) => EditReviewPage(review: widget.review)),
                             );
                           },
                         ),
@@ -242,23 +252,23 @@ class _ReviewCardState extends State<ReviewCard> {
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                          onPressed: () => _showDeleteConfirmation(context, businessId),
+                          onPressed: () => _showDeleteConfirmation(context, widget.review.businessId),
                         ),
                       ],
                     ),
                 ],
               ),
+
               const Divider(height: 24),
+
               Text(
-                comment,
+                widget.review.comment,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-              
+
               const SizedBox(height: 16),
-              
-             
-              //  like button and counter for reviews.
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -290,9 +300,8 @@ class _ReviewCardState extends State<ReviewCard> {
                   ),
                 ],
               ),
-              
-              
-              if (isBusinessOwner && response == null)
+
+              if (isBusinessOwner && widget.review.response == null)
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -300,8 +309,8 @@ class _ReviewCardState extends State<ReviewCard> {
                     child: const Text('Reply'),
                   ),
                 ),
-              
-              if (response != null)
+
+              if (widget.review.response != null)
                 Container(
                   width: double.infinity,
                   margin: const EdgeInsets.only(top: 16),
@@ -320,10 +329,10 @@ class _ReviewCardState extends State<ReviewCard> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        response,
+                        widget.review.response!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 14)
+                        style: const TextStyle(fontSize: 14),
                       ),
                     ],
                   ),
@@ -335,4 +344,3 @@ class _ReviewCardState extends State<ReviewCard> {
     );
   }
 }
-
