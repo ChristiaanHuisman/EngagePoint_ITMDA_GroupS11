@@ -1,8 +1,12 @@
-﻿namespace BusinessVerification_Service.Dtos
+﻿using System.Text.Json.Serialization;
+
+namespace BusinessVerification_Service.Dtos
 {
     public class VerificationResponseDto
     {
         // Assign NotStarted enum option as defualt
+        // Convert enum to string in JSON response
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public Status VerificationStatus { get; set; } = Status.NotStarted;
 
         // Success or error messages stored here
