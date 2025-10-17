@@ -12,7 +12,7 @@ namespace BusinessVerification_Service.Services
         private readonly ILogger<DomainVerificationService> _logger;
         private readonly IDomainParser _domainParser;
 
-        // Constructor for dependency injection of logger and domain parser
+        // Constructor for dependency injection
         public DomainVerificationService(ILogger<DomainVerificationService> logger, IDomainParser domainParser)
         {
             _logger = logger;
@@ -97,8 +97,8 @@ namespace BusinessVerification_Service.Services
 
                     // There should not be more that 1 scheme
                     // Only http, https and ftp are supported
-                    if (schemeCount > 1 || 
-                        (scheme != "http" && scheme != "https" && scheme != "ftp"))
+                    if (schemeCount > 1 
+                        || (scheme != "http" && scheme != "https" && scheme != "ftp"))
                     {
                         _logger.LogWarning(
                             "Service: Invalid, unsupported or more than one scheme in " + 
@@ -173,6 +173,8 @@ namespace BusinessVerification_Service.Services
                             returnResponse.VerificationStatus = Status.Pending;
                             returnResponse.Message = "Business name does not match email and " + 
                                 "website domain names entered clearly enough. Admin review required.";
+                            // Admin verification will be handled on the flutter app side, 
+                            // as it is unnecessary to just route the Firestore update through the API
                         break;
 
                         // For a score of <= 64 the business name cannot be verified
@@ -214,7 +216,7 @@ namespace BusinessVerification_Service.Services
                 firebaseResponse.VerifiedAt = DateTime.UtcNow;
             }
 
-            // Add way of passing firebase DTO to Firebase
+            // Add method call to pass Firebase DTO to Firebase
 
             _logger.LogInformation(
                 "Service: Business verification for user {user} with email {email}, " + 

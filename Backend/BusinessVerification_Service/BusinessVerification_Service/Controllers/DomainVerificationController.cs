@@ -12,7 +12,7 @@ namespace BusinessVerification_Service.Controllers
         private readonly ILogger<DomainVerificationController> _logger;
         private readonly IDomainVerificationService _domainVerificationService;
 
-        // Constructor for dependency injection of logger and service
+        // Constructor for dependency injection
         public DomainVerificationController(ILogger<DomainVerificationController> logger, 
             IDomainVerificationService domainVerificationService)
         {
@@ -39,7 +39,7 @@ namespace BusinessVerification_Service.Controllers
                     .Select(error => error.ErrorMessage)
                 );
 
-                _logger.LogWarning(
+                _logger.LogError(
                     "Controller: Invalid request DTO received from user {user} with errors:\n{errors}",
                     verificationRequestDto.UserId, errors
                 );

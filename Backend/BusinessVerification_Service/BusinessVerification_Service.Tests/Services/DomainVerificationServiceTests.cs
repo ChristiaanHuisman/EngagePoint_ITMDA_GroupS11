@@ -7,9 +7,10 @@ using Nager.PublicSuffix;
 
 namespace BusinessVerification_Service.Tests.Services
 {
-    // Same logic is used for the new DomainVerificationService,
-    // that was used in the previous microservice version,
-    // thus only limited specific tests are used here
+    // Same logic is used for the new DomainVerificationService, 
+    // that was used in the previous microservice version, 
+    // thus only limited specific tests are used here, 
+    // as the extensive previous tests all passed
     [Trait("Category", "DomainVerificationService Tests")]
     public class DomainVerificationServiceTests : IClassFixture<DomainParserFixture>
     {
@@ -17,7 +18,7 @@ namespace BusinessVerification_Service.Tests.Services
         private readonly Mock<ILogger<DomainVerificationService>> _mockLogger;
         private readonly IDomainParser _domainParser;
 
-        // Constructor for dependency injection of logger and domain parser
+        // Constructor for dependency injection
         public DomainVerificationServiceTests(DomainParserFixture domainParserFixture)
         {
             // Create the mocked logger
@@ -27,7 +28,7 @@ namespace BusinessVerification_Service.Tests.Services
             _domainParser = domainParserFixture.DomainParser;
         }
 
-        // Helper method to create the service with a mock logger and the real domain parser
+        // Helper method to create the service
         private DomainVerificationService CreateService()
         {
             return new DomainVerificationService(_mockLogger.Object, _domainParser);
@@ -52,25 +53,26 @@ namespace BusinessVerification_Service.Tests.Services
         // as it follows the same structure
         // If following tests need more explanation, 
         // it will be commented accordingly
+        // Logs will only be verified for non success outcomes
         // Test when request DTO is null
         // Should return NotStarted status with an error message
         [Fact]
         public void VerifyBusiness_NullRequest_ReturnsNotStarted()
         {
             // Arrange
-            // Create a service instance with a mock logger
-            var service = CreateService();
+            // Create a service instance
+            DomainVerificationService service = CreateService();
 
             // Act
             // Call the method with appropriate test parameters
-            var result = service.VerifyBusiness(null);
+            VerificationResponseDto responseDto = service.VerifyBusiness(null);
 
             // Assert
-            // Compare the response message
-            Assert.Contains("failed unexpectedly", result.Message, 
+            // Verify the response DTO message
+            Assert.Contains("failed unexpectedly", responseDto.Message, 
                 StringComparison.OrdinalIgnoreCase);
-            // Compare the response status
-            Assert.Equal(Status.NotStarted, result.VerificationStatus);
+            // Verify the response DTO status
+            Assert.Equal(Status.NotStarted, responseDto.VerificationStatus);
             // Verify logging level was logged
             VerifyLog(LogLevel.Error);
         }
@@ -81,9 +83,9 @@ namespace BusinessVerification_Service.Tests.Services
         public void VerifyBusiness_EmptyFieldsRequest_ReturnsNotStarted()
         {
             // Arrange
-            var service = CreateService();
+            DomainVerificationService service = CreateService();
             // Create a request DTO with the test parameters
-            var dto = new DomainVerificationRequestDto
+            DomainVerificationRequestDto requestDto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
                 BusinessEmail = "user@test.com", 
@@ -92,11 +94,11 @@ namespace BusinessVerification_Service.Tests.Services
             };
 
             // Act
-            var result = service.VerifyBusiness(dto);
+            VerificationResponseDto responseDto = service.VerifyBusiness(requestDto);
 
             // Assert
-            Assert.Contains("ensure all details", result.Message);
-            Assert.Equal(Status.NotStarted, result.VerificationStatus);
+            Assert.Contains("ensure all details", responseDto.Message);
+            Assert.Equal(Status.NotStarted, responseDto.VerificationStatus);
             VerifyLog(LogLevel.Warning);
         }
 
@@ -106,8 +108,8 @@ namespace BusinessVerification_Service.Tests.Services
         public void VerifyBusiness_InvalidEmailFormat_ReturnsNotStarted()
         {
             // Arrange
-            var service = CreateService();
-            var dto = new DomainVerificationRequestDto
+            DomainVerificationService service = CreateService();
+            DomainVerificationRequestDto requestDto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
                 BusinessEmail = "usertest.com", 
@@ -116,11 +118,11 @@ namespace BusinessVerification_Service.Tests.Services
             };
 
             // Act
-            var result = service.VerifyBusiness(dto);
+            VerificationResponseDto responseDto = service.VerifyBusiness(requestDto);
 
             // Assert
-            Assert.Contains("incomplete email format", result.Message);
-            Assert.Equal(Status.NotStarted, result.VerificationStatus);
+            Assert.Contains("incomplete email format", responseDto.Message);
+            Assert.Equal(Status.NotStarted, responseDto.VerificationStatus);
             VerifyLog(LogLevel.Warning);
         }
 
@@ -132,8 +134,8 @@ namespace BusinessVerification_Service.Tests.Services
             string website)
         {
             // Arrange
-            var service = CreateService();
-            var dto = new DomainVerificationRequestDto
+            DomainVerificationService service = CreateService();
+            DomainVerificationRequestDto requestDto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
                 BusinessEmail = "user@test.com", 
@@ -142,11 +144,11 @@ namespace BusinessVerification_Service.Tests.Services
             };
 
             // Act
-            var result = service.VerifyBusiness(dto);
+            VerificationResponseDto responseDto = service.VerifyBusiness(requestDto);
 
             // Assert
-            Assert.Contains("incomplete email or website format", result.Message);
-            Assert.Equal(Status.NotStarted, result.VerificationStatus);
+            Assert.Contains("incomplete email or website format", responseDto.Message);
+            Assert.Equal(Status.NotStarted, responseDto.VerificationStatus);
             VerifyLog(LogLevel.Warning);
         }
 
@@ -164,8 +166,8 @@ namespace BusinessVerification_Service.Tests.Services
             string website)
         {
             // Arrange
-            var service = CreateService();
-            var dto = new DomainVerificationRequestDto
+            DomainVerificationService service = CreateService();
+            DomainVerificationRequestDto requestDto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
                 BusinessEmail = "user@test.com", 
@@ -174,11 +176,11 @@ namespace BusinessVerification_Service.Tests.Services
             };
 
             // Act
-            var result = service.VerifyBusiness(dto);
+            VerificationResponseDto responseDto = service.VerifyBusiness(requestDto);
 
             // Assert
-            Assert.Contains("incomplete website format", result.Message);
-            Assert.Equal(Status.NotStarted, result.VerificationStatus);
+            Assert.Contains("incomplete website format", responseDto.Message);
+            Assert.Equal(Status.NotStarted, responseDto.VerificationStatus);
             VerifyLog(LogLevel.Warning);
         }
 
@@ -192,8 +194,8 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website)
         {
             // Arrange
-            var service = CreateService();
-            var dto = new DomainVerificationRequestDto
+            DomainVerificationService service = CreateService();
+            DomainVerificationRequestDto requestDto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
                 BusinessEmail = email, 
@@ -202,11 +204,11 @@ namespace BusinessVerification_Service.Tests.Services
             };
 
             // Act
-            var result = service.VerifyBusiness(dto);
+            VerificationResponseDto responseDto = service.VerifyBusiness(requestDto);
 
             // Assert
-            Assert.Contains("domains entered do not match", result.Message);
-            Assert.Equal(Status.Rejected, result.VerificationStatus);
+            Assert.Contains("domains entered do not match", responseDto.Message);
+            Assert.Equal(Status.Rejected, responseDto.VerificationStatus);
         }
 
         // Test when all details are valid and business name completely match
@@ -223,8 +225,8 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website, string name)
         {
             // Arrange
-            var service = CreateService();
-            var dto = new DomainVerificationRequestDto
+            DomainVerificationService service = CreateService();
+            DomainVerificationRequestDto requestDto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
                 BusinessEmail = email, 
@@ -233,11 +235,11 @@ namespace BusinessVerification_Service.Tests.Services
             };
 
             // Act
-            var result = service.VerifyBusiness(dto);
+            VerificationResponseDto responseDto = service.VerifyBusiness(requestDto);
 
             // Assert
-            Assert.Equal(Status.Accepted, result.VerificationStatus);
-            Assert.Contains("successfully verified", result.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("successfully verified", responseDto.Message);
+            Assert.Equal(Status.Accepted, responseDto.VerificationStatus);
         }
 
         // Test when all details are valid and business name partially match
@@ -255,8 +257,8 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website, string name)
         {
             // Arrange
-            var service = CreateService();
-            var dto = new DomainVerificationRequestDto
+            DomainVerificationService service = CreateService();
+            DomainVerificationRequestDto requestDto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
                 BusinessEmail = email, 
@@ -265,11 +267,11 @@ namespace BusinessVerification_Service.Tests.Services
             };
 
             // Act
-            var result = service.VerifyBusiness(dto);
+            VerificationResponseDto responseDto = service.VerifyBusiness(requestDto);
 
             // Assert
-            Assert.Equal(Status.Pending, result.VerificationStatus);
-            Assert.Contains("review required", result.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("review required", responseDto.Message);
+            Assert.Equal(Status.Pending, responseDto.VerificationStatus);
         }
 
         // Test when all details are valid and business name does not match
@@ -288,8 +290,8 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website, string name)
         {
             // Arrange
-            var service = CreateService();
-            var dto = new DomainVerificationRequestDto
+            DomainVerificationService service = CreateService();
+            DomainVerificationRequestDto requestDto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
                 BusinessEmail = email, 
@@ -298,11 +300,11 @@ namespace BusinessVerification_Service.Tests.Services
             };
 
             // Act
-            var result = service.VerifyBusiness(dto);
+            VerificationResponseDto responseDto = service.VerifyBusiness(requestDto);
 
             // Assert
-            Assert.Equal(Status.Rejected, result.VerificationStatus);
-            Assert.Contains("does not match", result.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("does not match", responseDto.Message);
+            Assert.Equal(Status.Rejected, responseDto.VerificationStatus);
         }
 
         // Test when unexpected exception is thrown
@@ -316,8 +318,9 @@ namespace BusinessVerification_Service.Tests.Services
             // Setup the behaviour of the mock parser
             mockParser.Setup(parser => parser.Parse(It.IsAny<string>()))
                 .Throws(new Exception("unexpected error"));
-            var service = new DomainVerificationService(_mockLogger.Object, mockParser.Object);
-            var dto = new DomainVerificationRequestDto
+            DomainVerificationService service = new DomainVerificationService(
+                _mockLogger.Object, mockParser.Object);
+            DomainVerificationRequestDto requestDto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
                 BusinessEmail = "user@test.com", 
@@ -326,11 +329,11 @@ namespace BusinessVerification_Service.Tests.Services
             };
 
             // Act
-            var result = service.VerifyBusiness(dto);
+            VerificationResponseDto responseDto = service.VerifyBusiness(requestDto);
 
             // Assert
-            Assert.Contains("failed unexpectedly", result.Message, StringComparison.OrdinalIgnoreCase);
-            Assert.Equal(Status.NotStarted, result.VerificationStatus);
+            Assert.Contains("failed unexpectedly", responseDto.Message);
+            Assert.Equal(Status.NotStarted, responseDto.VerificationStatus);
             VerifyLog(LogLevel.Error);
         }
     }

@@ -2,6 +2,8 @@
 
 namespace BusinessVerification_Service.Dtos
 {
+    // These properties are sent from the flutter app and not verified via Firestore, 
+    // just to keep read/write operations to a minimum as only the free Firebase plan is used
     public class DomainVerificationRequestDto
     {
         // Automatically passed via flutter app
