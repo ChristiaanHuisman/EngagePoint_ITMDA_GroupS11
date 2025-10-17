@@ -9,7 +9,7 @@ namespace BusinessVerification_Service.Tests.Controllers
 {
     // Test to independently verify the DomainVerificationController,
     // seperate from the service layer
-    [Trait("Category", "Controller Tests")]
+    [Trait("Category", "DomainVerificationController Tests")]
     public class DomainVerificationControllerTests
     {
         // Helper method to create a controller instance with mocked dependencies

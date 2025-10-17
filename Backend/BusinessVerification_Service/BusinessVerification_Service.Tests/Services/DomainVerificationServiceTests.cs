@@ -1,9 +1,9 @@
 ﻿using BusinessVerification_Service.Dtos;
 using BusinessVerification_Service.Services;
+using BusinessVerification_Service.Tests.Fixtures;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Nager.PublicSuffix;
-using Nager.PublicSuffix.RuleProviders;
 
 namespace BusinessVerification_Service.Tests.Services
 {
@@ -11,24 +11,40 @@ namespace BusinessVerification_Service.Tests.Services
     // that was used in the previous microservice version,
     // thus only limited specific tests are used here
     [Trait("Category", "DomainVerificationService Tests")]
-    public class DomainVerificationServiceTests
+    public class DomainVerificationServiceTests : IClassFixture<DomainParserFixture>
     {
+        // Injected dependencies
+        private readonly Mock<ILogger<DomainVerificationService>> _mockLogger;
         private readonly IDomainParser _domainParser;
 
-        public DomainVerificationServiceTests()
+        // Constructor for dependency injection of logger and domain parser
+        public DomainVerificationServiceTests(DomainParserFixture domainParserFixture)
         {
-            // Use the real public suffix list for testing
-            var ruleProvider = new SimpleHttpRuleProvider();
-            ruleProvider.BuildAsync().GetAwaiter().GetResult();
-            _domainParser = new DomainParser(ruleProvider);
+            // Create the mocked logger
+            _mockLogger = new Mock<ILogger<DomainVerificationService>>();
+
+            // Get the real domain parser from the fixture
+            _domainParser = domainParserFixture.DomainParser;
         }
 
         // Helper method to create the service with a mock logger and the real domain parser
-        private DomainVerificationService CreateService(
-            out Mock<ILogger<DomainVerificationService>> mockLogger)
+        private DomainVerificationService CreateService()
         {
-            mockLogger = new Mock<ILogger<DomainVerificationService>>();
-            return new DomainVerificationService(mockLogger.Object, _domainParser);
+            return new DomainVerificationService(_mockLogger.Object, _domainParser);
+        }
+
+        // Helper method for loggin verification
+        private void VerifyLog(LogLevel logLevel)
+        {
+            _mockLogger.Verify(logger => logger.Log(
+                logLevel, // Expect a specific log level 
+                It.IsAny<EventId>(), // Do not care about a specific event 
+                It.IsAny<It.IsAnyType>(), // Do not care about the state parameter 
+                It.IsAny<Exception>(), // Do not care about the exception parameter 
+                // Do not care about the formatter function
+                (Func<It.IsAnyType, Exception?, string>)It.IsAny<object>()),
+                Times.Once // Ensure logging was called only once
+            );
         }
 
         // This test has extensive comments,
@@ -43,7 +59,7 @@ namespace BusinessVerification_Service.Tests.Services
         {
             // Arrange
             // Create a service instance with a mock logger
-            var service = CreateService(out var mockLogger);
+            var service = CreateService();
 
             // Act
             // Call the method with appropriate test parameters
@@ -55,16 +71,8 @@ namespace BusinessVerification_Service.Tests.Services
                 StringComparison.OrdinalIgnoreCase);
             // Compare the response status
             Assert.Equal(Status.NotStarted, result.VerificationStatus);
-            // Verify that an error was logged
-            mockLogger.Verify(logger => logger.Log(
-                LogLevel.Error, // Expect a log level of Error 
-                It.IsAny<EventId>(), // Do not care about a specific event 
-                It.IsAny<It.IsAnyType>(), // Do not care about the state parameter 
-                It.IsAny<Exception>(), // Do not care about the exception parameter 
-                // Do not care about the formatter function
-                (Func<It.IsAnyType, Exception?, string>)It.IsAny<object>()), 
-                Times.Once // Ensure logging was called only once
-            );
+            // Verify logging level was logged
+            VerifyLog(LogLevel.Error);
         }
 
         // Test when required fields are empty
@@ -73,7 +81,7 @@ namespace BusinessVerification_Service.Tests.Services
         public void VerifyBusiness_EmptyFieldsRequest_ReturnsNotStarted()
         {
             // Arrange
-            var service = CreateService(out var mockLogger);
+            var service = CreateService();
             // Create a request DTO with the test parameters
             var dto = new DomainVerificationRequestDto
             {
@@ -89,14 +97,7 @@ namespace BusinessVerification_Service.Tests.Services
             // Assert
             Assert.Contains("ensure all details", result.Message);
             Assert.Equal(Status.NotStarted, result.VerificationStatus);
-            mockLogger.Verify(logger => logger.Log(
-                LogLevel.Warning, 
-                It.IsAny<EventId>(), 
-                It.IsAny<It.IsAnyType>(), 
-                It.IsAny<Exception>(), 
-                (Func<It.IsAnyType, Exception?, string>)It.IsAny<object>()), 
-                Times.AtLeastOnce
-            );
+            VerifyLog(LogLevel.Warning);
         }
 
         // Test when email format is invalid
@@ -105,7 +106,7 @@ namespace BusinessVerification_Service.Tests.Services
         public void VerifyBusiness_InvalidEmailFormat_ReturnsNotStarted()
         {
             // Arrange
-            var service = CreateService(out var mockLogger);
+            var service = CreateService();
             var dto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
@@ -120,14 +121,7 @@ namespace BusinessVerification_Service.Tests.Services
             // Assert
             Assert.Contains("incomplete email format", result.Message);
             Assert.Equal(Status.NotStarted, result.VerificationStatus);
-            mockLogger.Verify(logger => logger.Log(
-                LogLevel.Warning, 
-                It.IsAny<EventId>(), 
-                It.IsAny<It.IsAnyType>(), 
-                It.IsAny<Exception>(), 
-                (Func<It.IsAnyType, Exception?, string>)It.IsAny<object>()), 
-                Times.AtLeastOnce
-            );
+            VerifyLog(LogLevel.Warning);
         }
 
         // Test when website format is invalid
@@ -138,7 +132,7 @@ namespace BusinessVerification_Service.Tests.Services
             string website)
         {
             // Arrange
-            var service = CreateService(out var mockLogger);
+            var service = CreateService();
             var dto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
@@ -153,14 +147,7 @@ namespace BusinessVerification_Service.Tests.Services
             // Assert
             Assert.Contains("incomplete email or website format", result.Message);
             Assert.Equal(Status.NotStarted, result.VerificationStatus);
-            mockLogger.Verify(logger => logger.Log(
-                LogLevel.Warning, 
-                It.IsAny<EventId>(), 
-                It.IsAny<It.IsAnyType>(), 
-                It.IsAny<Exception>(), 
-                (Func<It.IsAnyType, Exception?, string>)It.IsAny<object>()), 
-                Times.AtLeastOnce
-            );
+            VerifyLog(LogLevel.Warning);
         }
 
         // Test when website format or scheme is invalid for UriBuilder
@@ -177,7 +164,7 @@ namespace BusinessVerification_Service.Tests.Services
             string website)
         {
             // Arrange
-            var service = CreateService(out var mockLogger);
+            var service = CreateService();
             var dto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
@@ -192,14 +179,7 @@ namespace BusinessVerification_Service.Tests.Services
             // Assert
             Assert.Contains("incomplete website format", result.Message);
             Assert.Equal(Status.NotStarted, result.VerificationStatus);
-            mockLogger.Verify(logger => logger.Log(
-                LogLevel.Warning, 
-                It.IsAny<EventId>(), 
-                It.IsAny<It.IsAnyType>(), 
-                It.IsAny<Exception>(), 
-                (Func<It.IsAnyType, Exception?, string>)It.IsAny<object>()), 
-                Times.AtLeastOnce
-            );
+            VerifyLog(LogLevel.Warning);
         }
 
         // Test when email and website domains do not match
@@ -212,7 +192,7 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website)
         {
             // Arrange
-            var service = CreateService(out var mockLogger);
+            var service = CreateService();
             var dto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
@@ -243,7 +223,7 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website, string name)
         {
             // Arrange
-            var service = CreateService(out var mockLogger);
+            var service = CreateService();
             var dto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
@@ -275,7 +255,7 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website, string name)
         {
             // Arrange
-            var service = CreateService(out var mockLogger);
+            var service = CreateService();
             var dto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
@@ -308,7 +288,7 @@ namespace BusinessVerification_Service.Tests.Services
             string email, string website, string name)
         {
             // Arrange
-            var service = CreateService(out var mockLogger);
+            var service = CreateService();
             var dto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
@@ -334,10 +314,9 @@ namespace BusinessVerification_Service.Tests.Services
             // Mock the domain parser to throw an exception
             var mockParser = new Mock<IDomainParser>();
             // Setup the behaviour of the mock parser
-            mockParser.Setup(parser => parser.Parse(It.IsAny<string>())).Throws(new Exception(
-                "unexpected error"));
-            var mockLogger = new Mock<ILogger<DomainVerificationService>>();
-            var service = new DomainVerificationService(mockLogger.Object, mockParser.Object);
+            mockParser.Setup(parser => parser.Parse(It.IsAny<string>()))
+                .Throws(new Exception("unexpected error"));
+            var service = new DomainVerificationService(_mockLogger.Object, mockParser.Object);
             var dto = new DomainVerificationRequestDto
             {
                 UserId = "testuser", 
@@ -352,14 +331,7 @@ namespace BusinessVerification_Service.Tests.Services
             // Assert
             Assert.Contains("failed unexpectedly", result.Message, StringComparison.OrdinalIgnoreCase);
             Assert.Equal(Status.NotStarted, result.VerificationStatus);
-            mockLogger.Verify(logger => logger.Log(
-                LogLevel.Error, 
-                It.IsAny<EventId>(), 
-                It.IsAny<It.IsAnyType>(), 
-                It.IsAny<Exception>(), 
-                (Func<It.IsAnyType, Exception?, string>)It.IsAny<object>()), 
-                Times.Once
-            );
+            VerifyLog(LogLevel.Error);
         }
     }
 }
