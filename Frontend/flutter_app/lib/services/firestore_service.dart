@@ -16,6 +16,7 @@ class FirestoreService {
     required String content,
     String? imageUrl,
     double? imageAspectRatio,
+    String? tag,
   }) async {
     final User? user = _auth.currentUser;
     if (user == null) {
@@ -42,6 +43,7 @@ class FirestoreService {
       'content': content,
       'imageUrl': imageUrl,
       'imageAspectRatio': imageAspectRatio,
+      'tag': tag,
       'createdAt': FieldValue.serverTimestamp(),
       'status': 'published',
     });
@@ -264,7 +266,7 @@ class FirestoreService {
       'respondedAt': FieldValue.serverTimestamp(),
     });
   }
-
+  
   // Updates a user's profile document with new data.
   Future<void> updateUserProfile(String uid, Map<String, dynamic> data) async {
     if (data.containsKey('name')) {
@@ -292,12 +294,14 @@ class FirestoreService {
     required String content,
     String? imageUrl,
     double? imageAspectRatio,
+    String? tag, 
   }) async {
     await _db.collection('posts').doc(postId).update({
       'title': title,
       'content': content,
       'imageUrl': imageUrl,
       'imageAspectRatio': imageAspectRatio,
+      'tag': tag, 
     });
   }
 
@@ -383,7 +387,7 @@ class FirestoreService {
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
-
+  
   // Saves or updates the user's FCM token in a 'devices' subcollection.
   Future<void> saveUserToken(String token) async {
     final currentUser = _auth.currentUser;
@@ -401,7 +405,7 @@ class FirestoreService {
       'lastSeenAt': FieldValue.serverTimestamp(),
     });
   }
-
+  
   // New methods for the business dashboard
 
   /// Gets the total number of likes across all posts for a business.
@@ -550,6 +554,15 @@ class FirestoreService {
           (snapshot.data() as Map<String, dynamic>)['points'] ?? 0;
       final newPoints = currentPoints + pointsToAdd;
       transaction.update(userRef, {'points': newPoints});
+    });
+  }
+
+  // New method to update user notification preferences
+  Future<void> updateNotificationPreferences(List<String> tags) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+    await _db.collection('users').doc(currentUser.uid).update({
+      'notificationTags': tags,
     });
   }
 }

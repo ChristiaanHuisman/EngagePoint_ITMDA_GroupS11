@@ -13,6 +13,7 @@ class UserModel {
   final String? description;
   final int points;
   final int spinsAvailable;
+  final List<String> notificationTags;
 
   UserModel({
     required this.uid,
@@ -25,6 +26,7 @@ class UserModel {
     this.description,
     this.points = 0,
     this.spinsAvailable = 0,
+    this.notificationTags = const [],
   });
 
   // This "factory constructor" is a helper that builds a UserModel
@@ -42,6 +44,7 @@ class UserModel {
       description: data['description'],
       points: data['points'] ?? 0,
       spinsAvailable: data['spinsAvailable'] ?? 0,
+      notificationTags: List<String>.from(data['notificationTags'] ?? []),
     );
   }
   

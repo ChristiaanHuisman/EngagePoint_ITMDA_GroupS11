@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 
@@ -7,7 +8,7 @@ class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic> userData;
   final String userId;
 
-  const EditProfilePage({super.key, required this.userData, required this.userId});
+  const EditProfilePage({super.key, required this.userData, required this.userId, required UserModel user});
 
   @override
   State<EditProfilePage> createState() => _EditProfilePageState();

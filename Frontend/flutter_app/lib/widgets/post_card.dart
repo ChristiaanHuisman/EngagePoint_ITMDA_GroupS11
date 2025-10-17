@@ -3,11 +3,29 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/services/logging_service.dart';
 import 'package:intl/intl.dart';
-import '../models/post_model.dart'; 
+import '../models/post_model.dart';
 import '../services/firestore_service.dart';
 import '../pages/user_profile_page.dart';
 import '../pages/post_page.dart';
 import '../pages/edit_post_page.dart';
+
+// Helper function to map tag strings to specific colors for the Chip.
+Color _getTagColor(String? tag) {
+  switch (tag) {
+    case 'Promotion':
+      return Colors.blue.shade300;
+    case 'Sale':
+      return Colors.green.shade300;
+    case 'Event':
+      return Colors.orange.shade300;
+    case 'New Stock':
+      return Colors.purple.shade300;
+    case 'Update':
+      return Colors.grey.shade500;
+    default:
+      return Colors.transparent;
+  }
+}
 
 class PostCard extends StatelessWidget {
   final PostModel post;
@@ -45,7 +63,6 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // access properties directly from the `post` object.
     final String formattedDate = DateFormat('MMM dd, yyyy').format(post.createdAt.toDate());
 
     return Card(
@@ -68,8 +85,8 @@ class PostCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               PostHeader(
-                businessId: post.businessId, 
-                onDelete: () => _showDeleteConfirmation(context, post.id), 
+                post: post,
+                onDelete: () => _showDeleteConfirmation(context, post.id),
                 onEdit: () {
                   Navigator.push(
                     context,
@@ -88,7 +105,7 @@ class PostCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.title, 
+                          post.title,
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -199,13 +216,13 @@ class PostCard extends StatelessWidget {
 }
 
 class PostHeader extends StatelessWidget {
-  final String businessId;
+  final PostModel post;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final FirestoreService _firestoreService = FirestoreService();
 
   PostHeader({
-    required this.businessId,
+    required this.post,
     required this.onEdit,
     required this.onDelete,
     super.key,
@@ -214,10 +231,10 @@ class PostHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final bool isOwner = currentUserId != null && currentUserId == businessId;
+    final bool isOwner = currentUserId != null && currentUserId == post.businessId;
 
     return FutureBuilder<DocumentSnapshot>(
-      future: _firestoreService.getUserProfile(businessId),
+      future: _firestoreService.getUserProfile(post.businessId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Row(
@@ -239,11 +256,11 @@ class PostHeader extends StatelessWidget {
 
         return GestureDetector(
           onTap: () {
-            if (businessId.isNotEmpty) {
+            if (post.businessId.isNotEmpty) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => UserProfilePage(userId: businessId),
+                  builder: (context) => UserProfilePage(userId: post.businessId),
                 ),
               );
             }
@@ -265,6 +282,16 @@ class PostHeader extends StatelessWidget {
                   ),
                 ),
               ),
+              
+              if (post.tag != null && post.tag!.isNotEmpty)
+                Chip(
+                  label: Text(post.tag!),
+                  backgroundColor: _getTagColor(post.tag),
+                  labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 2.0),
+                  shape: const StadiumBorder(),
+                ),
+
               if (isOwner)
                 Row(
                   mainAxisSize: MainAxisSize.min,

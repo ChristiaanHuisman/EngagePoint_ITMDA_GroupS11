@@ -19,6 +19,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
   bool _isLoading = false;
   File? _imageFile;
 
+  String? _selectedTag;
+  final List<String> _postTags = ['Promotion', 'Sale', 'Event', 'New Stock', 'Update'];
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -65,6 +68,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         content: _contentController.text,
         imageUrl: imageUrl,
         imageAspectRatio: imageAspectRatio, 
+        tag: _selectedTag,
       );
 
       if (mounted) {
@@ -127,6 +131,27 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 ),
               ),
               const SizedBox(height: 24),
+
+              DropdownButtonFormField<String>(
+                initialValue: _selectedTag,
+                decoration: const InputDecoration(
+                  labelText: 'Post Category / Tag',
+                  border: OutlineInputBorder(),
+                ),
+                hint: const Text('Select a tag (optional)'),
+                items: _postTags.map((String tag) {
+                  return DropdownMenuItem<String>(
+                    value: tag,
+                    child: Text(tag),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedTag = newValue;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
 
               TextFormField(
                 controller: _titleController,
