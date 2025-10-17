@@ -1,5 +1,3 @@
-// lib/models/user_model.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
@@ -14,6 +12,9 @@ class UserModel {
   final int points;
   final int spinsAvailable;
   final List<String> notificationTags;
+  final Timestamp createdAt;
+  final String? timezone;
+  final Timestamp? verifiedAt;
 
   UserModel({
     required this.uid,
@@ -27,10 +28,11 @@ class UserModel {
     this.points = 0,
     this.spinsAvailable = 0,
     this.notificationTags = const [],
+    required this.createdAt,
+    this.timezone,
+    this.verifiedAt,
   });
 
-  // This "factory constructor" is a helper that builds a UserModel
-  // from a Firestore document, providing default values for safety.
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return UserModel(
@@ -45,9 +47,32 @@ class UserModel {
       points: data['points'] ?? 0,
       spinsAvailable: data['spinsAvailable'] ?? 0,
       notificationTags: List<String>.from(data['notificationTags'] ?? []),
+      createdAt: data['createdAt'] ?? Timestamp.now(),
+      timezone: data['timezone'],
+      verifiedAt: data['verifiedAt'],
     );
   }
   
   // Helper getter to make role checks cleaner in the UI
   bool get isBusiness => role == 'business';
+
+  // Helper to convert the model to a map for writing to Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'searchName': name.toLowerCase(),
+      'email': email,
+      'photoUrl': photoUrl,
+      'role': role,
+      'status': status,
+      'businessType': businessType,
+      'description': description,
+      'points': points,
+      'spinsAvailable': spinsAvailable,
+      'notificationTags': notificationTags,
+      'createdAt': createdAt,
+      'timezone': timezone,
+      'verifiedAt': verifiedAt,
+    };
+  }
 }

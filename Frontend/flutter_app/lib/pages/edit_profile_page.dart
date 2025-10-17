@@ -1,14 +1,13 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 
 class EditProfilePage extends StatefulWidget {
-  final Map<String, dynamic> userData;
-  final String userId;
+  final UserModel user;
 
-  const EditProfilePage({super.key, required this.userData, required this.userId, required UserModel user});
+  const EditProfilePage({super.key, required this.user});
 
   @override
   State<EditProfilePage> createState() => _EditProfilePageState();
@@ -21,38 +20,41 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
-  //  Controller for the new text field
   late final TextEditingController _businessTypeController;
-  File? _imageFile;
+
+  Uint8List? _imageData;
+  String? _existingImageUrl;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.userData['name'] ?? '');
-    _descriptionController = TextEditingController(text: widget.userData['description'] ?? '');
-    // Initialize the controller with existing data
-    _businessTypeController = TextEditingController(text: widget.userData['businessType'] ?? '');
+    _nameController = TextEditingController(text: widget.user.name);
+    _descriptionController =
+        TextEditingController(text: widget.user.description ?? '');
+    _businessTypeController =
+        TextEditingController(text: widget.user.businessType ?? '');
+    _existingImageUrl = widget.user.photoUrl;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    //  Dispose of the new controller
     _businessTypeController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _pickImage() async {
-    final file = await _storageService.pickImage();
-    if (file != null) {
+    final data = await _storageService.pickImageAsBytes();
+    if (data != null) {
       setState(() {
-        _imageFile = file;
+        _imageData = data;
+        _existingImageUrl = null; // Clear the existing image URL
       });
     }
   }
-  
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -61,34 +63,34 @@ class _EditProfilePageState extends State<EditProfilePage> {
     setState(() => _isLoading = true);
 
     try {
-      String? newPhotoUrl;
-      
-      if (_imageFile != null) {
-        final path = 'profile_pictures/${widget.userId}';
-        newPhotoUrl = await _storageService.uploadFile(path, _imageFile!);
+      String? newPhotoUrl = _existingImageUrl;
+
+      if (_imageData != null) {
+        final path = 'profile_pictures/${widget.user.uid}';
+        newPhotoUrl = await _storageService.uploadImageData(path, _imageData!);
       }
-      
+
       final Map<String, dynamic> dataToUpdate = {
         'name': _nameController.text.trim(),
-        'searchName': _nameController.text.trim().toLowerCase(),
         'description': _descriptionController.text.trim(),
-        // Get the business type from the text controller
-        'businessType': _businessTypeController.text.trim(),
+        'photoUrl': newPhotoUrl, // Always include the photoUrl in the update
       };
-      
-      if (newPhotoUrl != null) {
-        dataToUpdate['photoUrl'] = newPhotoUrl;
+
+      if (widget.user.isBusiness) {
+        dataToUpdate['businessType'] = _businessTypeController.text.trim();
       }
 
-      await _firestoreService.updateUserProfile(widget.userId, dataToUpdate);
+      await _firestoreService.updateUserProfile(widget.user.uid, dataToUpdate);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated successfully!')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile updated successfully!')));
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to update profile: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update profile: $e')));
       }
     } finally {
       if (mounted) {
@@ -99,8 +101,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final String role = widget.userData['role'] ?? 'customer';
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
@@ -108,7 +108,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.only(right: 16.0),
-              child: Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white))),
+              child: Center(
+                  child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(color: Colors.white))),
             )
           else
             IconButton(
@@ -123,18 +127,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              
               GestureDetector(
                 onTap: _pickImage,
                 child: CircleAvatar(
                   radius: 60,
-                  backgroundImage: _imageFile != null
-                      ? FileImage(_imageFile!)
-                      : (widget.userData['photoUrl'] != null
-                          ? NetworkImage(widget.userData['photoUrl'])
+                  backgroundImage: _imageData != null
+                      ? MemoryImage(_imageData!)
+                      : (_existingImageUrl != null
+                          ? NetworkImage(_existingImageUrl!)
                           : null) as ImageProvider?,
-                  child: _imageFile == null && widget.userData['photoUrl'] == null
-                      ? Icon(role == 'business' ? Icons.store : Icons.person, size: 60)
+                  child: _imageData == null && _existingImageUrl == null
+                      ? Icon(
+                          widget.user.isBusiness ? Icons.store : Icons.person,
+                          size: 60)
                       : null,
                 ),
               ),
@@ -142,19 +147,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 onPressed: _pickImage,
                 child: const Text('Change Profile Picture'),
               ),
-              
               const SizedBox(height: 24),
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(
-                  labelText: role == 'business' ? 'Business Name' : 'Full Name',
+                  labelText:
+                      widget.user.isBusiness ? 'Business Name' : 'Full Name',
                   border: const OutlineInputBorder(),
                 ),
-                validator: (value) => value == null || value.isEmpty ? 'Please enter a name' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter a name'
+                    : null,
               ),
               const SizedBox(height: 16),
-              // Show this field only for business users
-              if (role == 'business')
+              if (widget.user.isBusiness)
                 TextFormField(
                   controller: _businessTypeController,
                   decoration: const InputDecoration(
@@ -163,15 +169,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-              
-              if (role == 'business')
-                const SizedBox(height: 16),
-
+              if (widget.user.isBusiness) const SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
                 decoration: InputDecoration(
                   labelText: 'Profile Description',
-                  hintText: role == 'business'
+                  hintText: widget.user.isBusiness
                       ? 'Tell customers about your business...'
                       : 'A little bit about yourself...',
                   border: const OutlineInputBorder(),
@@ -179,7 +182,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
                 maxLines: 4,
               ),
-              
             ],
           ),
         ),

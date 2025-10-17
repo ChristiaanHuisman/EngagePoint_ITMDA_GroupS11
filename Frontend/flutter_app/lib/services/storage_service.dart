@@ -1,42 +1,31 @@
-import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart'; // Required for Uint8List
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart'; 
 
 class StorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  final ImagePicker _picker = ImagePicker();
 
-  // Lets the user pick an image from their gallery.
-  // Returns a File object or null if the user cancels.
-  Future<File?> pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      return File(pickedFile.path);
+  Future<Uint8List?> pickImageAsBytes() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      return await image.readAsBytes();
     }
     return null;
   }
 
-  // Uploads a file to a specific path in Firebase Cloud Storage
-  // and returns the public download URL.
-  Future<String> uploadFile(String path, File file) async {
+  /// Uploads raw image data  to Firebase Storage.
+  /// This works on both mobile and web.
+  Future<String> uploadImageData(String path, Uint8List data) async {
     try {
-      Reference storageRef = _storage.ref().child(path);
+      final ref = _storage.ref().child(path);
 
-      UploadTask uploadTask = storageRef.putFile(file);
-      
-      TaskSnapshot snapshot = await uploadTask;
-      
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
+      final metadata = SettableMetadata(contentType: 'image/jpeg');
+      final uploadTask = await ref.putData(data, metadata);
+      return await uploadTask.ref.getDownloadURL();
     } catch (e) {
-      
-      
-      debugPrint("Error uploading file: $e");
-      
+      debugPrint("Error uploading image data: $e");
       rethrow;
     }
   }
 }
-

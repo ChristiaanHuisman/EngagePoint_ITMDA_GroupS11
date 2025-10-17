@@ -1,6 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../models/location_model.dart';
 import '../services/firestore_service.dart';
 
 class ManageLocationsPage extends StatefulWidget {
@@ -14,10 +14,10 @@ class _ManageLocationsPageState extends State<ManageLocationsPage> {
   final FirestoreService _firestoreService = FirestoreService();
   final String? _businessId = FirebaseAuth.instance.currentUser?.uid;
 
-  // Dialog for adding or editing a location
-  void _showLocationDialog({DocumentSnapshot? location}) {
-    final nameController = TextEditingController(text: location != null ? location['name'] : '');
-    final addressController = TextEditingController(text: location != null ? location['address'] : '');
+  void _showLocationDialog({LocationModel? location}) {
+    final nameController = TextEditingController(text: location?.name ?? '');
+    final addressController =
+        TextEditingController(text: location?.address ?? '');
     final isEditing = location != null;
 
     showDialog(
@@ -30,7 +30,8 @@ class _ManageLocationsPageState extends State<ManageLocationsPage> {
             children: [
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(labelText: 'Store Name (e.g., Main Branch)'),
+                decoration: const InputDecoration(
+                    labelText: 'Store Name (e.g., Main Branch)'),
               ),
               TextField(
                 controller: addressController,
@@ -45,7 +46,8 @@ class _ManageLocationsPageState extends State<ManageLocationsPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (nameController.text.isNotEmpty && addressController.text.isNotEmpty) {
+                if (nameController.text.isNotEmpty &&
+                    addressController.text.isNotEmpty) {
                   if (isEditing) {
                     _firestoreService.updateLocation(
                       locationId: location.id,
@@ -81,36 +83,41 @@ class _ManageLocationsPageState extends State<ManageLocationsPage> {
       ),
       body: _businessId == null
           ? const Center(child: Text('Not logged in.'))
-          : StreamBuilder<QuerySnapshot>(
-              // Pass the businessId to the getLocations method
+          : StreamBuilder<List<LocationModel>>(
               stream: _firestoreService.getLocations(_businessId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No locations added yet. Tap + to add one.'));
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(
+                      child: Text('No locations added yet. Tap + to add one.'));
                 }
 
-                final locations = snapshot.data!.docs;
+                final locations = snapshot.data!;
 
                 return ListView.builder(
                   itemCount: locations.length,
                   itemBuilder: (context, index) {
                     final location = locations[index];
                     return ListTile(
-                      title: Text(location['name']),
-                      subtitle: Text(location['address']),
+                      title: Text(location.name),
+                      subtitle: Text(location.address),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
                             icon: const Icon(Icons.edit_outlined),
-                            onPressed: () => _showLocationDialog(location: location),
+                            // Pass the whole LocationModel object
+                            onPressed: () =>
+                                _showLocationDialog(location: location),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
-                            onPressed: () => _firestoreService.deleteLocation(locationId: location.id),
+                            icon: const Icon(Icons.delete_outline,
+                                color: Colors.red),
+                            // Use location.id from the model
+                            onPressed: () => _firestoreService.deleteLocation(
+                                locationId: location.id),
                           ),
                         ],
                       ),

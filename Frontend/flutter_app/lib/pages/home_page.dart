@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/widgets/app_drawer.dart';
@@ -51,7 +50,10 @@ class MainAppNavigatorState extends State<MainAppNavigator> {
     _pages = <Widget>[
       FollowingFeed(user: _user),
       const DiscoverPage(),
-      if (_user != null) UserProfilePage(userId: _user.uid) else const Center(child: Text("Not Logged In")),
+      if (_user != null)
+        UserProfilePage(userId: _user.uid)
+      else
+        const Center(child: Text("Not Logged In")),
     ];
   }
 
@@ -64,7 +66,6 @@ class MainAppNavigatorState extends State<MainAppNavigator> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // THE FIX IS HERE: The SafeArea now only applies padding to the bottom.
       body: SafeArea(
         top: false,
         child: IndexedStack(
@@ -117,17 +118,18 @@ class _FollowingFeedState extends State<FollowingFeed> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     if (widget.user == null) {
       return const Center(child: Text("Not logged in."));
     }
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(widget.user!.uid).snapshots(),
+    return StreamBuilder<UserModel?>(
+      stream: _firestoreService.getUserStream(),
       builder: (context, userSnapshot) {
-        if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+        final userModel = userSnapshot.data;
+        if (userSnapshot.connectionState == ConnectionState.waiting ||
+            userModel == null) {
           return Scaffold(
             appBar: AppBar(title: const Text('Home')),
             drawer: const Drawer(),
@@ -135,21 +137,20 @@ class _FollowingFeedState extends State<FollowingFeed> {
           );
         }
 
-        final UserModel userModel = UserModel.fromFirestore(userSnapshot.data!);
-
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Theme.of(context).colorScheme.onPrimary,
             title: const Text('Home'),
           ),
-          
           drawer: const AppDrawer(),
-
           floatingActionButton: userModel.isBusiness
               ? FloatingActionButton(
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatePostPage()));
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const CreatePostPage()));
                   },
                   child: const Icon(Icons.add),
                 )
@@ -167,7 +168,9 @@ class _FollowingFeedState extends State<FollowingFeed> {
         if (followedSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (followedSnapshot.hasError || !followedSnapshot.hasData || followedSnapshot.data!.isEmpty) {
+        if (followedSnapshot.hasError ||
+            !followedSnapshot.hasData ||
+            followedSnapshot.data!.isEmpty) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16.0),
@@ -180,7 +183,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
           );
         }
         final followedBusinessIds = followedSnapshot.data!;
-        
+
         return StreamBuilder<List<PostModel>>(
           stream: _firestoreService.getFollowedPosts(followedBusinessIds),
           builder: (context, postSnapshot) {
@@ -199,7 +202,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
                 ),
               );
             }
-            
+
             final posts = postSnapshot.data!;
             return ListView.builder(
               itemCount: posts.length,

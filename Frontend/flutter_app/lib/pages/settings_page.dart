@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../models/settings_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -14,14 +13,17 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   final FirestoreService _firestoreService = FirestoreService();
-  final List<String> _postTags = ['Promotion', 'Sale', 'Event', 'New Stock', 'Update'];
-  
-  // This state is now managed directly by listening to the stream
-  // bool _tagFilteringEnabled = false; 
-  // List<String> _userPreferences = [];
+  final List<String> _postTags = [
+    'Promotion',
+    'Sale',
+    'Event',
+    'New Stock',
+    'Update'
+  ];
 
-  void _onPreferenceChanged(List<String> currentPrefs, String tag, bool isSelected) {
-    // Create a new list from the current one to modify it
+  void _onPreferenceChanged(
+      List<String> currentPrefs, String tag, bool isSelected) {
+    // This function remains the same
     final newPrefs = List<String>.from(currentPrefs);
     if (isSelected) {
       newPrefs.add(tag);
@@ -35,19 +37,25 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Settings")),
-      body: StreamBuilder<DocumentSnapshot>(
+      body: StreamBuilder<UserModel?>(
         stream: _firestoreService.getUserStream(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData || !snapshot.data!.exists) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final user = UserModel.fromFirestore(snapshot.data!);
-          // Determine if filtering is enabled based on the data from Firestore
+          final user = snapshot.data;
+
+          if (user == null) {
+            return const Center(child: Text("Could not load settings."));
+          }
+
+          // Determine if filtering is enabled based on the data from the model
           final bool tagFilteringEnabled = user.notificationTags.isNotEmpty;
 
           return Consumer<SettingsData>(
-            builder: (BuildContext context, SettingsData settings, Widget? child) {
+            builder:
+                (BuildContext context, SettingsData settings, Widget? child) {
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -62,8 +70,8 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                       ),
                     ),
-                    
-                    // Master switch for all notifications (from your provider)
+
+                    // Master switch for all notifications
                     SwitchListTile(
                       title: const Text("Receive Notifications"),
                       value: settings.receiveNotifications,
@@ -73,17 +81,18 @@ class _SettingsPageState extends State<SettingsPage> {
                       activeThumbColor: Theme.of(context).colorScheme.primary,
                     ),
 
-                    
                     SwitchListTile(
                       title: const Text("Filter Notifications by Tag"),
-                      subtitle: const Text("Only receive notifications for topics you select."),
+                      subtitle: const Text(
+                          "Only receive notifications for topics you select."),
                       value: tagFilteringEnabled,
                       onChanged: (bool value) {
                         // When the user toggles this switch, we update Firestore.
                         // The StreamBuilder will then automatically rebuild the UI.
                         if (value) {
                           // If turning on, default to all tags selected.
-                          _firestoreService.updateNotificationPreferences(_postTags);
+                          _firestoreService
+                              .updateNotificationPreferences(_postTags);
                         } else {
                           // If turning off, clear the preferences.
                           _firestoreService.updateNotificationPreferences([]);
@@ -92,10 +101,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       activeThumbColor: Theme.of(context).colorScheme.primary,
                     ),
 
-                    // Checkboxes are now dependent on the live data from the stream.
                     if (tagFilteringEnabled)
                       Padding(
-                        padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0),
+                        padding: const EdgeInsets.only(
+                            left: 16.0, right: 16.0, top: 8.0),
                         child: Container(
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey.shade300),
@@ -108,7 +117,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                 value: user.notificationTags.contains(tag),
                                 onChanged: (bool? value) {
                                   if (value != null) {
-                                    _onPreferenceChanged(user.notificationTags, tag, value);
+                                    _onPreferenceChanged(
+                                        user.notificationTags, tag, value);
                                   }
                                 },
                               );
@@ -118,7 +128,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
 
                     const Divider(height: 32),
-                    
+
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
@@ -178,7 +188,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         );
                       },
                     ),
-                     ListTile(
+                    ListTile(
                       leading: const Icon(Icons.info_outline),
                       title: const Text("About"),
                       onTap: () {

@@ -1,15 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/post_model.dart';
+import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import 'full_screen_image_viewer.dart';
 import 'user_profile_page.dart';
 import '../services/logging_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-// Helper function to map tag strings to specific colors for the Chip.
 Color _getTagColor(String? tag) {
   switch (tag) {
     case 'Promotion':
@@ -21,7 +18,7 @@ Color _getTagColor(String? tag) {
     case 'New Stock':
       return Colors.purple.shade300;
     case 'Update':
-      return Colors.grey.shade500;
+      return Colors.red.shade500;
     default:
       return Colors.transparent;
   }
@@ -38,9 +35,9 @@ class PostPage extends StatefulWidget {
 
 class _PostPageState extends State<PostPage> {
   final FirestoreService _firestoreService = FirestoreService();
-  final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
   final LoggingService _loggingService = LoggingService();
-  DocumentSnapshot? _businessProfile;
+
+  UserModel? _businessProfile;
   bool _isLoading = true;
 
   bool _isExpanded = false;
@@ -62,10 +59,9 @@ class _PostPageState extends State<PostPage> {
 
   Future<void> _fetchBusinessProfile() async {
     try {
-      final String businessId = widget.post.businessId;
-
-      if (businessId.isNotEmpty) {
-        final profile = await _firestoreService.getUserProfile(businessId);
+      if (widget.post.businessId.isNotEmpty) {
+        final profile =
+            await _firestoreService.getUserProfile(widget.post.businessId);
         if (mounted) {
           setState(() {
             _businessProfile = profile;
@@ -83,22 +79,8 @@ class _PostPageState extends State<PostPage> {
 
   @override
   Widget build(BuildContext context) {
-    final String formattedDate =
-        DateFormat('MMM dd, yyyy').format(widget.post.createdAt.toDate());
-    final currentUserId =
-        FirebaseAuth.instance.currentUser?.uid; 
-
-    String businessName = '...';
-    String? businessPhotoUrl;
-    String businessId = '';
-
-    if (_businessProfile != null && _businessProfile!.exists) {
-      final businessData = _businessProfile!.data() as Map<String, dynamic>;
-      businessName = businessData['name'] ?? 'Unnamed Business';
-      businessPhotoUrl = businessData['photoUrl'];
-      businessId = _businessProfile!.id;
-    }
-
+    final String formattedDate = widget.post.formattedDate;
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final bool isLongText = widget.post.content.length > _characterLimit;
 
     return Scaffold(
@@ -119,6 +101,8 @@ class _PostPageState extends State<PostPage> {
               else if (_businessProfile != null)
                 GestureDetector(
                   onTap: () {
+                    final businessId =
+                        _businessProfile!.uid; // Get ID from model
                     if (businessId.isNotEmpty) {
                       if (businessId == currentUserId) {
                         if (Navigator.canPop(context)) {
@@ -141,11 +125,11 @@ class _PostPageState extends State<PostPage> {
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundImage: businessPhotoUrl != null
-                              ? NetworkImage(businessPhotoUrl)
+                          backgroundImage: _businessProfile!.photoUrl != null
+                              ? NetworkImage(_businessProfile!.photoUrl!)
                               : null,
                           radius: 22,
-                          child: businessPhotoUrl == null
+                          child: _businessProfile!.photoUrl == null
                               ? const Icon(Icons.store, size: 22)
                               : null,
                         ),
@@ -154,7 +138,7 @@ class _PostPageState extends State<PostPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              businessName,
+                              _businessProfile!.name, // Direct access
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 16),
                             ),
@@ -247,6 +231,7 @@ class _PostPageState extends State<PostPage> {
                 ),
 
               const SizedBox(height: 16),
+
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

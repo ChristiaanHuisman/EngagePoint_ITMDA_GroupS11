@@ -1,7 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/location_model.dart';
 import '../models/post_model.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart';
@@ -39,7 +39,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final FirestoreService _firestoreService = FirestoreService();
   final LoggingService _loggingService = LoggingService();
 
-  // Level setup for Rewards tab
   final List<Level> _levels = [
     Level(level: 1, name: 'Bronze', pointsRequired: 0),
     Level(level: 2, name: 'Silver', pointsRequired: 500),
@@ -56,11 +55,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
         break;
       }
     }
-
     int nextLevelIndex = currentLevel.level;
     Level? nextLevel =
         (nextLevelIndex < _levels.length) ? _levels[nextLevelIndex] : null;
-
     if (nextLevel == null) {
       return {
         'currentLevel': currentLevel,
@@ -69,13 +66,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
         'pointsToNextLevel': 0,
       };
     }
-
     final int pointsInCurrent = points - currentLevel.pointsRequired;
     final int pointsForNext =
         nextLevel.pointsRequired - currentLevel.pointsRequired;
     final double progress =
         pointsForNext == 0 ? 1.0 : pointsInCurrent / pointsForNext;
-
     return {
       'currentLevel': currentLevel,
       'nextLevel': nextLevel,
@@ -89,11 +84,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final bool isOwnProfile = currentUserId == widget.userId;
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .snapshots(),
+    return StreamBuilder<UserModel?>(
+      stream: _firestoreService.getUserProfileStream(widget.userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -103,15 +95,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
           return const Scaffold(
               body: Center(child: Text("Error loading profile.")));
         }
-        if (!snapshot.hasData || !snapshot.data!.exists) {
+
+        final UserModel? user = snapshot.data;
+
+        if (user == null) {
           return const Scaffold(
               body: Center(child: Text("User profile not found.")));
         }
 
-        final UserModel user = UserModel.fromFirestore(snapshot.data!);
-        final bool isBusiness = user.role == 'business';
-
-        if (user.role == 'business' && !isOwnProfile) {
+        if (user.isBusiness && !isOwnProfile) {
           _loggingService.logAnalyticsEvent(
             eventName: 'View_business_profile',
             parameters: {
@@ -122,7 +114,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         }
 
         return DefaultTabController(
-          length: isBusiness ? 2 : 2,
+          length: user.isBusiness ? 2 : 2,
           child: Scaffold(
             appBar: AppBar(
               title: Text(isOwnProfile ? "My Profile" : "Profile"),
@@ -146,22 +138,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 if (isOwnProfile)
                   IconButton(
                     icon: const Icon(Icons.edit_outlined),
-                    onPressed: () async {
-                      final doc =
-                          await _firestoreService.getUserProfile(widget.userId);
-
-                      if (doc.exists && context.mounted) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EditProfilePage(
-                              userData: doc.data() as Map<String, dynamic>,
-                              userId: widget.userId,
-                              user: user,
-                            ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditProfilePage(
+                            user: user,
                           ),
-                        );
-                      }
+                        ),
+                      );
                     },
                   ),
               ],
@@ -176,7 +161,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     pinned: true,
                     delegate: _TabBarHeaderDelegate(
                       TabBar(
-                        tabs: isBusiness
+                        tabs: user.isBusiness
                             ? const [
                                 Tab(
                                     icon: Icon(Icons.post_add_outlined),
@@ -201,7 +186,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   ),
                 ];
               },
-              body: isBusiness
+              body: user.isBusiness
                   ? TabBarView(
                       children: [
                         _PostsTab(
@@ -220,7 +205,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             isCustomerView: true,
                             firestoreService: _firestoreService),
                         _RewardsTab(
-                            userId: widget.userId, getLevelData: _getLevelData),
+                            user: user,
+                            getLevelData: _getLevelData,
+                            firestoreService: _firestoreService),
                       ],
                     ),
             ),
@@ -330,14 +317,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
       );
 
   Widget _buildLocationsButton(BuildContext context, String businessId) {
-    return StreamBuilder<QuerySnapshot>(
+    return StreamBuilder<List<LocationModel>>(
       stream: _firestoreService.getLocations(businessId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const SizedBox.shrink();
         }
 
-        final locations = snapshot.data!.docs;
+        final locations = snapshot.data!;
         return OutlinedButton.icon(
           onPressed: () {
             showModalBottomSheet(
@@ -354,16 +341,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       itemCount: locations.length,
                       itemBuilder: (context, index) {
                         final location = locations[index];
-                        final String name = location['name'];
-                        final String address = location['address'];
                         return ListTile(
                           leading:
                               const Icon(Icons.store_mall_directory_outlined),
-                          title: Text(name),
-                          subtitle: Text(address),
+                          title: Text(location.name),
+                          subtitle: Text(location.address),
                           onTap: () async {
                             final Uri mapsUrl = Uri.parse(
-                                'https://maps.google.com/?q=${Uri.encodeComponent(address)}');
+                                'https://maps.google.com/?q=${Uri.encodeComponent(location.address)}');
                             if (await canLaunchUrl(mapsUrl)) {
                               await launchUrl(mapsUrl);
                             } else {
@@ -457,18 +442,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
 class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
   final TabBar _tabBar;
   _TabBarHeaderDelegate(this._tabBar);
-
   @override
   double get minExtent => _tabBar.preferredSize.height;
   @override
   double get maxExtent => _tabBar.preferredSize.height;
-
   @override
   Widget build(
           BuildContext context, double shrinkOffset, bool overlapsContent) =>
       Container(
           color: Theme.of(context).scaffoldBackgroundColor, child: _tabBar);
-
   @override
   bool shouldRebuild(covariant _TabBarHeaderDelegate oldDelegate) => false;
 }
@@ -477,7 +459,6 @@ class _PostsTab extends StatelessWidget {
   final String userId;
   final FirestoreService firestoreService;
   const _PostsTab({required this.userId, required this.firestoreService});
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<PostModel>>(
@@ -508,12 +489,10 @@ class _ReviewsTab extends StatelessWidget {
       {required this.userId,
       required this.isCustomerView,
       required this.firestoreService});
-
   @override
   Widget build(BuildContext context) {
     final bool canWriteReview =
         FirebaseAuth.instance.currentUser?.uid != userId;
-
     return Column(
       children: [
         if (!isCustomerView)
@@ -557,7 +536,6 @@ class _ReviewsTab extends StatelessWidget {
                       : "No reviews yet."),
                 );
               }
-
               final reviews = snapshot.data!;
               return ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -578,69 +556,59 @@ class _ReviewsTab extends StatelessWidget {
 }
 
 class _RewardsTab extends StatelessWidget {
-  final String userId;
+  final UserModel user;
   final Map<String, dynamic> Function(int) getLevelData;
-  const _RewardsTab({required this.userId, required this.getLevelData});
+  final FirestoreService firestoreService;
+
+  const _RewardsTab(
+      {required this.user,
+      required this.getLevelData,
+      required this.firestoreService});
 
   @override
   Widget build(BuildContext context) {
-    final firestore = FirebaseFirestore.instance;
+    final int points = user.points;
+    final levelData = getLevelData(points);
+    final Level currentLevel = levelData['currentLevel'];
+    final double progress = levelData['progress'];
+    final Level? nextLevel = levelData['nextLevel'];
+    final int pointsToNext = levelData['pointsToNextLevel'];
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream: firestore.collection('users').doc(userId).snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const Center(child: Text("Could not load rewards."));
-        }
-        final userData = snapshot.data!.data() as Map<String, dynamic>;
-        final int points = userData['points'] ?? 0;
-
-        final levelData = getLevelData(points);
-        final Level currentLevel = levelData['currentLevel'];
-        final double progress = levelData['progress'];
-        final Level? nextLevel = levelData['nextLevel'];
-        final int pointsToNext = levelData['pointsToNextLevel'];
-
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Text("Current Rank",
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                Text(
-                  currentLevel.name,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                LinearProgressIndicator(
-                  value: progress,
-                  borderRadius: BorderRadius.circular(10),
-                  minHeight: 12,
-                  backgroundColor: Colors.grey[300],
-                  valueColor: AlwaysStoppedAnimation(
-                      Theme.of(context).colorScheme.primary),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  nextLevel == null
-                      ? "Max Level Achieved!"
-                      : "Level ${currentLevel.level} → ${nextLevel.level} ($pointsToNext pts to next)",
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Text("Current Rank",
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              currentLevel.name,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              value: progress,
+              borderRadius: BorderRadius.circular(10),
+              minHeight: 12,
+              backgroundColor: Colors.grey[300],
+              valueColor:
+                  AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              nextLevel == null
+                  ? "Max Level Achieved!"
+                  : "Level ${currentLevel.level} → ${nextLevel.level} ($pointsToNext pts to next)",
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

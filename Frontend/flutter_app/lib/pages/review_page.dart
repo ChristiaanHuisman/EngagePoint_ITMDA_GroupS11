@@ -1,6 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/review_model.dart';
+import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import 'user_profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,8 +16,9 @@ class ReviewPage extends StatefulWidget {
 
 class _ReviewPageState extends State<ReviewPage> {
   final FirestoreService _firestoreService = FirestoreService();
-  DocumentSnapshot? _customerProfile;
-  DocumentSnapshot? _businessProfile;
+
+  UserModel? _customerProfile;
+  UserModel? _businessProfile;
   bool _isLoading = true;
 
   @override
@@ -27,47 +28,61 @@ class _ReviewPageState extends State<ReviewPage> {
   }
 
   Future<void> _fetchProfiles() async {
-    try {
-      // Getting IDs directly from the model.
-      final String customerId = widget.review.customerId;
-      final String businessId = widget.review.businessId;
+  final String reviewId = widget.review.id;
+  debugPrint("ReviewPage: fetching profiles for reviewId=$reviewId");
 
-      final profiles = await Future.wait([
-        _firestoreService.getUserProfile(customerId),
-        _firestoreService.getUserProfile(businessId),
-      ]);
-      if (mounted) {
-        setState(() {
-          _customerProfile = profiles[0];
-          _businessProfile = profiles[1];
-          _isLoading = false;
-        });
+  try {
+    final String customerId = widget.review.customerId;
+    final String businessId = widget.review.businessId;
+
+    UserModel? customer;
+    UserModel? business;
+
+    if (customerId.isNotEmpty) {
+      try {
+        customer = await _firestoreService.getUserProfile(customerId);
+      } catch (e, st) {
+        debugPrint(
+            "ReviewPage: error fetching customer profile for review=$reviewId customerId=$customerId -> $e\n$st");
       }
-    } catch (e) {
-      debugPrint("Error fetching profiles for review page: $e");
-      if (mounted) setState(() => _isLoading = false);
+    } else {
+      debugPrint("ReviewPage: empty customerId for review=$reviewId");
     }
+
+    if (businessId.isNotEmpty) {
+      try {
+        business = await _firestoreService.getUserProfile(businessId);
+      } catch (e, st) {
+        debugPrint(
+            "ReviewPage: error fetching business profile for review=$reviewId businessId=$businessId -> $e\n$st");
+      }
+    } else {
+      debugPrint("ReviewPage: empty businessId for review=$reviewId");
+    }
+
+    if (mounted) {
+      setState(() {
+        _customerProfile = customer;
+        _businessProfile = business;
+        _isLoading = false;
+      });
+    }
+  } catch (e, st) {
+    debugPrint(
+        "ReviewPage: unexpected error fetching profiles for review=${widget.review.id} -> $e\n$st");
+    if (mounted) setState(() => _isLoading = false);
   }
+}
+
+  
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId =
-        FirebaseAuth.instance.currentUser?.uid; 
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-    String customerName = 'Anonymous';
-    String businessName = 'The Business';
-    String? customerPhotoUrl;
-
-    if (_customerProfile != null && _customerProfile!.exists) {
-      final customerData = _customerProfile!.data() as Map<String, dynamic>;
-      customerName = customerData['name'] ?? 'Anonymous';
-      customerPhotoUrl = customerData['photoUrl'];
-    }
-    if (_businessProfile != null && _businessProfile!.exists) {
-      businessName =
-          (_businessProfile!.data() as Map<String, dynamic>)['name'] ??
-              'The Business';
-    }
+    final String customerName = _customerProfile?.name ?? 'Anonymous';
+    final String businessName = _businessProfile?.name ?? 'The Business';
+    final String? customerPhotoUrl = _customerProfile?.photoUrl;
 
     return Scaffold(
       appBar: AppBar(

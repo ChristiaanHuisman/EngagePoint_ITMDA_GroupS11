@@ -20,15 +20,22 @@ class FullScreenImageViewer extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white), 
       ),
       body: Center(
-        child: Hero(
-          tag: tag, 
-          child: InteractiveViewer( 
-            panEnabled: false,
-            minScale: 1.0,
-            maxScale: 4.0,
-            child: Image.network(imageUrl),
+       child: InteractiveViewer(
+    panEnabled: false,
+    minScale: 1.0,
+    maxScale: 4.0,
+    child: Image.network(
+      imageUrl,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child; 
+        return const Center(
+          child: CircularProgressIndicator(
+            color: Colors.white,
           ),
-        ),
+        );
+      },
+    ),
+  ),
       ),
     );
   }

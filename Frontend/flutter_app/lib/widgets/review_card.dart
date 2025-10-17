@@ -1,7 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../models/review_model.dart';
+import '../models/user_model.dart'; 
 import '../services/firestore_service.dart';
 import '../pages/review_page.dart';
 import '../pages/user_profile_page.dart';
@@ -23,8 +23,9 @@ class ReviewCard extends StatefulWidget {
 
 class _ReviewCardState extends State<ReviewCard> {
   final FirestoreService _firestoreService = FirestoreService();
-  DocumentSnapshot? _customerProfile;
-  DocumentSnapshot? _businessProfile;
+ 
+  UserModel? _customerProfile;
+  UserModel? _businessProfile;
   bool _isLoading = true;
 
   @override
@@ -33,31 +34,61 @@ class _ReviewCardState extends State<ReviewCard> {
     _fetchProfiles();
   }
 
+ 
   Future<void> _fetchProfiles() async {
-    try {
-      final String customerId = widget.review.customerId;
-      final String businessId = widget.review.businessId;
+  final String reviewId = widget.review.id;
+  debugPrint("ReviewCard: fetching profiles for reviewId=$reviewId");
 
-      final futures = <Future<DocumentSnapshot?>>[];
-      futures.add(_firestoreService.getUserProfile(customerId));
-      if (widget.showBusinessName) {
-        futures.add(_firestoreService.getUserProfile(businessId));
+  try {
+    final String customerId = widget.review.customerId;
+    final String businessId = widget.review.businessId;
+
+    // Defensive defaults
+    UserModel? customer;
+    UserModel? business;
+
+    // Fetch customer profile only if we have a non-empty id
+    if (customerId.isNotEmpty) {
+      try {
+        customer = await _firestoreService.getUserProfile(customerId);
+      } catch (e, st) {
+        debugPrint(
+            "ReviewCard: error fetching customer profile for review=$reviewId customerId=$customerId -> $e\n$st");
       }
-
-      final profiles = await Future.wait(futures);
-
-      if (mounted) {
-        setState(() {
-          _customerProfile = profiles.isNotEmpty ? profiles[0] : null;
-          _businessProfile = profiles.length > 1 ? profiles[1] : null;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error fetching profiles for review card: $e");
-      if (mounted) setState(() => _isLoading = false);
+    } else {
+      debugPrint(
+          "ReviewCard: empty customerId for review=$reviewId (possible bad data)");
     }
+
+    // Fetch business profile only if requested AND id is present
+    if (widget.showBusinessName) {
+      if (businessId.isNotEmpty) {
+        try {
+          business = await _firestoreService.getUserProfile(businessId);
+        } catch (e, st) {
+          debugPrint(
+              "ReviewCard: error fetching business profile for review=$reviewId businessId=$businessId -> $e\n$st");
+        }
+      } else {
+        debugPrint(
+            "ReviewCard: empty businessId for review=$reviewId (possible bad data)");
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _customerProfile = customer;
+        _businessProfile = business;
+        _isLoading = false;
+      });
+    }
+  } catch (e, st) {
+    debugPrint(
+        "ReviewCard: unexpected error fetching profiles for review=${widget.review.id} -> $e\n$st");
+    if (mounted) setState(() => _isLoading = false);
   }
+}
+
 
   void _showDeleteConfirmation(BuildContext context, String businessId) {
     showDialog(
@@ -84,6 +115,7 @@ class _ReviewCardState extends State<ReviewCard> {
       },
     );
   }
+
 
   void _showReplyDialog(BuildContext context, String reviewId) {
     final TextEditingController replyController = TextEditingController();
@@ -124,19 +156,11 @@ class _ReviewCardState extends State<ReviewCard> {
 
   @override
   Widget build(BuildContext context) {
-    String customerName = 'Anonymous';
-    String? customerPhotoUrl;
-    if (_customerProfile != null && _customerProfile!.exists) {
-      final customerData = _customerProfile!.data() as Map<String, dynamic>;
-      customerName = customerData['name'] ?? 'Anonymous';
-      customerPhotoUrl = customerData['photoUrl'];
-    }
 
-    String businessName = 'A Business';
-    if (_businessProfile != null && _businessProfile!.exists) {
-      final businessData = _businessProfile!.data() as Map<String, dynamic>;
-      businessName = businessData['name'] ?? 'A Business';
-    }
+    final String customerName = _customerProfile?.name ?? 'Anonymous';
+    final String? customerPhotoUrl = _customerProfile?.photoUrl;
+    final String businessName = _businessProfile?.name ?? 'A Business';
+
 
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final bool isReviewOwner =
@@ -171,6 +195,7 @@ class _ReviewCardState extends State<ReviewCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   GestureDetector(
+
                     onTap: () {
                       final String targetUserId = widget.review.customerId;
                       if (!widget.showBusinessName && targetUserId.isNotEmpty) {
@@ -211,6 +236,7 @@ class _ReviewCardState extends State<ReviewCard> {
                               style: TextStyle(color: Colors.grey.shade500))
                         else if (widget.showBusinessName)
                           GestureDetector(
+
                             onTap: () {
                               final String targetUserId =
                                   widget.review.businessId;
@@ -235,9 +261,9 @@ class _ReviewCardState extends State<ReviewCard> {
                               'Review for: $businessName',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black, 
+                                color: Colors.black,
                                 decoration:
-                                    TextDecoration.none, 
+                                    TextDecoration.none,
                               ),
                             ),
                           )
@@ -293,6 +319,7 @@ class _ReviewCardState extends State<ReviewCard> {
                     ),
                 ],
               ),
+
 
               const Divider(height: 24),
 

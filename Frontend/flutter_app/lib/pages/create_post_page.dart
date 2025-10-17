@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
@@ -17,10 +17,18 @@ class _CreatePostPageState extends State<CreatePostPage> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   bool _isLoading = false;
-  File? _imageFile;
+
+  //  Use Uint8List to store image data in memory, not File.
+  Uint8List? _imageData;
 
   String? _selectedTag;
-  final List<String> _postTags = ['Promotion', 'Sale', 'Event', 'New Stock', 'Update'];
+  final List<String> _postTags = [
+    'Promotion',
+    'Sale',
+    'Event',
+    'New Stock',
+    'Update'
+  ];
 
   @override
   void dispose() {
@@ -28,20 +36,21 @@ class _CreatePostPageState extends State<CreatePostPage> {
     _contentController.dispose();
     super.dispose();
   }
-  
+
   // Method to handle picking an image from the gallery.
   Future<void> _pickImage() async {
-    final file = await _storageService.pickImage();
-    if (file != null) {
+    // Use the new service method that returns bytes.
+    final data = await _storageService.pickImageAsBytes();
+    if (data != null) {
       setState(() {
-        _imageFile = file;
+        _imageData = data;
       });
     }
   }
 
-  //  Helper function to get the aspect ratio from an image file.
-  Future<double> _getImageAspectRatio(File imageFile) async {
-    final image = await decodeImageFromList(imageFile.readAsBytesSync());
+  //  Helper function to get the aspect ratio from image data.
+  Future<double> _getImageAspectRatio(Uint8List imageData) async {
+    final image = await decodeImageFromList(imageData);
     return image.width / image.height;
   }
 
@@ -54,20 +63,22 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     try {
       String? imageUrl;
-      double? imageAspectRatio; 
+      double? imageAspectRatio;
 
-      if (_imageFile != null) {
+      //  Check for _imageData instead of _imageFile.
+      if (_imageData != null) {
         final path = 'post_images/${DateTime.now().millisecondsSinceEpoch}.jpg';
-        imageUrl = await _storageService.uploadFile(path, _imageFile!);
-        // Calculate aspect ratio before submitting
-        imageAspectRatio = await _getImageAspectRatio(_imageFile!);
+        // Use the new upload method.
+        imageUrl = await _storageService.uploadImageData(path, _imageData!);
+        // Calculate aspect ratio from the image data.
+        imageAspectRatio = await _getImageAspectRatio(_imageData!);
       }
-      
+
       await _firestoreService.createPost(
         title: _titleController.text,
         content: _contentController.text,
         imageUrl: imageUrl,
-        imageAspectRatio: imageAspectRatio, 
+        imageAspectRatio: imageAspectRatio,
         tag: _selectedTag,
       );
 
@@ -113,16 +124,19 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 ),
                 child: InkWell(
                   onTap: _pickImage,
-                  child: _imageFile != null
+                  //  Use Image.memory to display the image from bytes.
+                  child: _imageData != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.file(_imageFile!, fit: BoxFit.cover, width: double.infinity),
+                          child: Image.memory(_imageData!,
+                              fit: BoxFit.cover, width: double.infinity),
                         )
                       : const Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.add_a_photo_outlined, size: 40, color: Colors.grey),
+                              Icon(Icons.add_a_photo_outlined,
+                                  size: 40, color: Colors.grey),
                               SizedBox(height: 8),
                               Text('Add an image (optional)'),
                             ],
@@ -131,7 +145,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 ),
               ),
               const SizedBox(height: 24),
-
               DropdownButtonFormField<String>(
                 initialValue: _selectedTag,
                 decoration: const InputDecoration(
@@ -152,14 +165,15 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 },
               ),
               const SizedBox(height: 16),
-
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
                   labelText: 'Post Title',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) => value == null || value.isEmpty ? 'Please enter a title' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter a title'
+                    : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -170,7 +184,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   alignLabelWithHint: true,
                 ),
                 maxLines: 8,
-                validator: (value) => value == null || value.isEmpty ? 'Please enter content' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter content'
+                    : null,
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -182,7 +198,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     ? const SizedBox(
                         height: 24,
                         width: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2.5, color: Colors.white),
                       )
                     : const Text('Publish Post'),
               ),

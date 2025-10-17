@@ -1,15 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/services/logging_service.dart';
-import 'package:intl/intl.dart';
 import '../models/post_model.dart';
+import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../pages/user_profile_page.dart';
 import '../pages/post_page.dart';
 import '../pages/edit_post_page.dart';
 
-// Helper function to map tag strings to specific colors for the Chip.
 Color _getTagColor(String? tag) {
   switch (tag) {
     case 'Promotion':
@@ -21,7 +19,7 @@ Color _getTagColor(String? tag) {
     case 'New Stock':
       return Colors.purple.shade300;
     case 'Update':
-      return Colors.grey.shade500;
+      return Colors.red.shade500;
     default:
       return Colors.transparent;
   }
@@ -64,9 +62,6 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String formattedDate =
-        DateFormat('MMM dd, yyyy').format(post.createdAt.toDate());
-
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
@@ -208,7 +203,7 @@ class PostCard extends StatelessWidget {
                     ],
                   ),
                   Text(
-                    formattedDate,
+                    post.formattedDate,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey[500],
                         ),
@@ -242,7 +237,7 @@ class PostHeader extends StatelessWidget {
     final bool isOwner =
         currentUserId != null && currentUserId == post.businessId;
 
-    return FutureBuilder<DocumentSnapshot>(
+    return FutureBuilder<UserModel?>(
       future: _firestoreService.getUserProfile(post.businessId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -255,25 +250,19 @@ class PostHeader extends StatelessWidget {
           );
         }
 
-        if (!snapshot.hasData || !snapshot.data!.exists) {
+        final business = snapshot.data;
+        if (business == null) {
           return const Text('Unknown Business');
         }
-
-        var businessData = snapshot.data!.data() as Map<String, dynamic>;
-        final String businessName = businessData['name'] ?? 'Unnamed Business';
-        final String? businessPhotoUrl = businessData['photoUrl'];
 
         return GestureDetector(
           onTap: () {
             final String targetUserId = post.businessId;
-
             if (targetUserId.isNotEmpty && targetUserId == currentUserId) {
-              // It's our own profile, go back to the root screen.
               if (Navigator.canPop(context)) {
                 Navigator.of(context).popUntil((route) => route.isFirst);
               }
             } else if (targetUserId.isNotEmpty) {
-              // It's someone else's profile, push the new page.
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -285,18 +274,18 @@ class PostHeader extends StatelessWidget {
           child: Row(
             children: [
               CircleAvatar(
-                backgroundImage: businessPhotoUrl != null
-                    ? NetworkImage(businessPhotoUrl)
+                backgroundImage: business.photoUrl != null
+                    ? NetworkImage(business.photoUrl!)
                     : null,
                 radius: 20,
-                child: businessPhotoUrl == null
+                child: business.photoUrl == null
                     ? const Icon(Icons.store, size: 20)
                     : null,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  businessName,
+                  business.name, // Direct access
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,

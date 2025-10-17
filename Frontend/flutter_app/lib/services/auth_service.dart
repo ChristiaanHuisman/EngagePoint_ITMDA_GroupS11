@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'notification_service.dart'; 
+import 'notification_service.dart';
 import '../services/logging_service.dart';
 
 class AuthService {
@@ -12,7 +12,8 @@ class AuthService {
   final NotificationService _notificationService = NotificationService();
   final LoggingService _loggingService = LoggingService();
 
-  Future<void> _createUserDocument(User user, {String? name, bool isBusiness = false}) async {
+  Future<void> _createUserDocument(User user,
+      {String? name, bool isBusiness = false}) async {
     final userRef = _firestore.collection('users').doc(user.uid);
     final docSnapshot = await userRef.get();
 
@@ -23,7 +24,8 @@ class AuthService {
 
       await userRef.set({
         'name': displayName,
-        'searchName': displayName.toLowerCase(), // A lowercase version of the name is saved for case-insensitive searching.
+        'searchName': displayName
+            .toLowerCase(), // A lowercase version of the name is saved for case-insensitive searching.
         'email': user.email,
         'role': role,
         'status': status,
@@ -45,13 +47,14 @@ class AuthService {
       if (result.user != null) {
         await _notificationService.initAndSaveToken();
       }
-      _loggingService.logAnalyticsEvent(  //analytics logging
-      eventName: 'user_login',
-      parameters: {
-        'method': 'email',
-        'user_id': result.user?.uid ?? 'unknown',
-      },
-    );
+      _loggingService.logAnalyticsEvent(
+        //analytics logging
+        eventName: 'user_login',
+        parameters: {
+          'method': 'email',
+          'user_id': result.user?.uid ?? 'unknown',
+        },
+      );
       return result.user;
     } catch (e) {
       debugPrint("Email login error: $e");
@@ -74,25 +77,26 @@ class AuthService {
       final user = result.user;
       if (user != null) {
         await _createUserDocument(user, isBusiness: false);
-        // ADDITION: Save the FCM token on successful login.
+        // Save the FCM token on successful login.
         await _notificationService.initAndSaveToken();
       }
-      _loggingService.logAnalyticsEvent(  //analytics logging
-      eventName: 'user_login',
-      parameters: {
-        'method': 'google',
-        'user_id': result.user?.uid ?? 'unknown',
-      },
-    );
+      _loggingService.logAnalyticsEvent(
+        //analytics logging
+        eventName: 'user_login',
+        parameters: {
+          'method': 'google',
+          'user_id': result.user?.uid ?? 'unknown',
+        },
+      );
       return result.user;
-
     } catch (e) {
       debugPrint("Google login error: $e");
       return null;
     }
   }
 
-  Future<User?> signUpWithEmail(String email, String password, String name, {required bool isBusiness}) async {
+  Future<User?> signUpWithEmail(String email, String password, String name,
+      {required bool isBusiness}) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
