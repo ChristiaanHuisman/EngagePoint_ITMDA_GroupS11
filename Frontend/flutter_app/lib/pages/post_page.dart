@@ -2,11 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import '../models/post_model.dart'; 
+import '../models/post_model.dart';
 import '../services/firestore_service.dart';
 import 'full_screen_image_viewer.dart';
 import 'user_profile_page.dart';
 import '../services/logging_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // Helper function to map tag strings to specific colors for the Chip.
 Color _getTagColor(String? tag) {
@@ -82,7 +83,10 @@ class _PostPageState extends State<PostPage> {
 
   @override
   Widget build(BuildContext context) {
-    final String formattedDate = DateFormat('MMM dd, yyyy').format(widget.post.createdAt.toDate());
+    final String formattedDate =
+        DateFormat('MMM dd, yyyy').format(widget.post.createdAt.toDate());
+    final currentUserId =
+        FirebaseAuth.instance.currentUser?.uid; 
 
     String businessName = '...';
     String? businessPhotoUrl;
@@ -116,12 +120,20 @@ class _PostPageState extends State<PostPage> {
                 GestureDetector(
                   onTap: () {
                     if (businessId.isNotEmpty) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserProfilePage(userId: businessId),
-                        ),
-                      );
+                      if (businessId == currentUserId) {
+                        if (Navigator.canPop(context)) {
+                          Navigator.of(context)
+                              .popUntil((route) => route.isFirst);
+                        }
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                UserProfilePage(userId: businessId),
+                          ),
+                        );
+                      }
                     }
                   },
                   child: Container(
@@ -129,9 +141,13 @@ class _PostPageState extends State<PostPage> {
                     child: Row(
                       children: [
                         CircleAvatar(
-                          backgroundImage: businessPhotoUrl != null ? NetworkImage(businessPhotoUrl) : null,
+                          backgroundImage: businessPhotoUrl != null
+                              ? NetworkImage(businessPhotoUrl)
+                              : null,
                           radius: 22,
-                          child: businessPhotoUrl == null ? const Icon(Icons.store, size: 22) : null,
+                          child: businessPhotoUrl == null
+                              ? const Icon(Icons.store, size: 22)
+                              : null,
                         ),
                         const SizedBox(width: 12),
                         Column(
@@ -139,21 +155,30 @@ class _PostPageState extends State<PostPage> {
                           children: [
                             Text(
                               businessName,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             Text(
                               'Posted on $formattedDate',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: Colors.grey[600]),
                             ),
                           ],
                         ),
                         const Spacer(),
-                        if (widget.post.tag != null && widget.post.tag!.isNotEmpty)
+                        if (widget.post.tag != null &&
+                            widget.post.tag!.isNotEmpty)
                           Chip(
                             label: Text(widget.post.tag!),
                             backgroundColor: _getTagColor(widget.post.tag),
-                            labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                            padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 2.0),
+                            labelStyle: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10.0, vertical: 2.0),
                             shape: const StadiumBorder(),
                           ),
                       ],
@@ -165,12 +190,15 @@ class _PostPageState extends State<PostPage> {
 
               // Title
               Text(
-                widget.post.title, 
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                widget.post.title,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
 
               // Image
-              if (widget.post.imageUrl != null) 
+              if (widget.post.imageUrl != null)
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 16.0),
@@ -184,7 +212,7 @@ class _PostPageState extends State<PostPage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => FullScreenImageViewer(
-                                  imageUrl: widget.post.imageUrl!, 
+                                  imageUrl: widget.post.imageUrl!,
                                   tag: widget.post.id,
                                 ),
                               ),
@@ -193,16 +221,21 @@ class _PostPageState extends State<PostPage> {
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxHeight: 300),
                             child: AspectRatio(
-                              aspectRatio: widget.post.imageAspectRatio ?? 16 / 9, 
+                              aspectRatio:
+                                  widget.post.imageAspectRatio ?? 16 / 9,
                               child: Image.network(
                                 widget.post.imageUrl!,
                                 fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
                                   if (loadingProgress == null) return child;
-                                  return const Center(child: CircularProgressIndicator());
+                                  return const Center(
+                                      child: CircularProgressIndicator());
                                 },
                                 errorBuilder: (context, error, stackTrace) {
-                                  return const Center(child: Icon(Icons.error_outline, color: Colors.red, size: 50));
+                                  return const Center(
+                                      child: Icon(Icons.error_outline,
+                                          color: Colors.red, size: 50));
                                 },
                               ),
                             ),
@@ -218,10 +251,13 @@ class _PostPageState extends State<PostPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isLongText && !_isExpanded 
-                        ? '${widget.post.content.substring(0, _characterLimit)}...' 
+                    isLongText && !_isExpanded
+                        ? '${widget.post.content.substring(0, _characterLimit)}...'
                         : widget.post.content,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6, fontSize: 16),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyLarge
+                        ?.copyWith(height: 1.6, fontSize: 16),
                   ),
                   if (isLongText)
                     GestureDetector(
@@ -260,9 +296,12 @@ class _PostPageState extends State<PostPage> {
                             color: hasReacted ? Colors.red : Colors.grey,
                           ),
                           onPressed: () {
-                            _firestoreService.togglePostReaction(widget.post.id);
+                            _firestoreService
+                                .togglePostReaction(widget.post.id);
                             _loggingService.logAnalyticsEvent(
-                              eventName: hasReacted ? 'post_reaction_removed' : 'post_reaction_added',
+                              eventName: hasReacted
+                                  ? 'post_reaction_removed'
+                                  : 'post_reaction_added',
                               parameters: {
                                 'post_id': widget.post.id,
                                 'business_id': widget.post.businessId,
@@ -273,12 +312,15 @@ class _PostPageState extends State<PostPage> {
                       },
                     ),
                     StreamBuilder<int>(
-                      stream: _firestoreService.getPostReactionCount(widget.post.id),
+                      stream: _firestoreService
+                          .getPostReactionCount(widget.post.id),
                       builder: (context, snapshot) {
                         final count = snapshot.data ?? 0;
                         return Text(
                           '$count likes',
-                          style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.bold),
                         );
                       },
                     ),

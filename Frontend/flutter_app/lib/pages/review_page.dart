@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../models/review_model.dart'; 
+import '../models/review_model.dart';
 import '../services/firestore_service.dart';
 import 'user_profile_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ReviewPage extends StatefulWidget {
   final ReviewModel review;
@@ -50,6 +51,8 @@ class _ReviewPageState extends State<ReviewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId =
+        FirebaseAuth.instance.currentUser?.uid; 
 
     String customerName = 'Anonymous';
     String businessName = 'The Business';
@@ -61,7 +64,9 @@ class _ReviewPageState extends State<ReviewPage> {
       customerPhotoUrl = customerData['photoUrl'];
     }
     if (_businessProfile != null && _businessProfile!.exists) {
-      businessName = (_businessProfile!.data() as Map<String, dynamic>)['name'] ?? 'The Business';
+      businessName =
+          (_businessProfile!.data() as Map<String, dynamic>)['name'] ??
+              'The Business';
     }
 
     return Scaffold(
@@ -80,25 +85,42 @@ class _ReviewPageState extends State<ReviewPage> {
             else
               GestureDetector(
                 onTap: () {
-                  if (widget.review.customerId.isNotEmpty) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => UserProfilePage(userId: widget.review.customerId)),
-                    );
+                  final String targetUserId = widget.review.customerId;
+                  if (targetUserId.isNotEmpty) {
+                    if (targetUserId == currentUserId) {
+                      if (Navigator.canPop(context)) {
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
+                      }
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              UserProfilePage(userId: targetUserId),
+                        ),
+                      );
+                    }
                   }
                 },
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 24,
-                      backgroundImage: customerPhotoUrl != null ? NetworkImage(customerPhotoUrl) : null,
-                      child: customerPhotoUrl == null ? const Icon(Icons.person) : null,
+                      backgroundImage: customerPhotoUrl != null
+                          ? NetworkImage(customerPhotoUrl)
+                          : null,
+                      child: customerPhotoUrl == null
+                          ? const Icon(Icons.person)
+                          : null,
                     ),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(customerName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        Text(customerName,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 18)),
                         Text('Reviewed $businessName'),
                       ],
                     ),
@@ -117,14 +139,18 @@ class _ReviewPageState extends State<ReviewPage> {
             ),
             const Divider(height: 32),
             Text(
-              widget.review.comment, 
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.6, fontSize: 16),
+              widget.review.comment,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(height: 1.6, fontSize: 16),
             ),
             const SizedBox(height: 24),
             Row(
               children: [
                 StreamBuilder<bool>(
-                  stream: _firestoreService.hasUserReactedToReview(widget.review.id),
+                  stream: _firestoreService
+                      .hasUserReactedToReview(widget.review.id),
                   builder: (context, snapshot) {
                     final hasReacted = snapshot.data ?? false;
                     return IconButton(
@@ -133,24 +159,28 @@ class _ReviewPageState extends State<ReviewPage> {
                         color: hasReacted ? Colors.red : Colors.grey,
                       ),
                       onPressed: () {
-                        _firestoreService.toggleReviewReaction(widget.review.id);
+                        _firestoreService
+                            .toggleReviewReaction(widget.review.id);
                       },
                     );
                   },
                 ),
                 StreamBuilder<int>(
-                  stream: _firestoreService.getReviewReactionCount(widget.review.id),
+                  stream: _firestoreService
+                      .getReviewReactionCount(widget.review.id),
                   builder: (context, snapshot) {
                     final count = snapshot.data ?? 0;
                     return Text(
                       '$count likes',
-                      style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.grey[600], fontWeight: FontWeight.bold),
                     );
                   },
                 ),
               ],
             ),
-            if (widget.review.response != null && widget.review.response!.isNotEmpty) ...[ 
+            if (widget.review.response != null &&
+                widget.review.response!.isNotEmpty) ...[
               const SizedBox(height: 24),
               Container(
                 width: double.infinity,
@@ -168,7 +198,7 @@ class _ReviewPageState extends State<ReviewPage> {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    Text(widget.review.response!), 
+                    Text(widget.review.response!),
                   ],
                 ),
               ),
