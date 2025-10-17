@@ -1,9 +1,7 @@
-
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/rewards_model.dart';
+import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/reward_wheel.dart';
 
@@ -13,14 +11,16 @@ class Level {
   final String name;
   final int pointsRequired;
 
-  Level({required this.level, required this.name, required this.pointsRequired});
+  Level(
+      {required this.level, required this.name, required this.pointsRequired});
 }
 
 class RewardsAndProgressionPage extends StatefulWidget {
   const RewardsAndProgressionPage({super.key});
 
   @override
-  State<RewardsAndProgressionPage> createState() => _RewardsAndProgressionPageState();
+  State<RewardsAndProgressionPage> createState() =>
+      _RewardsAndProgressionPageState();
 }
 
 class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
@@ -37,7 +37,6 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
 
   // This function handles all levels, including the max level
   Map<String, dynamic> _getLevelData(int points) {
-    // get the user's current level by iterating backwards through the levels list
     Level currentLevel = _levels.first;
     for (var level in _levels.reversed) {
       if (points >= level.pointsRequired) {
@@ -46,11 +45,10 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
       }
     }
 
-    
-    int nextLevelIndex = currentLevel.level; 
-    Level? nextLevel = (nextLevelIndex < _levels.length) ? _levels[nextLevelIndex] : null;
+    int nextLevelIndex = currentLevel.level;
+    Level? nextLevel =
+        (nextLevelIndex < _levels.length) ? _levels[nextLevelIndex] : null;
 
-    // if user is max level
     if (nextLevel == null) {
       return {
         'currentLevel': currentLevel,
@@ -60,15 +58,17 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
       };
     }
 
-    //  progress towards the next level.
     final int pointsInCurrentLevel = points - currentLevel.pointsRequired;
-    final int pointsForNextLevel = nextLevel.pointsRequired - currentLevel.pointsRequired;
-    final double progress = (pointsForNextLevel == 0) ? 1.0 : (pointsInCurrentLevel / pointsForNextLevel);
+    final int pointsForNextLevel =
+        nextLevel.pointsRequired - currentLevel.pointsRequired;
+    final double progress = (pointsForNextLevel == 0)
+        ? 1.0
+        : (pointsInCurrentLevel / pointsForNextLevel);
 
     return {
       'currentLevel': currentLevel,
       'nextLevel': nextLevel,
-      'progress': progress.clamp(0.0, 1.0), // Ensure progress stays between 0 and 1
+      'progress': progress.clamp(0.0, 1.0),
       'pointsToNextLevel': nextLevel.pointsRequired - points,
     };
   }
@@ -83,23 +83,26 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
         ),
-        body: StreamBuilder<DocumentSnapshot>(
+        body: StreamBuilder<UserModel?>(
           stream: _firestoreService.getUserStream(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            if (!snapshot.hasData || !snapshot.data!.exists) {
+
+            final user = snapshot.data;
+            if (user == null) {
               return const Center(child: Text("Could not load user data."));
             }
 
-            final userData = snapshot.data!.data() as Map<String, dynamic>;
-            final int currentPoints = userData['points'] ?? 0;
+            // Access data directly from the model
+            final int currentPoints = user.points;
+            final int spinsAvailable = user.spinsAvailable;
+
             final levelData = _getLevelData(currentPoints);
             final Level currentLevel = levelData['currentLevel'];
             final int pointsToNextLevel = levelData['pointsToNextLevel'];
             final double progress = levelData['progress'];
-            final int spinsAvailable = userData['spinsAvailable'] ?? 1;
 
             return Center(
               child: SingleChildScrollView(
@@ -116,7 +119,10 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
                     const SizedBox(height: 30),
                     Text(
                       "You have $spinsAvailable spin(s) available. Good luck!",
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyLarge
+                          ?.copyWith(color: Colors.grey),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
@@ -161,11 +167,17 @@ class LevelProgressBar extends StatelessWidget {
               children: [
                 Text(
                   levelName,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
                   'Level $levelNumber',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -175,14 +187,20 @@ class LevelProgressBar extends StatelessWidget {
               minHeight: 10,
               borderRadius: BorderRadius.circular(5),
               backgroundColor: Colors.grey[300],
-              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).colorScheme.primary),
             ),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,
               child: Text(
-                pointsToNextLevel > 0 ? '$pointsToNextLevel points to next level' : 'Max Level Reached!',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                pointsToNextLevel > 0
+                    ? '$pointsToNextLevel points to next level'
+                    : 'Max Level Reached!',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.grey[600]),
               ),
             ),
           ],
@@ -191,4 +209,3 @@ class LevelProgressBar extends StatelessWidget {
     );
   }
 }
-

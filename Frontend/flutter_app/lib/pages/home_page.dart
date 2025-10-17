@@ -1,14 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../models/post_model.dart'; 
+import 'package:flutter_app/widgets/app_drawer.dart';
+import '../models/post_model.dart';
+import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
 import 'login_page.dart';
 import 'discover_page.dart';
 import 'create_post_page.dart';
 import 'user_profile_page.dart';
-import '../widgets/app_drawer.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -23,11 +23,9 @@ class HomePage extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
         if (authSnapshot.hasData) {
           return const MainAppNavigator();
         }
-
         return const LoginPage();
       },
     );
@@ -38,14 +36,11 @@ class MainAppNavigator extends StatefulWidget {
   const MainAppNavigator({super.key});
 
   @override
-  // Return the new public state class name.
   State<MainAppNavigator> createState() => MainAppNavigatorState();
 }
 
-// The state class is now public (no leading underscore).
 class MainAppNavigatorState extends State<MainAppNavigator> {
   int _selectedIndex = 0;
-
   late final List<Widget> _pages;
   final User? _user = FirebaseAuth.instance.currentUser;
 
@@ -55,7 +50,10 @@ class MainAppNavigatorState extends State<MainAppNavigator> {
     _pages = <Widget>[
       FollowingFeed(user: _user),
       const DiscoverPage(),
-      if (_user != null) UserProfilePage(userId: _user.uid) else const Center(child: Text("Not Logged In")),
+      if (_user != null)
+        UserProfilePage(userId: _user.uid)
+      else
+        const Center(child: Text("Not Logged In")),
     ];
   }
 
@@ -68,24 +66,18 @@ class MainAppNavigatorState extends State<MainAppNavigator> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
+      body: SafeArea(
+        top: false,
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: _pages,
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.explore),
-            label: 'Discover',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.explore), label: 'Discover'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Theme.of(context).colorScheme.primary,
@@ -105,7 +97,26 @@ class FollowingFeed extends StatefulWidget {
 
 class _FollowingFeedState extends State<FollowingFeed> {
   final FirestoreService _firestoreService = FirestoreService();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      if (_searchQuery != _searchController.text) {
+        setState(() {
+          _searchQuery = _searchController.text;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,17 +124,18 @@ class _FollowingFeedState extends State<FollowingFeed> {
       return const Center(child: Text("Not logged in."));
     }
 
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(widget.user!.uid).snapshots(),
+    return StreamBuilder<UserModel?>(
+      stream: _firestoreService.getUserStream(),
       builder: (context, userSnapshot) {
-        String role = 'customer';
-        Map<String, dynamic> userData = {};
-
-        if (userSnapshot.hasData && userSnapshot.data!.exists) {
-          userData = userSnapshot.data!.data() as Map<String, dynamic>;
-          role = userData['role'] ?? 'customer';
+        final userModel = userSnapshot.data;
+        if (userSnapshot.connectionState == ConnectionState.waiting ||
+            userModel == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Home')),
+            drawer: const Drawer(),
+            body: const Center(child: CircularProgressIndicator()),
+          );
         }
-
 
         return Scaffold(
           appBar: AppBar(
@@ -132,14 +144,13 @@ class _FollowingFeedState extends State<FollowingFeed> {
             title: const Text('Home'),
           ),
           drawer: const AppDrawer(),
-
-          floatingActionButton: role == 'business'
+          floatingActionButton: userModel.isBusiness
               ? FloatingActionButton(
                   onPressed: () {
                     Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CreatePostPage()),
-                    );
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const CreatePostPage()));
                   },
                   child: const Icon(Icons.add),
                 )
@@ -157,10 +168,9 @@ class _FollowingFeedState extends State<FollowingFeed> {
         if (followedSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (followedSnapshot.hasError) {
-          return const Center(child: Text("Error fetching followed businesses."));
-        }
-        if (!followedSnapshot.hasData || followedSnapshot.data!.isEmpty) {
+        if (followedSnapshot.hasError ||
+            !followedSnapshot.hasData ||
+            followedSnapshot.data!.isEmpty) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16.0),
@@ -173,18 +183,13 @@ class _FollowingFeedState extends State<FollowingFeed> {
           );
         }
         final followedBusinessIds = followedSnapshot.data!;
-        // The StreamBuilder now expects a List of PostModels.
+
         return StreamBuilder<List<PostModel>>(
           stream: _firestoreService.getFollowedPosts(followedBusinessIds),
           builder: (context, postSnapshot) {
             if (postSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            if (postSnapshot.hasError) {
-              debugPrint("Error fetching followed posts: ${postSnapshot.error}");
-              return const Center(child: Text("Something went wrong loading posts."));
-            }
-            // The check uses .isEmpty on the list directly.
             if (!postSnapshot.hasData || postSnapshot.data!.isEmpty) {
               return const Center(
                 child: Padding(
@@ -197,7 +202,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
                 ),
               );
             }
-            // The data is  list of PostModels.
+
             final posts = postSnapshot.data!;
             return ListView.builder(
               itemCount: posts.length,
