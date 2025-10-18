@@ -46,4 +46,3 @@ class ReviewModel:
             doc_ref.delete()
             return "Deleted"
         return None
-    
