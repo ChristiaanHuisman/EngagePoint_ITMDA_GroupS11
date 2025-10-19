@@ -41,4 +41,6 @@ class PostModel {
   
   // Helper getter for formatted date
   String get formattedDate => DateFormat('MMM dd, yyyy').format(createdAt.toDate());
+
+  data() {}
 }
