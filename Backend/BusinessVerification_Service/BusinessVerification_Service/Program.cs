@@ -15,12 +15,14 @@ namespace BusinessVerification_Service
             var builder = WebApplication.CreateBuilder(args);
 
             // Register IDomainParser as a Singleton asynchronously
+            //Only done once per application lifetime as it is for prototyping purposes
             var ruleProvider = new SimpleHttpRuleProvider();
             await ruleProvider.BuildAsync();
             var domainParser = new DomainParser(ruleProvider);
             builder.Services.AddSingleton<IDomainParser>(domainParser);
 
             // Register FirestoreDb as a Singleton
+            //Only done once per application lifetime as it is for prototyping purposes
             var credentialPath = builder.Configuration["Firestore:CredentialsPath"];
             var projectId = builder.Configuration["Firestore:ProjectId"];
             var googleCredential = GoogleCredential.FromFile(credentialPath);
@@ -51,7 +53,6 @@ namespace BusinessVerification_Service
             }
 
             app.UseAuthorization();
-
 
             app.MapControllers();
 

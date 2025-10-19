@@ -47,7 +47,7 @@ namespace BusinessVerification_Service.Services
             DomainVerificationFirebaseResponseDto firebaseResponse = new DomainVerificationFirebaseResponseDto();
 
             // Extract variables from request DTO, 
-            // just for easier usage in the method
+            // just for easier use
             string userId = verificationRequestDto.UserId;
             string email = verificationRequestDto.BusinessEmail;
             string website = verificationRequestDto.BusinessWebsite;
@@ -169,7 +169,7 @@ namespace BusinessVerification_Service.Services
 
                         // For a score of >= 65 and <= 89 an admin needs to verify the business name
                         case >= 65:
-                            firebaseResponse.RequiresAdmin = true;
+                            firebaseResponse.RequiresAdminVerification = true;
                             returnResponse.VerificationStatus = Status.Pending;
                             returnResponse.Message = "Business name does not match email and " + 
                                 "website domain names entered clearly enough. Admin review required.";
@@ -208,14 +208,13 @@ namespace BusinessVerification_Service.Services
             }
 
             // To be edited in future versions that uses email link verification
-            // Using the Firebase response DTO to log verification request to Firebase
+            // Using the Firebase response DTO to push verification request to Firebase
             firebaseResponse.ErrorOccurred = false;
-            if (!firebaseResponse.RequiresAdmin)
+            if (!firebaseResponse.RequiresAdminVerification)
             {
                 firebaseResponse.OfficiallyVerified = true;
                 firebaseResponse.VerifiedAt = DateTime.UtcNow;
             }
-
             // Add method call to pass Firebase DTO to Firebase
 
             _logger.LogInformation(

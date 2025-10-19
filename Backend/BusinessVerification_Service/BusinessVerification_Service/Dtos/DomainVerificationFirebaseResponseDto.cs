@@ -9,7 +9,7 @@
         // Initialize to false so that admins do not see verification requests, 
         // where users entered wrong information or unexpected errors occurred, 
         // by default
-        public bool RequiresAdmin { get; set; } = false;
+        public bool RequiresAdminVerification { get; set; } = false;
 
         // To be added in future versions that uses email link verification
         // If the user verified through email link
@@ -26,8 +26,9 @@
 
         // Time business requested verification
         // UTC used as Firebase stores timestamps in UTC
-        public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
+        public DateTime VerificationRequestedAt { get; set; } = DateTime.UtcNow;
 
+        // To be removed in future versions that uses email link verification
         // Time business verification was approved
         public DateTime? VerifiedAt { get; set; }
     }
