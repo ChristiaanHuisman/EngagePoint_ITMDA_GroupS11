@@ -10,6 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  googleapis_auth: ^1.4.1
+  jose: ^0.3.5
+  
+
 
   cupertino_icons: ^1.0.8
   provider: ^6.0.5
@@ -40,6 +44,7 @@ flutter:
   # THE FIX IS HERE: Correct indentation and folder declaration
   assets:
     - assets/
+    - assets/service_account.json
 
 
 flutter_launcher_icons:

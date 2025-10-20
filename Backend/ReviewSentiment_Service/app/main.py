@@ -4,6 +4,7 @@ import datetime
 import nltk, random
 from nltk.sentiment import SentimentIntensityAnalyzer
 from model import ReviewModel
+import os
 
 nltk.download('vader_lexicon')
 
@@ -61,7 +62,7 @@ app = Flask(__name__)
 
 @app.route('/reviews', methods=["POST"])
 def add_or_update_review():
-    data = request.json
+    data = request.json # Gets request from flutter app containing customerId, businessId, rating, and comment
     if not data:
         return jsonify({"message": "Invalid request"}), 400
 
@@ -70,10 +71,10 @@ def add_or_update_review():
     rating = data.get("rating")
     comment = data.get("comment", "")
 
-    if not business_id or not customer_id or rating is None:
+    if not business_id or not customer_id or rating is None: # Checking if business_id, customer_id, and rating have values
         return jsonify({"message": "Missing required fields"}), 400
 
-    if comment.strip():
+    if comment.strip(): # Checks if there is a comment before performing any operations
         sentiment_value = get_review_sentiment(comment)
         censored_review_text = censor_text(comment)
     else:
@@ -94,20 +95,20 @@ def add_or_update_review():
     }
 
     updated = ReviewModel.update(review)
-    if updated:
+    if updated: # This will only be True if the record already existed in the firebase database
         return jsonify({"message": "Review updated successfully"}), 200
 
     ReviewModel.create(review)
     return jsonify({"message": "Review created successfully"}), 201
 
 @app.route('/reviews/<businessId>', methods=["GET"])
-def read_all_reviews(businessId):
+def read_all_reviews(businessId): # Reads all reviews related to businessId from the firebase database
     reviews = ReviewModel.read_all(businessId)
     return jsonify(reviews), 200
 
 @app.route('/reviews', methods=["DELETE"])
 def delete_review():
-    data = request.json
+    data = request.json # Gets request from flutter app containing customerId and businessId
     if data.get("businessId") and data.get("customerId"):
         deleted = ReviewModel.delete(data["businessId"], data["customerId"])
         if deleted:
@@ -118,11 +119,11 @@ def delete_review():
 
 @app.route('/reviews/analytics/<businessId>', methods = ["GET"])
 def getReviewSentimentStats(businessId):
-    reviews = ReviewModel.read_all(businessId)
+    reviews = ReviewModel.read_all(businessId) # Reads all reviews related to businessId from the firebase database
     positive = 0
     negative = 0
     neutral = 0
-    for i in reviews:
+    for i in reviews: 
         sentiment = i.get("sentiment")
         if sentiment == "positive":
             positive += 1
@@ -134,4 +135,22 @@ def getReviewSentimentStats(businessId):
             
     
 if __name__ == "__main__":
-    app.run(host="192.168.8.131")
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0",port = port)
+    
+    
+import requests
+
+url = "https://review-sentiment-service-570976278139.africa-south1.run.app/reviews"
+
+data = {
+    "businessId": "b1",
+    "customerId": "c1",
+    "rating": 5,
+    "comment": "Great service!"
+}
+
+response = requests.post(url, json=data)
+
+print(response.status_code)
+print(response.json())

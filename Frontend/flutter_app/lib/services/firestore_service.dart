@@ -5,6 +5,55 @@ import 'package:flutter_app/models/review_model.dart';
 import 'package:flutter_app/models/post_model.dart';
 import 'package:flutter_app/services/logging_service.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:jose/jose.dart';
+
+// Top-level function to get the token
+Future<String> getCloudRunIdToken(String cloudRunUrl) async {
+  // 1️⃣ Load the service account JSON
+  final jsonString = await rootBundle.loadString('assets/service_account.json');
+  final account = jsonDecode(jsonString);
+
+  final clientEmail = account['client_email'];
+  final privateKey = account['private_key'];
+
+  // 2️⃣ Create JWT header and claims
+  final claimSet = JsonWebTokenClaims.fromJson({
+    'iss': clientEmail,
+    'sub': clientEmail,
+    'aud': 'https://oauth2.googleapis.com/token',
+    'target_audience': cloudRunUrl,
+    'iat': (DateTime.now().millisecondsSinceEpoch ~/ 1000),
+    'exp': (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600,
+  });
+
+  final builder = JsonWebSignatureBuilder()
+    ..jsonContent = claimSet.toJson()
+    ..addRecipient(
+      JsonWebKey.fromPem(privateKey, keyId: account['private_key_id']),
+      algorithm: 'RS256',
+    );
+
+  final jws = builder.build();
+  final jwt = jws.toCompactSerialization();
+
+  // 3️⃣ Exchange JWT for an ID token
+  final response = await http.post(
+    Uri.parse('https://oauth2.googleapis.com/token'),
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    body: {
+      'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      'assertion': jwt,
+    },
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Failed to get ID token: ${response.body}');
+  }
+
+  final data = jsonDecode(response.body);
+  return data['id_token'];
+}
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -170,7 +219,7 @@ class FirestoreService {
         .snapshots();
   }
 
-  // REVIEW METHODS USING PYTHON API 
+  // REVIEW METHODS USING PYTHON MiCROSERVICE  
 
   // Adds a new review or updates an existing one for a business using Python API.
   Future<void> addOrUpdateReview({
@@ -183,10 +232,10 @@ class FirestoreService {
       throw Exception("You must be logged in to leave a review.");
     }
 
-    final url = Uri.parse('http://192.168.8.131:5000/reviews');
+    final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
     final response = await http.post(
       url,
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'},
       body: jsonEncode({
         'businessId': businessId,
         'customerId': currentUser.uid,
@@ -202,8 +251,8 @@ class FirestoreService {
 
   // Gets all reviews for a business using Python API (for non-stream use).
   Future<List<Map<String, dynamic>>> getReviewsForBusinessApi(String businessId) async {
-    final url = Uri.parse('http://192.168.8.131:5000/reviews/$businessId');
-    final response = await http.get(url);
+    final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews/$businessId');
+    final response = await http.get(url,headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'},);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
@@ -218,10 +267,10 @@ class FirestoreService {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    final url = Uri.parse('http://192.168.8.131:5000/reviews');
+    final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
     final response = await http.delete(
       url,
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'},
       body: jsonEncode({
         'businessId': businessId,
         'customerId': currentUser.uid,
@@ -468,8 +517,8 @@ class FirestoreService {
   }
 
 Future<Map<String, int>> getReviewSentimentStats(String businessId) async {
-  final url = Uri.parse('http://192.168.8.131:5000/reviews/analytics/$businessId');
-  final response = await http.get(url);
+  final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews/analytics/$businessId');
+  final response = await http.get(url,headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'},);
 
   if (response.statusCode == 200) {
     final data = jsonDecode(response.body);
