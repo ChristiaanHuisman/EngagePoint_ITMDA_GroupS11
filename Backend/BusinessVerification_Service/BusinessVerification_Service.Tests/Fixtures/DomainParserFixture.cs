@@ -3,6 +3,7 @@ using Nager.PublicSuffix.RuleProviders;
 
 namespace BusinessVerification_Service.Tests.Fixtures
 {
+    // Fixture for one DomainParser instance to be used in all test cases
     public class DomainParserFixture : IDisposable
     {
         // Expose the DomainParser instance to tests

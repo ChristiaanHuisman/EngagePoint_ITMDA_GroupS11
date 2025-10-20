@@ -4,10 +4,9 @@ namespace BusinessVerification_Service.Dtos
 {
     public class VerificationResponseDto
     {
-        // Assign NotStarted enum option as defualt
         // Convert enum to string in JSON response
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public Status VerificationStatus { get; set; } = Status.NotStarted;
+        public Status VerificationStatus { get; set; }
 
         // Success or error messages stored here
         // Assign empty as default
@@ -19,7 +18,8 @@ namespace BusinessVerification_Service.Dtos
     {
         NotStarted,
         Rejected,
-        Pending,
-        Accepted // To be removed in future versions that uses email link verification
+        AdminPending,
+        EmailPending,
+        Accepted
     }
 }

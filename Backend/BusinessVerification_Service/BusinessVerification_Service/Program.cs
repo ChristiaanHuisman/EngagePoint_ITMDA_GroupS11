@@ -14,24 +14,44 @@ namespace BusinessVerification_Service
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Register IDomainParser as a Singleton asynchronously
-            //Only done once per application lifetime as it is for prototyping purposes
-            var ruleProvider = new SimpleHttpRuleProvider();
-            await ruleProvider.BuildAsync();
-            var domainParser = new DomainParser(ruleProvider);
-            builder.Services.AddSingleton<IDomainParser>(domainParser);
-
-            // Register FirestoreDb as a Singleton
-            //Only done once per application lifetime as it is for prototyping purposes
-            var credentialPath = builder.Configuration["Firestore:CredentialsPath"];
-            var projectId = builder.Configuration["Firestore:ProjectId"];
-            var googleCredential = GoogleCredential.FromFile(credentialPath);
-            var firestoreClient = new FirestoreClientBuilder
+            // Stop the program if getting the public suffix list fails
+            try
             {
-                Credential = googleCredential
-            }.Build();
-            var firestoreDb = FirestoreDb.Create(projectId, client: firestoreClient);
-            builder.Services.AddSingleton(firestoreDb);
+                // Register IDomainParser as a Singleton asynchronously
+                // Only done once per application lifetime as it is for prototyping purposes
+                // Caching the public suffix list can be added in future verisons, 
+                // for performance improvements when the application scales to a more permanent hosting solution
+                var ruleProvider = new SimpleHttpRuleProvider();
+                await ruleProvider.BuildAsync();
+                var domainParser = new DomainParser(ruleProvider);
+                builder.Services.AddSingleton<IDomainParser>(domainParser);
+            }
+            catch
+            {
+                throw;
+            }
+
+            // Stop the program if the connection to Firestore fails
+            try
+            {
+                // Register FirestoreDb as a Singleton
+                // Only done once per application lifetime as it is for prototyping purposes
+                // Having periodic refresh of the credentials can be added in future versions, 
+                // for performance improvements when the application scales to a more permanent hosting solution
+                var credentialPath = builder.Configuration["Firestore:CredentialsPath"];
+                var projectId = builder.Configuration["Firestore:ProjectId"];
+                var googleCredential = GoogleCredential.FromFile(credentialPath);
+                var firestoreClient = new FirestoreClientBuilder
+                {
+                    Credential = googleCredential
+                }.Build();
+                var firestoreDb = FirestoreDb.Create(projectId, client: firestoreClient);
+                builder.Services.AddSingleton(firestoreDb);
+            }
+            catch
+            {
+                throw;
+            }
             
             // Register interface services
             builder.Services.AddScoped<IDomainVerificationService, DomainVerificationService>();

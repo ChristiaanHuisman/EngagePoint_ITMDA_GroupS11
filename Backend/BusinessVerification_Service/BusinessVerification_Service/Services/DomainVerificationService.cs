@@ -11,12 +11,15 @@ namespace BusinessVerification_Service.Services
         // Injected dependencies
         private readonly ILogger<DomainVerificationService> _logger;
         private readonly IDomainParser _domainParser;
+        private readonly IFirestoreFunctionsService _firestoreFunctionsService;
 
         // Constructor for dependency injection
-        public DomainVerificationService(ILogger<DomainVerificationService> logger, IDomainParser domainParser)
+        public DomainVerificationService(ILogger<DomainVerificationService> logger, 
+            IDomainParser domainParser, IFirestoreFunctionsService firestoreFunctionsService)
         {
             _logger = logger;
             _domainParser = domainParser;
+            _firestoreFunctionsService = firestoreFunctionsService;
         }
 
         // Standard error message ending for displaying user error messages
@@ -36,6 +39,9 @@ namespace BusinessVerification_Service.Services
                 _logger.LogError(
                     "Service: Request DTO received for business verification is null."
                 );
+
+                // Firebase DTO will not be written to Firebase here, 
+                // as there is no user to link to
 
                 // Return response DTO with appropriate error message
                 returnResponse.Message = "Business verification failed unexpectedly. " +
@@ -81,6 +87,9 @@ namespace BusinessVerification_Service.Services
                         email, website, name, userId
                     );
 
+                    // Write Firebase DTO to Firebase
+                    _firestoreFunctionsService.WriteVerificationRequest(firebaseResponse);
+
                     // Return response DTO with appropriate error message
                     returnResponse.Message = errorMessageEnd;
                     return returnResponse;
@@ -105,6 +114,9 @@ namespace BusinessVerification_Service.Services
                             "user {user} website {website}.", 
                             userId, website
                         );
+
+                        // Write Firebase DTO to Firebase
+                        _firestoreFunctionsService.WriteVerificationRequest(firebaseResponse);
 
                         // Return response DTO with appropriate error message
                         returnResponse.Message = "Invalid or incomplete website format entered. " + 
@@ -132,6 +144,9 @@ namespace BusinessVerification_Service.Services
                         userId, website
                     );
 
+                    // Write Firebase DTO to Firebase
+                    _firestoreFunctionsService.WriteVerificationRequest(firebaseResponse);
+
                     // Return response DTO with appropriate error message
                     returnResponse.Message = "Invalid or incomplete website format entered. " + 
                         errorMessageEnd;
@@ -146,6 +161,9 @@ namespace BusinessVerification_Service.Services
                     // Determine if the email and website domains do not match
                     if (!VerifyDomainMatch(email, website, userId))
                     {
+                        // Write Firebase DTO to Firebase
+                        _firestoreFunctionsService.WriteVerificationRequest(firebaseResponse);
+
                         // Return response DTO with appropriate message
                         returnResponse.VerificationStatus = Status.Rejected;
                         returnResponse.Message = "Email and website domains entered do not match. " +  
@@ -163,18 +181,17 @@ namespace BusinessVerification_Service.Services
                         // For a score of >= 90 the business name can be automatically verified
                         case >= 90:
                             // To be edited in future versions that uses email link verification
+                            firebaseResponse.VerificationStatus = Status.Accepted;
                             returnResponse.VerificationStatus = Status.Accepted;
                             returnResponse.Message = "Business successfully verified.";
                         break;
 
                         // For a score of >= 65 and <= 89 an admin needs to verify the business name
                         case >= 65:
-                            firebaseResponse.RequiresAdminVerification = true;
+                            firebaseResponse.VerificationStatus = Status.Pending;
                             returnResponse.VerificationStatus = Status.Pending;
                             returnResponse.Message = "Business name does not match email and " + 
                                 "website domain names entered clearly enough. Admin review required.";
-                            // Admin verification will be handled on the flutter app side, 
-                            // as it is unnecessary to just route the Firestore update through the API
                         break;
 
                         // For a score of <= 64 the business name cannot be verified
@@ -188,6 +205,9 @@ namespace BusinessVerification_Service.Services
                 // Handle errors throwing appropriate custom error message
                 catch (Exception exception)
                 {
+                    // Write Firebase DTO to Firebase
+                    _firestoreFunctionsService.WriteVerificationRequest(firebaseResponse);
+
                     // Return response DTO with appropriate error message
                     returnResponse.Message = exception.Message;
                     return returnResponse;
@@ -201,6 +221,9 @@ namespace BusinessVerification_Service.Services
                     userId
                 );
 
+                // Write Firebase DTO to Firebase
+                _firestoreFunctionsService.WriteVerificationRequest(firebaseResponse);
+
                 // Return response DTO with appropriate error message
                 returnResponse.Message = "Business verification failed unexpectedly. " + 
                     errorMessageEnd;
@@ -210,16 +233,18 @@ namespace BusinessVerification_Service.Services
             // To be edited in future versions that uses email link verification
             // Using the Firebase response DTO to push verification request to Firebase
             firebaseResponse.ErrorOccurred = false;
-            if (!firebaseResponse.RequiresAdminVerification)
+            if (firebaseResponse.VerificationStatus == Status.Accepted)
             {
-                firebaseResponse.OfficiallyVerified = true;
                 firebaseResponse.VerifiedAt = DateTime.UtcNow;
             }
-            // Add method call to pass Firebase DTO to Firebase
+
+            // Write Firebase DTO to Firebase
+            _firestoreFunctionsService.WriteVerificationRequest(firebaseResponse);
 
             _logger.LogInformation(
                 "Service: Business verification for user {user} with email {email}, " + 
-                "website {website} and business name {name} completed without errors.", 
+                "website {website} and business name {name} completed without errors.\n" + 
+                "Verification properties passed to Firebase service.", 
                 userId, email, website, name
             );
 

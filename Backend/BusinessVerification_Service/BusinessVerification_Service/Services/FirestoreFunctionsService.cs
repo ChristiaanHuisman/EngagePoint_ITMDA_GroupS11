@@ -20,6 +20,7 @@ namespace BusinessVerification_Service.Services
 
         // Firestore collection names
         const string firestoreUsersCollection = "users";
+        const string usersBusinessVerificationCollection = "businessVerification";
 
         // Writes business verification data to Firestore
         // Dictionaries are used for merging fields,
@@ -91,7 +92,7 @@ namespace BusinessVerification_Service.Services
                 // Reference the verification subcollection
                 // There should only be one document of this subcollection per user
                 documentReference = documentReference.Collection(
-                    "businessVerification").Document(userId);
+                    usersBusinessVerificationCollection).Document(userId);
 
                 // Map the relavent verification document fields
                 // These fields are selceted for data completeness
