@@ -4,6 +4,7 @@ import java.util.Date;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+@Document(collection = "posts")
 public class Post {
     private String businessID;
     private String content;

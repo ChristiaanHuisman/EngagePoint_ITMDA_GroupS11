@@ -28,34 +28,16 @@ public class FirebaseManager {
     // DB initialiser
     @Bean
     public FirebaseApp initializeFirebase() throws IOException {
-        FileInputStream serviceAccount =
-                new FileInputStream(serviceAccountKey.getContentAsByteArray());
-
+        ClassPathResource serviceAccount = new ClassPathResource("firebase/google-services.json");
         FirebaseOptions options = FirebaseOptions.builder()
-                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                .setCredentials(GoogleCredentials.fromStream(serviceAccount.getInputStream()))
+                .setDatabaseUrl("db-url") // placeholder url
                 .build();
 
-        return FirebaseApp.initializeApp(options);
-    }
-
-    // Fetches post from firestore DB
-    public Post fetchPost(String postID) {
-        Firestore db = FirestoreClient.getFirestore();
-        Task<DocumentSnapshot> task = db.collection("posts").document(postID).get();
-
-        try {
-            task = task.get();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-
-        DocumentSnapshot document = task.getResult();
-        if (document.exists()) {
-            Post post = new Post("businessID", "content", "createdAt", "title", "tag", postID);
-            return document.toObject(Post.class);
+        if (FirebaseApp.getApps().isEmpty()) {
+            return FirebaseApp.initializeApp(options);
         } else {
-            return null;
+            return FirebaseApp.getInstance();
         }
     }
 }

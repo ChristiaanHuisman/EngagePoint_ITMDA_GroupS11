@@ -11,27 +11,33 @@ import java.util.Date;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-@Configuration
 @EnableScheduling
 @Component
 public class ContentScheduler {
-    // called from event listener
-    public void scheduleContentTask() {
-        Post post = new Post();
-        // Logic to schedule content posting
-        
-        // Check if the 'createdAt' timestamp is older than 15 minutes
+    @Scheduled(cron = "0 0/30 * * * ?") // Every 30 minutes
+    public void scheduleContentPosts() {
+        // Logic to check for scheduled posts and publish them
+        System.out.println("Checking for scheduled posts to publish...");
+        // This is where you would add the logic to interact with Firebase
+        // and publish posts that are due.
+    }
+
+    public List<Post> getPosts(String date, boolean published) throws ExecutionException, InterruptedException {
+        List<Post> posts = new ArrayList<>();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
-        post.getPostDate();
-        Date now = new Date();
-        long diffInMillies = now.getTime() - post.getPostDate().getTime();
-        long diffInMinutes = TimeUnit.MINUTES.convert(diffInMillies, TimeUnit.MILLISECONDS);
-        if ((diffInMinutes >= 15) && (!post.getPublished())) {
-            // Logic to post content
-            System.out.println("Posting content: " + post.getContent());
-            post.setPublished(true);
-        } else {
-            System.out.println("Post is not old enough to be posted yet.");
+        date parsedDate = sdf.parse(date);
+        QuerySnapshot querySnapshot = FirestoreClient.getFirestore()
+                .collection("posts")
+                .whereLessThanOrEqualTo("postDate", parsedDate)
+                .whereEqualTo("published", !(published))
+                .get()
+                .get();
+        
+        for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+            Post post = document.toObject(Post.class);
+            posts.add(post);
         }
+        
+        return posts;
     }
 }

@@ -8,22 +8,29 @@ import com.engagepoint.content_scheduler.service.FirebaseManager;
 
 @Service
 public class FirestoreService {
-    private final FirebaseManager firebaseManager;
+    @PostConstruct
+    public void listenForChanges() {
+        Firestore db = FirestoreClient.getFirestore(FirebaseManager.initializeFirebase());
+        
+        db.collection("posts").addSnapshotListener((snapshots, e) -> {
+            if (e != null) {
+                System.err.println("Listen failed: " + e);
+                return;
+            }
 
-    public FirestoreService(FirebaseManager firebaseManager) {
-        this.firebaseManager = firebaseManager;
-    }
-
-    public <T> T getDocumentById(String collectionName, String documentId, Class<T> clazz) {
-        ApiFuture<DocumentSnapshot> future = FirestoreClient.getFirestore()
-                .collection("posts")
-                .document(postID)
-                .get();
-        DocumentSnapshot document = future.get();
-        if (document.exists()) {
-            return document.toObject(clazz);
-        } else {
-            return null;
-        }
+            for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                switch (dc.getType()) {
+                    case ADDED:
+                        System.out.println("New post: " + dc.getDocument().getData());
+                        break;
+                    case MODIFIED:
+                        System.out.println("Modified post: " + dc.getDocument().getData());
+                        break;
+                    case REMOVED:
+                        System.out.println("Removed post: " + dc.getDocument().getData());
+                        break;
+                }
+            }
+        });
     }
 }
