@@ -1,5 +1,7 @@
 package main.java.com.engagepoint.content_scheduler.service;
 
+import org.springframework.context.annotation.Configuration;
+import com.engagepoint.content_scheduler.model.Post;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -13,11 +15,23 @@ import org.springframework.stereotype.Component;
 @EnableScheduling
 @Component
 public class ContentScheduler {
-    @Scheduled(cron = "0 0/1 * * * ?") // placeholder cron expression
+    // called from event listener
     public void scheduleContentTask() {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
-        Date date = new Date(System.currentTimeMillis());
-        System.out.println("Scheduled task executed at: " + formatter.format(date));
+        Post post = new Post();
+        // Logic to schedule content posting
+        
+        // Check if the 'createdAt' timestamp is older than 15 minutes
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
+        post.getPostDate();
+        Date now = new Date();
+        long diffInMillies = now.getTime() - post.getPostDate().getTime();
+        long diffInMinutes = TimeUnit.MINUTES.convert(diffInMillies, TimeUnit.MILLISECONDS);
+        if ((diffInMinutes >= 15) && (!post.getPublished())) {
+            // Logic to post content
+            System.out.println("Posting content: " + post.getContent());
+            post.setPublished(true);
+        } else {
+            System.out.println("Post is not old enough to be posted yet.");
+        }
     }
-    
 }

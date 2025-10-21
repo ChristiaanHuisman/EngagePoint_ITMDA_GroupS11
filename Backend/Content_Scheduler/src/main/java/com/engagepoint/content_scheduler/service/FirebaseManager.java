@@ -21,9 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Configuration
 public class FirebaseManager {
+    // Private account key
     @Value ("classpath:firebase/google-services.json")
     private Resource serviceAccount;
 
+    // DB initialiser
     @Bean
     public FirebaseApp initializeFirebase() throws IOException {
         FileInputStream serviceAccount =
@@ -36,6 +38,7 @@ public class FirebaseManager {
         return FirebaseApp.initializeApp(options);
     }
 
+    // Fetches post from firestore DB
     public Post fetchPost(String postID) {
         Firestore db = FirestoreClient.getFirestore();
         Task<DocumentSnapshot> task = db.collection("posts").document(postID).get();
@@ -46,9 +49,10 @@ public class FirebaseManager {
             e.printStackTrace();
             return null;
         }
-        
+
         DocumentSnapshot document = task.getResult();
         if (document.exists()) {
+            Post post = new Post("businessID", "content", "createdAt", "title", "tag", postID);
             return document.toObject(Post.class);
         } else {
             return null;
