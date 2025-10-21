@@ -15,7 +15,7 @@ import 'write_review_page.dart';
 import '../services/logging_service.dart';
 import '../widgets/app_drawer.dart';
 
-// LEVEL STRUCT
+// Level struct
 class Level {
   final int level;
   final String name;
@@ -25,7 +25,7 @@ class Level {
       {required this.level, required this.name, required this.pointsRequired});
 }
 
-// MAIN PAGE
+// Main StatefulWidget
 class UserProfilePage extends StatefulWidget {
   final String userId;
 
@@ -39,6 +39,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final FirestoreService _firestoreService = FirestoreService();
   final LoggingService _loggingService = LoggingService();
 
+  // Level data
   final List<Level> _levels = [
     Level(level: 1, name: 'Bronze', pointsRequired: 0),
     Level(level: 2, name: 'Silver', pointsRequired: 500),
@@ -46,7 +47,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     Level(level: 4, name: 'Platinum', pointsRequired: 3000),
     Level(level: 5, name: 'Diamond', pointsRequired: 5000),
   ];
-
   Map<String, dynamic> _getLevelData(int points) {
     Level currentLevel = _levels.first;
     for (var level in _levels.reversed) {
@@ -63,7 +63,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         'currentLevel': currentLevel,
         'nextLevel': null,
         'progress': 1.0,
-        'pointsToNextLevel': 0,
+        'pointsToNextLevel': 0
       };
     }
     final int pointsInCurrent = points - currentLevel.pointsRequired;
@@ -75,7 +75,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       'currentLevel': currentLevel,
       'nextLevel': nextLevel,
       'progress': progress.clamp(0.0, 1.0),
-      'pointsToNextLevel': nextLevel.pointsRequired - points,
+      'pointsToNextLevel': nextLevel.pointsRequired - points
     };
   }
 
@@ -108,7 +108,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             eventName: 'View_business_profile',
             parameters: {
               'viewer_id': currentUserId ?? 'unknown',
-              'viewed_business_id': widget.userId,
+              'viewed_business_id': widget.userId
             },
           );
         }
@@ -120,19 +120,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
               title: Text(isOwnProfile ? "My Profile" : "Profile"),
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              automaticallyImplyLeading: Navigator.canPop(context),
               leading: Navigator.canPop(context)
                   ? IconButton(
                       icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.pop(context),
-                    )
+                      onPressed: () => Navigator.pop(context))
                   : (isOwnProfile
                       ? Builder(
                           builder: (context) => IconButton(
-                            icon: const Icon(Icons.menu),
-                            onPressed: () => Scaffold.of(context).openDrawer(),
-                          ),
-                        )
+                              icon: const Icon(Icons.menu),
+                              onPressed: () =>
+                                  Scaffold.of(context).openDrawer()))
                       : null),
               actions: [
                 if (isOwnProfile)
@@ -142,10 +139,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => EditProfilePage(
-                            user: user,
-                          ),
-                        ),
+                            builder: (_) => EditProfilePage(user: user)),
                       );
                     },
                   ),
@@ -168,7 +162,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                     text: 'Posts'),
                                 Tab(
                                     icon: Icon(Icons.reviews_outlined),
-                                    text: 'Reviews'),
+                                    text: 'Reviews')
                               ]
                             : const [
                                 Tab(
@@ -176,7 +170,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                                     text: 'Reviews'),
                                 Tab(
                                     icon: Icon(Icons.emoji_events_outlined),
-                                    text: 'Rewards'),
+                                    text: 'Rewards')
                               ],
                         indicatorColor: Theme.of(context).colorScheme.primary,
                         labelColor: Theme.of(context).colorScheme.primary,
@@ -186,9 +180,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   ),
                 ];
               },
-              body: user.isBusiness
-                  ? TabBarView(
-                      children: [
+              body: TabBarView(
+                children: user.isBusiness
+                    ? [
                         _PostsTab(
                             userId: widget.userId,
                             firestoreService: _firestoreService),
@@ -196,10 +190,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             userId: widget.userId,
                             isCustomerView: false,
                             firestoreService: _firestoreService),
-                      ],
-                    )
-                  : TabBarView(
-                      children: [
+                      ]
+                    : [
                         _ReviewsTab(
                             userId: widget.userId,
                             isCustomerView: true,
@@ -209,7 +201,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                             getLevelData: _getLevelData,
                             firestoreService: _firestoreService),
                       ],
-                    ),
+              ),
             ),
           ),
         );
@@ -232,25 +224,21 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 : null,
           ),
           const SizedBox(height: 16),
-          Text(
-            user.name,
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
+          Text(user.name,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center),
           if (user.description != null && user.description!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                user.description!,
-                textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(color: Colors.grey[600]),
-              ),
+              child: Text(user.description!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(color: Colors.grey[600])),
             ),
           if (user.isBusiness &&
               user.businessType != null &&
@@ -260,9 +248,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
               child: Chip(
                 label: Text(user.businessType!),
                 labelStyle: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer),
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 backgroundColor:
                     Theme.of(context).colorScheme.secondaryContainer,
@@ -281,17 +268,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     _buildReviewStatColumn(widget.userId),
                     isOwnProfile
                         ? ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const BusinessDashboardPage()));
-                            },
+                            onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const BusinessDashboardPage())),
                             icon:
                                 const Icon(Icons.dashboard_outlined, size: 16),
-                            label: const Text('Dashboard'),
-                          )
+                            label: const Text('Dashboard'))
                         : _buildFollowButton(widget.userId),
                   ],
                 ),
@@ -310,11 +294,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   Widget _buildManageLocationsButton(BuildContext context) =>
       OutlinedButton.icon(
-        onPressed: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const ManageLocationsPage())),
-        icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
-        label: const Text('Manage Store Locations'),
-      );
+          onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const ManageLocationsPage())),
+          icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
+          label: const Text('Manage Store Locations'));
 
   Widget _buildLocationsButton(BuildContext context, String businessId) {
     return StreamBuilder<List<LocationModel>>(
@@ -323,7 +306,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const SizedBox.shrink();
         }
-
         final locations = snapshot.data!;
         return OutlinedButton.icon(
           onPressed: () {
@@ -341,6 +323,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       itemCount: locations.length,
                       itemBuilder: (context, index) {
                         final location = locations[index];
+
                         return ListTile(
                           leading:
                               const Icon(Icons.store_mall_directory_outlined),
@@ -348,15 +331,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
                           subtitle: Text(location.address),
                           onTap: () async {
                             final Uri mapsUrl = Uri.parse(
-                                'https://maps.google.com/?q=${Uri.encodeComponent(location.address)}');
+                                'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location.address)}');
                             if (await canLaunchUrl(mapsUrl)) {
                               await launchUrl(mapsUrl);
-                            } else {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('Could not open map.')));
-                              }
+                            } else if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('Could not open map.')));
                             }
                           },
                         );
@@ -497,12 +478,11 @@ class _ReviewsTab extends StatelessWidget {
       children: [
         if (!isCustomerView)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Customer Reviews",
-                    style: Theme.of(context).textTheme.titleLarge),
+                Text("Reviews", style: Theme.of(context).textTheme.titleLarge),
                 if (canWriteReview)
                   TextButton(
                     onPressed: () {

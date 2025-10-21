@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'notification_preferences_model.dart';
 
 class UserModel {
   final String uid;
@@ -13,8 +14,12 @@ class UserModel {
   final int spinsAvailable;
   final List<String> notificationTags;
   final Timestamp createdAt;
+  
   final String? timezone;
+  final String? timezoneOffset;
   final Timestamp? verifiedAt;
+  final NotificationPreferences notificationPreferences;
+  
 
   UserModel({
     required this.uid,
@@ -30,7 +35,9 @@ class UserModel {
     this.notificationTags = const [],
     required this.createdAt,
     this.timezone,
+    this.timezoneOffset,
     this.verifiedAt,
+    required this.notificationPreferences,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -49,10 +56,12 @@ class UserModel {
       notificationTags: List<String>.from(data['notificationTags'] ?? []),
       createdAt: data['createdAt'] ?? Timestamp.now(),
       timezone: data['timezone'],
+      timezoneOffset: data['timezoneOffset'],
       verifiedAt: data['verifiedAt'],
+      notificationPreferences: NotificationPreferences.fromMap(data['notificationPreferences']),
     );
   }
-  
+
   // Helper getter to make role checks cleaner in the UI
   bool get isBusiness => role == 'business';
 
@@ -72,7 +81,20 @@ class UserModel {
       'notificationTags': notificationTags,
       'createdAt': createdAt,
       'timezone': timezone,
+      'timezoneOffset': timezoneOffset, 
       'verifiedAt': verifiedAt,
+
+      "notificationPreferences": {
+        "onNewPost": true,
+        "onReviewResponse": true,
+        "onNewReview": true,
+        "onPostLike": false,
+        "onNewFollower": true,
+        "subscribedTags": ["Promotion", "Sale"],
+        "quietTimeEnabled": false,
+        "quietTimeStart": "22:00",
+        "quietTimeEnd": "08:00"
+      }
     };
   }
 }
