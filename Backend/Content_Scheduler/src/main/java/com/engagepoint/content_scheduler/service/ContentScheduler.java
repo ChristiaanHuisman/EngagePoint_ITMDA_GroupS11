@@ -17,19 +17,35 @@ public class ContentScheduler {
     @Scheduled(cron = "0 0/30 * * * ?") // Every 30 minutes
     public void scheduleContentPosts() {
         // Logic to check for scheduled posts and publish them
-        System.out.println("Checking for scheduled posts to publish...");
-        // This is where you would add the logic to interact with Firebase
-        // and publish posts that are due.
+        String currentDate = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z").format(new Date());
+
+        try {
+            List<Post> postsToPublish = getPosts(currentDate);
+
+            for (Post post : postsToPublish) {
+                if (!post.isPublished() && post.getPostDate().before(new Date())) {
+                    // Publish the post
+                    post.setPublished(true);
+                    // Update the post in Firestore
+                    FirestoreClient.getFirestore()
+                        .collection("posts")
+                        .document(post.getPostID())
+                        .set(post);
+                }
+            } catch (Exception e) {
+                System.err.println("Error scheduling posts: " + e.getMessage());
+            }
+        }
     }
 
-    public List<Post> getPosts(String date, boolean published) throws ExecutionException, InterruptedException {
+    public List<Post> getPosts(String date) throws ExecutionException, InterruptedException {
         List<Post> posts = new ArrayList<>();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
         date parsedDate = sdf.parse(date);
         QuerySnapshot querySnapshot = FirestoreClient.getFirestore()
                 .collection("posts")
                 .whereLessThanOrEqualTo("postDate", parsedDate)
-                .whereEqualTo("published", !(published))
+                .whereEqualTo("published", false)
                 .get()
                 .get();
         
@@ -37,7 +53,7 @@ public class ContentScheduler {
             Post post = document.toObject(Post.class);
             posts.add(post);
         }
-        
+
         return posts;
     }
 }

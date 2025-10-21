@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter;
 public class Post {
     private String businessID;
     private String content;
-    private String postDate;
+    private ZonedDateTime postDate;
     private String postTitle;
     private String postTag;
     private String postID;
@@ -20,7 +20,7 @@ public class Post {
 
     public Post(String businessID, String content, String postDate, String postTitle, String postTag, String postID, boolean published) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd 'at' HH:mm:ss z");
-        LocalDateTime dateTime = LocalDateTime.parse(postDate, formatter);
+        ZonedDateTime dateTime = ZonedDateTime.parse(postDate, formatter);
 
         this.businessID = businessID;
         this.content = content;
@@ -48,17 +48,14 @@ public class Post {
         this.content = content;
     }
 
-    public String getPostDate() {
+    public Date getPostDate() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd 'at' HH:mm:ss z");
         LocalDateTime dateTime = LocalDateTime.parse(this.postDate, formatter);
 
         return postDate;
     }
 
-    public void setPostDate(String postDate) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd 'at' HH:mm:ss z");
-        LocalDateTime dateTime = LocalDateTime.parse(postDate, formatter);
-
+    public void setPostDate(Date postDate) {
         this.postDate = postDate;
     }
 

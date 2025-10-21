@@ -8,6 +8,8 @@ import com.engagepoint.content_scheduler.service.FirebaseManager;
 
 @Service
 public class FirestoreService {
+    private FirebaseApp firebaseApp;
+
     @PostConstruct
     public void listenForChanges() {
         Firestore db = FirestoreClient.getFirestore(FirebaseManager.initializeFirebase());

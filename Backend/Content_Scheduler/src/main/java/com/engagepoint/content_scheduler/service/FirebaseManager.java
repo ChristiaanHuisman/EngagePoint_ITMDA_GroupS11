@@ -28,7 +28,6 @@ public class FirebaseManager {
     // DB initialiser
     @Bean
     public FirebaseApp initializeFirebase() throws IOException {
-        ClassPathResource serviceAccount = new ClassPathResource("firebase/google-services.json");
         FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount.getInputStream()))
                 .setDatabaseUrl("db-url") // placeholder url
