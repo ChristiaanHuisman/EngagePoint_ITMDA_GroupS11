@@ -84,12 +84,13 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
               ],
             ),
             drawer: isOwnProfile ? const AppDrawer() : null,
-            body: NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) {
-                return <Widget>[
-                  SliverToBoxAdapter(child: _buildProfileHeader(context, user, isOwnProfile)),
-                  SliverPersistentHeader(
-                    pinned: true,
+            body: SafeArea(
+              child: NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return <Widget>[
+                    SliverToBoxAdapter(child: _buildProfileHeader(context, user, isOwnProfile)),
+                    SliverPersistentHeader(
+                      pinned: true,
                     delegate: _TabBarHeaderDelegate(
                       TabBar(
                         tabs: const [ // Tabs are fixed for business
@@ -112,6 +113,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
               ),
             ),
           ),
+        )
         );
       },
     );

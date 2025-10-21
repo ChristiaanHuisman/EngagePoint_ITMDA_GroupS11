@@ -38,12 +38,12 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
             unselectedLabelColor: Colors.white70,
           ),
         ),
-        body: TabBarView(
+        body: SafeArea(child: TabBarView(
           children: [
             _buildEngagementView(),
             _buildSentimentView(),
           ],
-        ),
+        )),
       ),
     );
   }

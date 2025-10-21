@@ -114,97 +114,102 @@ class _UserProfilePageState extends State<UserProfilePage> {
         }
 
         return DefaultTabController(
-          length: user.isBusiness ? 2 : 2,
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(isOwnProfile ? "My Profile" : "Profile"),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              leading: Navigator.canPop(context)
-                  ? IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.pop(context))
-                  : (isOwnProfile
-                      ? Builder(
-                          builder: (context) => IconButton(
-                              icon: const Icon(Icons.menu),
-                              onPressed: () =>
-                                  Scaffold.of(context).openDrawer()))
-                      : null),
-              actions: [
-                if (isOwnProfile)
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => EditProfilePage(user: user)),
-                      );
+            length: user.isBusiness ? 2 : 2,
+            child: Scaffold(
+                appBar: AppBar(
+                  title: Text(isOwnProfile ? "My Profile" : "Profile"),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  leading: Navigator.canPop(context)
+                      ? IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () => Navigator.pop(context))
+                      : (isOwnProfile
+                          ? Builder(
+                              builder: (context) => IconButton(
+                                  icon: const Icon(Icons.menu),
+                                  onPressed: () =>
+                                      Scaffold.of(context).openDrawer()))
+                          : null),
+                  actions: [
+                    if (isOwnProfile)
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => EditProfilePage(user: user)),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+                drawer: isOwnProfile ? const AppDrawer() : null,
+                body: SafeArea(
+                  child: NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) {
+                      return <Widget>[
+                        SliverToBoxAdapter(
+                            child: _buildProfileHeader(
+                                context, user, isOwnProfile)),
+                        SliverPersistentHeader(
+                          pinned: true,
+                          delegate: _TabBarHeaderDelegate(
+                            TabBar(
+                              tabs: user.isBusiness
+                                  ? const [
+                                      Tab(
+                                          icon: Icon(Icons.post_add_outlined),
+                                          text: 'Posts'),
+                                      Tab(
+                                          icon: Icon(Icons.reviews_outlined),
+                                          text: 'Reviews')
+                                    ]
+                                  : const [
+                                      Tab(
+                                          icon: Icon(Icons.reviews_outlined),
+                                          text: 'Reviews'),
+                                      Tab(
+                                          icon:
+                                              Icon(Icons.emoji_events_outlined),
+                                          text: 'Rewards')
+                                    ],
+                              indicatorColor:
+                                  Theme.of(context).colorScheme.primary,
+                              labelColor: Theme.of(context).colorScheme.primary,
+                              unselectedLabelColor: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ];
                     },
-                  ),
-              ],
-            ),
-            drawer: isOwnProfile ? const AppDrawer() : null,
-            body: NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) {
-                return <Widget>[
-                  SliverToBoxAdapter(
-                      child: _buildProfileHeader(context, user, isOwnProfile)),
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _TabBarHeaderDelegate(
-                      TabBar(
-                        tabs: user.isBusiness
-                            ? const [
-                                Tab(
-                                    icon: Icon(Icons.post_add_outlined),
-                                    text: 'Posts'),
-                                Tab(
-                                    icon: Icon(Icons.reviews_outlined),
-                                    text: 'Reviews')
+                    body: SafeArea(
+                      child: TabBarView(
+                        children: user.isBusiness
+                            ? [
+                                _PostsTab(
+                                    userId: widget.userId,
+                                    firestoreService: _firestoreService),
+                                _ReviewsTab(
+                                    userId: widget.userId,
+                                    isCustomerView: false,
+                                    firestoreService: _firestoreService),
                               ]
-                            : const [
-                                Tab(
-                                    icon: Icon(Icons.reviews_outlined),
-                                    text: 'Reviews'),
-                                Tab(
-                                    icon: Icon(Icons.emoji_events_outlined),
-                                    text: 'Rewards')
+                            : [
+                                _ReviewsTab(
+                                    userId: widget.userId,
+                                    isCustomerView: true,
+                                    firestoreService: _firestoreService),
+                                _RewardsTab(
+                                    user: user,
+                                    getLevelData: _getLevelData,
+                                    firestoreService: _firestoreService),
                               ],
-                        indicatorColor: Theme.of(context).colorScheme.primary,
-                        labelColor: Theme.of(context).colorScheme.primary,
-                        unselectedLabelColor: Colors.grey,
                       ),
                     ),
                   ),
-                ];
-              },
-              body: TabBarView(
-                children: user.isBusiness
-                    ? [
-                        _PostsTab(
-                            userId: widget.userId,
-                            firestoreService: _firestoreService),
-                        _ReviewsTab(
-                            userId: widget.userId,
-                            isCustomerView: false,
-                            firestoreService: _firestoreService),
-                      ]
-                    : [
-                        _ReviewsTab(
-                            userId: widget.userId,
-                            isCustomerView: true,
-                            firestoreService: _firestoreService),
-                        _RewardsTab(
-                            user: user,
-                            getLevelData: _getLevelData,
-                            firestoreService: _firestoreService),
-                      ],
-              ),
-            ),
-          ),
-        );
+                )));
       },
     );
   }

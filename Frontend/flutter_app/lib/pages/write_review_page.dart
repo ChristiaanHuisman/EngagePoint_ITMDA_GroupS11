@@ -88,12 +88,13 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
                 'Select Your Rating',
@@ -149,6 +150,7 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
           ),
         ),
       ),
+    )
     );
   }
 }

@@ -122,7 +122,7 @@ class _EditPostPageState extends State<EditPostPage> {
           ),
         ],
       ),
-      body: Form(
+      body: SafeArea(
         key: _formKey,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),

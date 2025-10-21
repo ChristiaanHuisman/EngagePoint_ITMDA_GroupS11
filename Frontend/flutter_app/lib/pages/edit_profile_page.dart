@@ -102,90 +102,94 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
-        actions: [
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.only(right: 16.0),
-              child: Center(
-                  child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(color: Colors.white))),
-            )
-          else
-            IconButton(
-              onPressed: _saveProfile,
-              icon: const Icon(Icons.check),
-            ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              GestureDetector(
-                onTap: _pickImage,
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundImage: _imageData != null
-                      ? MemoryImage(_imageData!)
-                      : (_existingImageUrl != null
-                          ? NetworkImage(_existingImageUrl!)
-                          : null) as ImageProvider?,
-                  child: _imageData == null && _existingImageUrl == null
-                      ? Icon(
-                          widget.user.isBusiness ? Icons.store : Icons.person,
-                          size: 60)
-                      : null,
-                ),
+        appBar: AppBar(
+          title: const Text('Edit Profile'),
+          actions: [
+            if (_isLoading)
+              const Padding(
+                padding: EdgeInsets.only(right: 16.0),
+                child: Center(
+                    child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(color: Colors.white))),
+              )
+            else
+              IconButton(
+                onPressed: _saveProfile,
+                icon: const Icon(Icons.check),
               ),
-              TextButton(
-                onPressed: _pickImage,
-                child: const Text('Change Profile Picture'),
-              ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText:
-                      widget.user.isBusiness ? 'Business Name' : 'Full Name',
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Please enter a name'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              if (widget.user.isBusiness)
-                TextFormField(
-                  controller: _businessTypeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Business Type',
-                    hintText: 'e.g., Restaurant, Retail, Cafe',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              if (widget.user.isBusiness) const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  labelText: 'Profile Description',
-                  hintText: widget.user.isBusiness
-                      ? 'Tell customers about your business...'
-                      : 'A little bit about yourself...',
-                  border: const OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 4,
-              ),
-            ],
-          ),
+          ],
         ),
-      ),
-    );
+        body: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundImage: _imageData != null
+                          ? MemoryImage(_imageData!)
+                          : (_existingImageUrl != null
+                              ? NetworkImage(_existingImageUrl!)
+                              : null) as ImageProvider?,
+                      child: _imageData == null && _existingImageUrl == null
+                          ? Icon(
+                              widget.user.isBusiness
+                                  ? Icons.store
+                                  : Icons.person,
+                              size: 60)
+                          : null,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _pickImage,
+                    child: const Text('Change Profile Picture'),
+                  ),
+                  const SizedBox(height: 24),
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: widget.user.isBusiness
+                          ? 'Business Name'
+                          : 'Full Name',
+                      border: const OutlineInputBorder(),
+                    ),
+                    validator: (value) => value == null || value.isEmpty
+                        ? 'Please enter a name'
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  if (widget.user.isBusiness)
+                    TextFormField(
+                      controller: _businessTypeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Business Type',
+                        hintText: 'e.g., Restaurant, Retail, Cafe',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  if (widget.user.isBusiness) const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: InputDecoration(
+                      labelText: 'Profile Description',
+                      hintText: widget.user.isBusiness
+                          ? 'Tell customers about your business...'
+                          : 'A little bit about yourself...',
+                      border: const OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 4,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ));
   }
 }

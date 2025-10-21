@@ -27,12 +27,13 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Notification Settings")),
-      body: StreamBuilder<UserModel?>(
-        stream: _firestoreService.getUserStream(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: SafeArea(
+        child: StreamBuilder<UserModel?>(
+          stream: _firestoreService.getUserStream(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
           final user = snapshot.data!;
           final prefs = user.notificationPreferences; // Get the clean preferences object
 
@@ -139,6 +140,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
           );
         },
       ),
+    )
     );
   }
 }
