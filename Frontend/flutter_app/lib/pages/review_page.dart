@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/pages/business_profile.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
-import 'user_profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ReviewPage extends StatefulWidget {
@@ -112,7 +112,7 @@ class _ReviewPageState extends State<ReviewPage> {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              UserProfilePage(userId: targetUserId),
+                              BusinessProfilePage(userId: targetUserId),
                         ),
                       );
                     }

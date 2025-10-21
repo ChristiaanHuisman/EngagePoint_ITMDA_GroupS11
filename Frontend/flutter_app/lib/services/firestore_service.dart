@@ -560,14 +560,14 @@ class FirestoreService {
   }
 
   // update user notification preferences
-  
-  Future<void> updateUserPreference(String key, dynamic value) async {
-  final currentUser = _auth.currentUser;
-  if (currentUser == null) return;
 
-  await _db.collection('users').doc(currentUser.uid).update({
-    'notificationPreferences.$key': value,
-  });
+  Future<void> updateUserPreference(String key, dynamic value) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    await _db.collection('users').doc(currentUser.uid).update({
+      'notificationPreferences.$key': value,
+    });
   }
 
   // Fetches a single post by its document ID
@@ -584,23 +584,26 @@ class FirestoreService {
 
   // Updates a single field within the notificationPreferences map.
   Future<void> updateNotificationPreference(String key, dynamic value) async {
-  final currentUser = _auth.currentUser;
-  if (currentUser == null) return;
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
 
-  // Use dot notation to update a field in a nested map
-  await _db.collection('users').doc(currentUser.uid).update({
-    'notificationPreferences.$key': value,
-  });
-}
+    // Use dot notation to update a field in a nested map
+    await _db.collection('users').doc(currentUser.uid).update({
+      'notificationPreferences.$key': value,
+    });
+  }
 
 // Overwrites the list of subscribed tags.
-Future<void> updateSubscribedTags(List<String> tags) async {
-  await updateNotificationPreference('subscribedTags', tags);
+  Future<void> updateSubscribedTags(List<String> tags) async {
+    await updateNotificationPreference('subscribedTags', tags);
+  }
+
+  Future<void> updateUserPrivacy(bool isPrivate) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    await _db.collection('users').doc(currentUser.uid).update({
+      'isPrivate': isPrivate,
+    });
+  }
 }
-
-
-}
-
-
-
-

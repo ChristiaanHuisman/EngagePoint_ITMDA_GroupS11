@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/pages/customer_profile.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'models/post_model.dart';
@@ -9,7 +10,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'pages/home_page.dart';
 import 'pages/post_page.dart';
 import 'pages/review_page.dart';
-import 'pages/user_profile_page.dart';
 import 'providers/theme_provider.dart';
 import 'services/firestore_service.dart';
 import 'services/notification_service.dart';
@@ -74,7 +74,7 @@ Future<void> _handleNotificationNavigation(RemoteMessage message) async {
     if (followerId != null && navigatorKey.currentContext != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
-            builder: (context) => UserProfilePage(userId: followerId)),
+            builder: (context) => CustomerProfilePage(userId: followerId)),
       );
     }
   }

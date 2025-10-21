@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_app/pages/business_profile.dart' show BusinessProfilePage;
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import 'full_screen_image_viewer.dart';
-import 'user_profile_page.dart';
 import '../services/logging_service.dart';
 
 Color _getTagColor(String? tag) {
@@ -114,7 +114,7 @@ class _PostPageState extends State<PostPage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
-                                UserProfilePage(userId: businessId),
+                                BusinessProfilePage(userId: businessId),
                           ),
                         );
                       }

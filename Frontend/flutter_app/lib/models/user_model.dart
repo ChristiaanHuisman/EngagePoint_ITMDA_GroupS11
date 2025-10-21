@@ -19,6 +19,7 @@ class UserModel {
   final String? timezoneOffset;
   final Timestamp? verifiedAt;
   final NotificationPreferences notificationPreferences;
+  final bool isPrivate;
   
 
   UserModel({
@@ -38,6 +39,7 @@ class UserModel {
     this.timezoneOffset,
     this.verifiedAt,
     required this.notificationPreferences,
+    this.isPrivate = false,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -59,6 +61,7 @@ class UserModel {
       timezoneOffset: data['timezoneOffset'],
       verifiedAt: data['verifiedAt'],
       notificationPreferences: NotificationPreferences.fromMap(data['notificationPreferences']),
+      isPrivate: data['isPrivate'] ?? false,
     );
   }
 
@@ -83,6 +86,7 @@ class UserModel {
       'timezone': timezone,
       'timezoneOffset': timezoneOffset, 
       'verifiedAt': verifiedAt,
+      'isPrivate': isPrivate,
 
       "notificationPreferences": {
         "onNewPost": true,
@@ -90,7 +94,7 @@ class UserModel {
         "onNewReview": true,
         "onPostLike": false,
         "onNewFollower": true,
-        "subscribedTags": ["Promotion", "Sale"],
+        "subscribedTags": [],
         "quietTimeEnabled": false,
         "quietTimeStart": "22:00",
         "quietTimeEnd": "08:00"

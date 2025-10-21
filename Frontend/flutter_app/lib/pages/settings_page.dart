@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // Import Provider
+import 'package:provider/provider.dart'; 
 import 'package:flutter_app/pages/notification_settings_page.dart';
 import '../models/user_model.dart';
-import '../providers/theme_provider.dart'; // Import ThemeProvider
+import '../providers/theme_provider.dart'; 
 import '../services/firestore_service.dart';
 
 // Changed to StatelessWidget as theme state is managed by Provider
@@ -51,11 +51,13 @@ class SettingsPage extends StatelessWidget {
                 ),
                 SwitchListTile(
                   title: const Text("Receive Notifications"),
-                  subtitle: const Text("Enable/disable detailed settings below"),
+                  subtitle:
+                      const Text("Enable/disable detailed settings below"),
                   value: receiveNotificationsEnabled,
                   onChanged: (bool value) {
                     // Update the relevant preference in Firestore
-                    firestoreService.updateNotificationPreference('onNewPost', value);
+                    firestoreService.updateNotificationPreference(
+                        'onNewPost', value);
                     // Consider updating all notification toggles if this is a true master switch
                   },
                   activeThumbColor: Theme.of(context).colorScheme.primary,
@@ -73,7 +75,8 @@ class SettingsPage extends StatelessWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
+                      MaterialPageRoute(
+                          builder: (_) => const NotificationSettingsPage()),
                     );
                   },
                 ),
@@ -90,27 +93,34 @@ class SettingsPage extends StatelessWidget {
                         ),
                   ),
                 ),
-                
-               
+
                 CheckboxListTile(
                   title: const Text("Private Profile"),
-                  value: false, // Placeholder - connect to state/Firestore if needed
+                  subtitle: const Text(
+                      "Hide your activity (e.g., reviews) from others"),
+                  // Read the value from the user model
+                  value: user.isPrivate,
                   onChanged: (bool? value) {
-                    // TODO: Implement saving this preference 
+                    if (value != null) {
+                      // Call the service to update Firestore
+                      firestoreService.updateUserPrivacy(value);
+                    }
                   },
                 ),
                 CheckboxListTile(
                   title: const Text("Anonymous Rewards"),
-                  value: false, // Placeholder - connect to state/Firestore if needed
+                  value:
+                      false, // Placeholder - connect to state/Firestore if needed
                   onChanged: (bool? value) {
-                     // TODO: Implement saving this preference 
+                    // TODO: Implement saving this preference
                   },
                 ),
                 CheckboxListTile(
                   title: const Text("Track Analytics"),
-                  value: true, // Placeholder - connect to state/Firestore if needed
+                  value:
+                      true, // Placeholder - connect to state/Firestore if needed
                   onChanged: (bool? value) {
-                     // TODO: Implement saving this preference 
+                    // TODO: Implement saving this preference
                   },
                 ),
 
@@ -131,7 +141,8 @@ class SettingsPage extends StatelessWidget {
                   // Read the value directly from the ThemeProvider
                   value: themeProvider.themeMode == ThemeMode.dark,
                   onChanged: (bool value) {
-                    Provider.of<ThemeProvider>(context, listen: false).toggleTheme(value);
+                    Provider.of<ThemeProvider>(context, listen: false)
+                        .toggleTheme(value);
                   },
                   activeThumbColor: Theme.of(context).colorScheme.primary,
                 ),
@@ -141,7 +152,8 @@ class SettingsPage extends StatelessWidget {
                   onTap: () {
                     // Add actual cache clearing logic if needed
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Cache cleared (simulation).')),
+                      const SnackBar(
+                          content: Text('Cache cleared (simulation).')),
                     );
                   },
                 ),
@@ -152,10 +164,11 @@ class SettingsPage extends StatelessWidget {
                     showAboutDialog(
                       context: context,
                       applicationName: 'EngagePoint',
-                      applicationVersion: '1.0.0', 
-                      applicationLegalese: '© 2025 ITMDA Group S11', 
+                      applicationVersion: '1.0.0',
+                      applicationLegalese: '© 2025 ITMDA Group S11',
                       children: <Widget>[
-                        const Text('A mobile engagement app connecting businesses and customers.'),
+                        const Text(
+                            'A mobile engagement app connecting businesses and customers.'),
                       ],
                     );
                   },

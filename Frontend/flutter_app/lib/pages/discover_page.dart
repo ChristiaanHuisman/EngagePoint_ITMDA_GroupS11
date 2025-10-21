@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/pages/business_profile.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
-import 'user_profile_page.dart';
 import '../widgets/app_drawer.dart';
 
 class DiscoverPage extends StatefulWidget {
@@ -166,7 +166,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
-                          UserProfilePage(userId: business.uid),
+                          BusinessProfilePage(userId: business.uid),
                     ),
                   );
                 },
