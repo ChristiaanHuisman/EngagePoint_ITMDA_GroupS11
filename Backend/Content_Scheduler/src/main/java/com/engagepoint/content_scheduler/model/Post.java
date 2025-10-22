@@ -1,8 +1,7 @@
-package main.java.com.engagepoint.content_scheduler.model;
+package com.engagepoint.content_scheduler.model;
 
-import java.util.Date;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import org.springframework.data.mongodb.core.mapping.Document;
+import java.time.ZonedDateTime;
 
 @Document(collection = "posts")
 public class Post {
@@ -18,10 +17,7 @@ public class Post {
     public Post() {
     }
 
-    public Post(String businessID, String content, String postDate, String postTitle, String postTag, String postID, boolean published) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd 'at' HH:mm:ss z");
-        ZonedDateTime dateTime = ZonedDateTime.parse(postDate, formatter);
-
+    public Post(String businessID, String content, ZonedDateTime postDate, String postTitle, String postTag, String postID, boolean published) {
         this.businessID = businessID;
         this.content = content;
         this.postDate = postDate;
@@ -48,14 +44,11 @@ public class Post {
         this.content = content;
     }
 
-    public Date getPostDate() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd 'at' HH:mm:ss z");
-        LocalDateTime dateTime = LocalDateTime.parse(this.postDate, formatter);
-
+    public ZonedDateTime getPostDate() {
         return postDate;
     }
 
-    public void setPostDate(Date postDate) {
+    public void setPostDate(ZonedDateTime postDate) {
         this.postDate = postDate;
     }
 
@@ -87,7 +80,7 @@ public class Post {
         return published;
     }
 
-    public void setPublished(boolean Published) {
+    public void setPublished(boolean published) {
         this.published = published;
     }
 
