@@ -1,10 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/pages/business_profile_page.dart';
+import 'package:flutter_app/pages/customer_profile_page.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart'; 
 import '../services/firestore_service.dart';
 import '../pages/review_page.dart';
-import '../pages/user_profile_page.dart';
 import '../pages/edit_review_page.dart';
 
 class ReviewCard extends StatefulWidget {
@@ -43,7 +44,7 @@ class _ReviewCardState extends State<ReviewCard> {
     final String customerId = widget.review.customerId;
     final String businessId = widget.review.businessId;
 
-    // Defensive defaults
+
     UserModel? customer;
     UserModel? business;
 
@@ -209,7 +210,7 @@ class _ReviewCardState extends State<ReviewCard> {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  UserProfilePage(userId: targetUserId),
+                                  CustomerProfilePage(userId: targetUserId),
                             ),
                           );
                         }
@@ -251,7 +252,7 @@ class _ReviewCardState extends State<ReviewCard> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          UserProfilePage(userId: targetUserId),
+                                          BusinessProfilePage(userId: targetUserId),
                                     ),
                                   );
                                 }

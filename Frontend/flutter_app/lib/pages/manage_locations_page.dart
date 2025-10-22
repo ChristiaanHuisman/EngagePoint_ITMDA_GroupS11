@@ -74,58 +74,60 @@ class _ManageLocationsPageState extends State<ManageLocationsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Store Locations'),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showLocationDialog(),
-        child: const Icon(Icons.add),
-      ),
-      body: _businessId == null
-          ? const Center(child: Text('Not logged in.'))
-          : StreamBuilder<List<LocationModel>>(
-              stream: _firestoreService.getLocations(_businessId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
-                      child: Text('No locations added yet. Tap + to add one.'));
-                }
+        appBar: AppBar(
+          title: const Text('Manage Store Locations'),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showLocationDialog(),
+          child: const Icon(Icons.add),
+        ),
+        body: SafeArea(
+          child: _businessId == null
+              ? const Center(child: Text('Not logged in.'))
+              : StreamBuilder<List<LocationModel>>(
+                  stream: _firestoreService.getLocations(_businessId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(
+                          child: Text(
+                              'No locations added yet. Tap + to add one.'));
+                    }
 
-                final locations = snapshot.data!;
+                    final locations = snapshot.data!;
 
-                return ListView.builder(
-                  itemCount: locations.length,
-                  itemBuilder: (context, index) {
-                    final location = locations[index];
-                    return ListTile(
-                      title: Text(location.name),
-                      subtitle: Text(location.address),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined),
-                            // Pass the whole LocationModel object
-                            onPressed: () =>
-                                _showLocationDialog(location: location),
+                    return ListView.builder(
+                      itemCount: locations.length,
+                      itemBuilder: (context, index) {
+                        final location = locations[index];
+                        return ListTile(
+                          title: Text(location.name),
+                          subtitle: Text(location.address),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined),
+                                // Pass the whole LocationModel object
+                                onPressed: () =>
+                                    _showLocationDialog(location: location),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline,
+                                    color: Colors.red),
+                                // Use location.id from the model
+                                onPressed: () => _firestoreService
+                                    .deleteLocation(locationId: location.id),
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline,
-                                color: Colors.red),
-                            // Use location.id from the model
-                            onPressed: () => _firestoreService.deleteLocation(
-                                locationId: location.id),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
-    );
+                ),
+        ));
   }
 }

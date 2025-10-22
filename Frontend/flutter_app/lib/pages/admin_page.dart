@@ -31,14 +31,16 @@ class _AdminPageState extends State<AdminPage> {
             unselectedLabelColor: Colors.white70,
           ),
         ),
-        body: TabBarView(
-          children: [
-            // Content for the "Business Verification" tab
-            _buildBusinessVerificationView(),
-            
-            // Content for the "Content Moderation" tab
-            _buildContentModerationView(),
-          ],
+        body: SafeArea(
+          child: TabBarView(
+            children: [
+              // Content for the "Business Verification" tab
+              _buildBusinessVerificationView(),
+
+              // Content for the "Content Moderation" tab
+              _buildContentModerationView(),
+            ],
+          ),
         ),
       ),
     );

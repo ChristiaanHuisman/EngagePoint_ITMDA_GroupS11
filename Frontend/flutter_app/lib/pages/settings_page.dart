@@ -1,66 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/settings_model.dart';
+import 'package:flutter_app/pages/notification_settings_page.dart';
 import '../models/user_model.dart';
+import '../providers/theme_provider.dart';
 import '../services/firestore_service.dart';
 
-class SettingsPage extends StatefulWidget {
+// Changed to StatelessWidget as theme state is managed by Provider
+class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
-}
-
-class _SettingsPageState extends State<SettingsPage> {
-  final FirestoreService _firestoreService = FirestoreService();
-  final List<String> _postTags = [
-    'Promotion',
-    'Sale',
-    'Event',
-    'New Stock',
-    'Update'
-  ];
-
-  void _onPreferenceChanged(
-      List<String> currentPrefs, String tag, bool isSelected) {
-    // This function remains the same
-    final newPrefs = List<String>.from(currentPrefs);
-    if (isSelected) {
-      newPrefs.add(tag);
-    } else {
-      newPrefs.remove(tag);
-    }
-    _firestoreService.updateNotificationPreferences(newPrefs);
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final FirestoreService firestoreService = FirestoreService();
+    // Access the ThemeProvider (listen: false in callbacks, listen: true for UI)
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Settings")),
-      body: StreamBuilder<UserModel?>(
-        stream: _firestoreService.getUserStream(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      
+        appBar: AppBar(
+        title: const Text("Settings"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      ),
+        body: SafeArea(
+          child: StreamBuilder<UserModel?>(
+            stream: firestoreService.getUserStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          final user = snapshot.data;
+              final user = snapshot.data;
+              // Handle case where user data might not be loaded yet or user is null
+              if (user == null) {
+                return const Center(
+                    child: Text("Could not load user settings."));
+              }
 
-          if (user == null) {
-            return const Center(child: Text("Could not load settings."));
-          }
+              final prefs = user.notificationPreferences;
+              // Use a specific preference (like onNewPost) as the master toggle indicator
+              final bool receiveNotificationsEnabled = prefs.onNewPost;
 
-          // Determine if filtering is enabled based on the data from the model
-          final bool tagFilteringEnabled = user.notificationTags.isNotEmpty;
-
-          return Consumer<SettingsData>(
-            builder:
-                (BuildContext context, SettingsData settings, Widget? child) {
               return SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
+                    // --- Notifications Section ---
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
@@ -70,65 +56,42 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                       ),
                     ),
-
-                    // Master switch for all notifications
                     SwitchListTile(
                       title: const Text("Receive Notifications"),
-                      value: settings.receiveNotifications,
+                      subtitle:
+                          const Text("Enable/disable detailed settings below"),
+                      value: receiveNotificationsEnabled,
                       onChanged: (bool value) {
-                        settings.receiveNotifications = value;
+                        // Update the relevant preference in Firestore
+                        firestoreService.updateNotificationPreference(
+                            'onNewPost', value);
+                        // Consider updating all notification toggles if this is a true master switch
                       },
                       activeThumbColor: Theme.of(context).colorScheme.primary,
                     ),
-
-                    SwitchListTile(
-                      title: const Text("Filter Notifications by Tag"),
-                      subtitle: const Text(
-                          "Only receive notifications for topics you select."),
-                      value: tagFilteringEnabled,
-                      onChanged: (bool value) {
-                        // When the user toggles this switch, we update Firestore.
-                        // The StreamBuilder will then automatically rebuild the UI.
-                        if (value) {
-                          // If turning on, default to all tags selected.
-                          _firestoreService
-                              .updateNotificationPreferences(_postTags);
-                        } else {
-                          // If turning off, clear the preferences.
-                          _firestoreService.updateNotificationPreferences([]);
-                        }
-                      },
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
-                    ),
-
-                    if (tagFilteringEnabled)
-                      Padding(
-                        padding: const EdgeInsets.only(
-                            left: 16.0, right: 16.0, top: 8.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            children: _postTags.map((tag) {
-                              return CheckboxListTile(
-                                title: Text(tag),
-                                value: user.notificationTags.contains(tag),
-                                onChanged: (bool? value) {
-                                  if (value != null) {
-                                    _onPreferenceChanged(
-                                        user.notificationTags, tag, value);
-                                  }
-                                },
-                              );
-                            }).toList(),
-                          ),
-                        ),
+                    ListTile(
+                      title: const Text("Advanced Notification Settings"),
+                      subtitle:
+                          const Text("Manage post, review, and quiet hours"),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios,
+                        color: receiveNotificationsEnabled
+                            ? Colors.grey.shade700
+                            : Colors.grey.shade400,
                       ),
+                      enabled: receiveNotificationsEnabled,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const NotificationSettingsPage()),
+                        );
+                      },
+                    ),
 
                     const Divider(height: 32),
 
+                    // --- Privacy Section ---
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
@@ -138,30 +101,24 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                       ),
                     ),
+
                     CheckboxListTile(
                       title: const Text("Private Profile"),
-                      value: settings.privateProfile,
+                      subtitle: const Text(
+                          "Hide your activity (e.g., reviews) from others"),
+                      // Read the value from the user model
+                      value: user.isPrivate,
                       onChanged: (bool? value) {
-                        settings.privateProfile = value ?? false;
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: const Text("Anonymous Rewards"),
-                      value: settings.anonymousRewards,
-                      onChanged: (bool? value) {
-                        settings.anonymousRewards = value ?? false;
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: const Text("Track Analytics"),
-                      value: settings.trackAnalytics,
-                      onChanged: (bool? value) {
-                        settings.trackAnalytics = value ?? false;
+                        if (value != null) {
+                          // Call the service to update Firestore
+                          firestoreService.updateUserPrivacy(value);
+                        }
                       },
                     ),
 
                     const Divider(height: 32),
 
+                    // --- App Section ---
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
@@ -173,9 +130,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     SwitchListTile(
                       title: const Text("Dark Mode"),
-                      value: settings.darkModeEnabled,
+                      // Read the value directly from the ThemeProvider
+                      value: themeProvider.themeMode == ThemeMode.dark,
                       onChanged: (bool value) {
-                        settings.darkModeEnabled = value;
+                        Provider.of<ThemeProvider>(context, listen: false)
+                            .toggleTheme(value);
                       },
                       activeThumbColor: Theme.of(context).colorScheme.primary,
                     ),
@@ -183,8 +142,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       leading: const Icon(Icons.cleaning_services),
                       title: const Text("Clear Cache"),
                       onTap: () {
+                        // Add actual cache clearing logic if needed
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Cache cleared.')),
+                          const SnackBar(
+                              content: Text('Cache cleared (simulation).')),
                         );
                       },
                     ),
@@ -196,9 +157,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           context: context,
                           applicationName: 'EngagePoint',
                           applicationVersion: '1.0.0',
-                          applicationLegalese: '© 2024 ITMDA Group S11',
+                          applicationLegalese: '© 2025 ITMDA Group S11',
                           children: <Widget>[
-                            const Text('A mobile engagement app.'),
+                            const Text(
+                                'A mobile engagement app connecting businesses and customers.'),
                           ],
                         );
                       },
@@ -207,9 +169,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               );
             },
-          );
-        },
-      ),
-    );
+          ),
+        ),
+      );
   }
 }

@@ -1,10 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/pages/business_profile_page.dart';
 import 'package:flutter_app/services/logging_service.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
-import '../pages/user_profile_page.dart';
 import '../pages/post_page.dart';
 import '../pages/edit_post_page.dart';
 
@@ -266,7 +266,7 @@ class PostHeader extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => UserProfilePage(userId: targetUserId),
+                  builder: (context) => BusinessProfilePage(userId: targetUserId),
                 ),
               );
             }

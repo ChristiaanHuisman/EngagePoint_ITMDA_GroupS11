@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_app/models/review_model.dart';
 import '../services/logging_service.dart';
 import '../models/post_model.dart';
-import '../models/user_model.dart';      
-import '../models/location_model.dart';  
+import '../models/user_model.dart';
+import '../models/location_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -33,7 +33,8 @@ class FirestoreService {
 
     final userModel = UserModel.fromFirestore(userDoc);
     if (!userModel.isBusiness) {
-      throw Exception("Permission denied. Only business users can create posts.");
+      throw Exception(
+          "Permission denied. Only business users can create posts.");
     }
 
     await _db.collection('posts').add({
@@ -99,7 +100,8 @@ class FirestoreService {
       'followedAt': FieldValue.serverTimestamp(),
     });
 
-    _loggingService.logAnalyticsEvent( //analytics logging
+    _loggingService.logAnalyticsEvent(
+      //analytics logging
       eventName: 'business_follow',
       parameters: {
         'customer_id': currentUser.uid,
@@ -172,24 +174,23 @@ class FirestoreService {
   // Returns a stream of ReviewModels.
   // Returns a stream of reviews for a specific business.
   Stream<List<ReviewModel>> getReviewsForBusiness(String businessId) {
-  return _db
-      .collection('reviews')
-      .where('businessId', isEqualTo: businessId)
-      .orderBy('createdAt', descending: true)
-      .snapshots()
-      .map((snapshot) {
-        List<ReviewModel> reviews = [];
-        for (var doc in snapshot.docs) {
-          try {
-            reviews.add(ReviewModel.fromFirestore(doc));
-          } catch (e) {
-            debugPrint("Error parsing review ${doc.id}: $e");
-          }
+    return _db
+        .collection('reviews')
+        .where('businessId', isEqualTo: businessId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      List<ReviewModel> reviews = [];
+      for (var doc in snapshot.docs) {
+        try {
+          reviews.add(ReviewModel.fromFirestore(doc));
+        } catch (e) {
+          debugPrint("Error parsing review ${doc.id}: $e");
         }
-        return reviews;
-      });
-}
-
+      }
+      return reviews;
+    });
+  }
 
   // Gets the real-time average rating and review count for a business.
   Stream<Map<String, double>> getReviewStats(String businessId) {
@@ -279,15 +280,16 @@ class FirestoreService {
   }
 
   // Returns a stream of ReviewModels.
-  /// Returns a stream of reviews written by a specific customer.
+  // Returns a stream of reviews written by a specific customer.
   Stream<List<ReviewModel>> getReviewsForCustomer(String customerId) {
     return _db
         .collection('reviews')
         .where('customerId', isEqualTo: customerId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => ReviewModel.fromFirestore(doc)).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => ReviewModel.fromFirestore(doc))
+            .toList());
   }
 
   // Updates an existing post document with new data.
@@ -338,7 +340,7 @@ class FirestoreService {
         .map((snapshot) => snapshot.exists);
   }
 
-  /// Gets the real-time count of reactions for a post.
+  // Gets the real-time count of reactions for a post.
   Stream<int> getPostReactionCount(String postId) {
     return _db
         .collection('posts')
@@ -365,7 +367,7 @@ class FirestoreService {
     }
   }
 
-  /// Checks if the current user has liked a specific review.
+  // Checks if the current user has liked a specific review.
   Stream<bool> hasUserReactedToReview(String reviewId) {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return Stream.value(false);
@@ -378,7 +380,7 @@ class FirestoreService {
         .map((snapshot) => snapshot.exists);
   }
 
-  /// Gets the real-time count of likes for a review.
+  // Gets the real-time count of likes for a review.
   Stream<int> getReviewReactionCount(String reviewId) {
     return _db
         .collection('reviews')
@@ -404,16 +406,13 @@ class FirestoreService {
     });
   }
 
-
-  /// Gets the total number of likes across all posts for a business.
+  // Gets the total number of likes across all posts for a business.
   Future<int> getTotalLikesForBusiness(String businessId) async {
     final postsQuery = await _db
         .collection('posts')
         .where('businessId', isEqualTo: businessId)
         .get();
     int totalLikes = 0;
-    // This is inefficient for large numbers of posts. For a production app,
-    // you would use a Cloud Function to update a counter. But for this project, it's fine.
     for (final postDoc in postsQuery.docs) {
       final reactionsQuery =
           await postDoc.reference.collection('reactions').get();
@@ -422,7 +421,7 @@ class FirestoreService {
     return totalLikes;
   }
 
-  /// Gets the total number of reviews for a business.
+  // Gets the total number of reviews for a business.
   Future<int> getTotalReviewsForBusiness(String businessId) async {
     final reviewsQuery = await _db
         .collection('reviews')
@@ -480,7 +479,7 @@ class FirestoreService {
     });
   }
 
-  /// Gets a real-time stream of locations for a specific business.
+  // Gets a real-time stream of locations for a specific business.
   Stream<List<LocationModel>> getLocations(String businessId) {
     return _db
         .collection('users')
@@ -492,7 +491,7 @@ class FirestoreService {
             .toList());
   }
 
-  /// Updates an existing location document for the current business.
+  // Updates an existing location document for the current business.
   Future<void> updateLocation({
     required String locationId,
     required String name,
@@ -511,7 +510,7 @@ class FirestoreService {
     });
   }
 
-  /// Deletes a location document for the current business.
+  // Deletes a location document for the current business.
   Future<void> deleteLocation({required String locationId}) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
@@ -533,13 +532,16 @@ class FirestoreService {
         .map((doc) => doc.exists ? UserModel.fromFirestore(doc) : null);
   }
 
-  /// Provides a stream of a user's profile for any given user ID.
+  // Provides a stream of a user's profile for any given user ID.
   Stream<UserModel?> getUserProfileStream(String uid) {
-    return _db.collection('users').doc(uid).snapshots()
+    return _db
+        .collection('users')
+        .doc(uid)
+        .snapshots()
         .map((doc) => doc.exists ? UserModel.fromFirestore(doc) : null);
   }
 
-  /// Updates the current user's points by a given amount.
+  // Updates the current user's points by a given amount.
   Future<void> updateUserPoints(int pointsToAdd) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
@@ -557,12 +559,51 @@ class FirestoreService {
     });
   }
 
-  // New method to update user notification preferences
-  Future<void> updateNotificationPreferences(List<String> tags) async {
+  // update user notification preferences
+
+  Future<void> updateUserPreference(String key, dynamic value) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
+
     await _db.collection('users').doc(currentUser.uid).update({
-      'notificationTags': tags,
+      'notificationPreferences.$key': value,
+    });
+  }
+
+  // Fetches a single post by its document ID
+  Future<PostModel?> getPostById(String postId) async {
+    final doc = await _db.collection('posts').doc(postId).get();
+    return doc.exists ? PostModel.fromFirestore(doc) : null;
+  }
+
+  // Fetches a single review by its document ID
+  Future<ReviewModel?> getReviewById(String reviewId) async {
+    final doc = await _db.collection('reviews').doc(reviewId).get();
+    return doc.exists ? ReviewModel.fromFirestore(doc) : null;
+  }
+
+  // Updates a single field within the notificationPreferences map.
+  Future<void> updateNotificationPreference(String key, dynamic value) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    // Use dot notation to update a field in a nested map
+    await _db.collection('users').doc(currentUser.uid).update({
+      'notificationPreferences.$key': value,
+    });
+  }
+
+// Overwrites the list of subscribed tags.
+  Future<void> updateSubscribedTags(List<String> tags) async {
+    await updateNotificationPreference('subscribedTags', tags);
+  }
+
+  Future<void> updateUserPrivacy(bool isPrivate) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    await _db.collection('users').doc(currentUser.uid).update({
+      'isPrivate': isPrivate,
     });
   }
 }
