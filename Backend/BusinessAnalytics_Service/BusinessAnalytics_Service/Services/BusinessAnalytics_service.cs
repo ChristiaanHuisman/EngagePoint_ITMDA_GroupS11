@@ -1,11 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Google.Analytics.Data.V1Beta;
 using Google.Apis.Auth.OAuth2;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.ComponentModel.DataAnnotations;
 using Backend.BusinessAnalytics_Service.BusinessAnalytics_Service.Models;
 
 
@@ -120,11 +114,11 @@ namespace BusinessAnalytics_Service.Services
                 },
                 DateRanges = { new DateRange { StartDate = startDate, EndDate = endDate } },
 
-                OrderBys =
+                OrderBys =   //ensures data is ordered by date in ascending order
                 {
                     new OrderBy
                     {
-                        Dimension = new OrderBy.Types.DimensionOrderBy
+                        Dimension = new OrderBy.Types.DimensionOrderBy  
                         {
                             DimensionName="date"
                         },
@@ -198,7 +192,7 @@ namespace BusinessAnalytics_Service.Services
                 },
                 DateRanges = { new DateRange { StartDate = startDate, EndDate = endDate } },
 
-                OrderBys =
+                OrderBys =    //ensures data is ordered by date in ascending order
                 {
                     new OrderBy
                     {
@@ -257,7 +251,7 @@ namespace BusinessAnalytics_Service.Services
                                 }
                             },
 
-                            new FilterExpression //ensures it only accounts for "click_through" events
+                            new FilterExpression //ensures it only accounts for "business_follow" events
                             {
                                 Filter = new Filter
                                 {
@@ -275,7 +269,7 @@ namespace BusinessAnalytics_Service.Services
                 },
                 DateRanges = { new DateRange { StartDate = startDate, EndDate = endDate } },
 
-                OrderBys =
+                OrderBys =      //ensures data is ordered by date in ascending order
                 {
                     new OrderBy
                     {
