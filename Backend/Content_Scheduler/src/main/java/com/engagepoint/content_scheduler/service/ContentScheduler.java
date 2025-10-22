@@ -32,8 +32,9 @@ public class ContentScheduler {
                         .document(post.getPostID())
                         .set(post);
                 }
+                
             } catch (Exception e) {
-                System.err.println("Error scheduling posts: " + e.getMessage());
+                    System.err.println("Error scheduling posts: " + e.getMessage());
             }
         }
     }

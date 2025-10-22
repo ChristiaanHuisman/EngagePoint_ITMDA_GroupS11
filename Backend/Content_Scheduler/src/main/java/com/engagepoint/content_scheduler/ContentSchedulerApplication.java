@@ -8,7 +8,6 @@ import engagepoint.content_scheduler.service.ContentScheduler;
 
 @SpringBootApplication
 public class ContentSchedulerApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(ContentSchedulerApplication.class, args);
 	}
