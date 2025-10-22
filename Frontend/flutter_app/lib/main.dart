@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/pages/customer_profile.dart';
+import 'package:flutter_app/pages/customer_profile_page.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'models/post_model.dart';
@@ -35,7 +35,7 @@ Future<void> _handleNotificationNavigation(RemoteMessage message) async {
 
   // Log the notification open event
   final loggingService = LoggingService();
-  final currentUser = FirebaseAuth.instance.currentUser; // Import firebase_auth
+  final currentUser = FirebaseAuth.instance.currentUser; 
   loggingService.logAnalyticsEvent(
     eventName: 'notification_opened',
     parameters: {

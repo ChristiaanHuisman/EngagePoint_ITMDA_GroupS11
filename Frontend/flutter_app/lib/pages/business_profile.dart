@@ -11,14 +11,18 @@ import '../widgets/review_card.dart';
 import 'business_dashboard_page.dart';
 import 'edit_profile_page.dart';
 import 'manage_locations_page.dart';
-import 'write_review_page.dart'; 
+import 'write_review_page.dart';
 import '../services/logging_service.dart';
-import '../widgets/app_drawer.dart';
 
 class BusinessProfilePage extends StatefulWidget {
   final String userId;
+  final bool isMainPage; 
 
-  const BusinessProfilePage({super.key, required this.userId});
+  const BusinessProfilePage({
+    super.key,
+    required this.userId,
+    this.isMainPage = false, 
+  });
 
   @override
   State<BusinessProfilePage> createState() => _BusinessProfilePageState();
@@ -37,135 +41,192 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
       stream: _firestoreService.getUserProfileStream(widget.userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return widget.isMainPage
+              ? const Center(child: CircularProgressIndicator())
+              : const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasError) {
-          return const Scaffold(body: Center(child: Text("Error loading profile.")));
+          return widget.isMainPage
+              ? const Center(child: Text("Error loading profile."))
+              : const Scaffold(body: Center(child: Text("Error loading profile.")));
         }
 
         final UserModel? user = snapshot.data;
 
-        if (user == null || !user.isBusiness) { // Ensure it's a business profile
-          return const Scaffold(body: Center(child: Text("Business profile not found.")));
+        if (user == null || !user.isBusiness) {
+          return widget.isMainPage
+              ? const Center(child: Text("Business profile not found."))
+              : const Scaffold(body: Center(child: Text("Business profile not found.")));
         }
 
-        // Log profile view if it's not the user's own profile
         if (!isOwnProfile) {
           _loggingService.logAnalyticsEvent(
             eventName: 'View_business_profile',
-            parameters: {'viewer_id': currentUserId ?? 'unknown', 'viewed_business_id': widget.userId},
+            parameters: {
+              'viewer_id': currentUserId ?? 'unknown',
+              'viewed_business_id': widget.userId
+            },
           );
         }
 
-        // Business profile always has 2 tabs: Posts & Reviews
-        return DefaultTabController(
-          length: 2,
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(isOwnProfile ? "My Business Profile" : user.name),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              leading: Navigator.canPop(context)
-                  ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context))
-                  : (isOwnProfile
-                      ? Builder(builder: (context) => IconButton(icon: const Icon(Icons.menu), onPressed: () => Scaffold.of(context).openDrawer()))
-                      : null),
-              actions: [
-                if (isOwnProfile)
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => EditProfilePage(user: user)),
-                      );
-                    },
-                  ),
-              ],
-            ),
-            drawer: isOwnProfile ? const AppDrawer() : null,
-            body: SafeArea(
-              child: NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) {
-                  return <Widget>[
-                    SliverToBoxAdapter(child: _buildProfileHeader(context, user, isOwnProfile)),
-                    SliverPersistentHeader(
-                      pinned: true,
-                    delegate: _TabBarHeaderDelegate(
-                      TabBar(
-                        tabs: const [ // Tabs are fixed for business
-                          Tab(icon: Icon(Icons.post_add_outlined), text: 'Posts'),
-                          Tab(icon: Icon(Icons.reviews_outlined), text: 'Reviews'),
-                        ],
-                        indicatorColor: Theme.of(context).colorScheme.primary,
-                        labelColor: Theme.of(context).colorScheme.primary,
-                        unselectedLabelColor: Colors.grey,
-                      ),
-                    ),
-                  ),
-                ];
-              },
-              body: TabBarView( // Views match the fixed tabs
-                children: [
-                  _PostsTab(userId: widget.userId, firestoreService: _firestoreService),
-                  _ReviewsTab(userId: widget.userId, isCustomerView: false, firestoreService: _firestoreService),
-                ],
-              ),
-            ),
-          ),
-        )
-        );
+        
+        
+        if (!widget.isMainPage) {
+          return Scaffold(
+            appBar: _buildAppBar(context, user, isOwnProfile),
+            body: _buildBody(context, user, isOwnProfile),
+          );
+        }
+
+        
+        return _buildBody(context, user, isOwnProfile);
       },
     );
   }
 
-  // --- Helper Widgets --- (Copied from UserProfilePage, slightly simplified)
+  
+  PreferredSizeWidget _buildAppBar(BuildContext context, UserModel user, bool isOwnProfile) {
+    return AppBar(
+      title: Text(isOwnProfile ? "My Business Profile" : user.name),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      actions: [
+        if (isOwnProfile)
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => EditProfilePage(user: user)),
+              );
+            },
+          ),
+      ],
+    );
+  }
 
-  Widget _buildProfileHeader(BuildContext context, UserModel user, bool isOwnProfile) {
+ 
+  Widget _buildBody(BuildContext context, UserModel user, bool isOwnProfile) {
+    return DefaultTabController(
+      length: 2,
+      child: SafeArea(
+        top: !widget.isMainPage,
+        bottom: !widget.isMainPage,
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return <Widget>[
+              SliverToBoxAdapter(
+                  child: _buildProfileHeader(context, user, isOwnProfile)),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _TabBarHeaderDelegate(
+                  TabBar(
+                    tabs: const [
+                      Tab(
+                          icon: Icon(Icons.post_add_outlined),
+                          text: 'Posts'),
+                      Tab(
+                          icon: Icon(Icons.reviews_outlined),
+                          text: 'Reviews'),
+                    ],
+                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    labelColor: Theme.of(context).colorScheme.primary,
+                    unselectedLabelColor: Colors.grey,
+                  ),
+                ),
+              ),
+            ];
+          },
+          body: TabBarView(
+            children: [
+              _PostsTab(
+                  userId: widget.userId,
+                  firestoreService: _firestoreService),
+              _ReviewsTab(
+                  userId: widget.userId,
+                  isCustomerView: false,
+                  firestoreService: _firestoreService),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper Widgets 
+
+  Widget _buildProfileHeader(
+      BuildContext context, UserModel user, bool isOwnProfile) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
           CircleAvatar(
             radius: 60,
-            backgroundImage: user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
-            child: user.photoUrl == null ? const Icon(Icons.store, size: 60) : null, // Always store icon
+            backgroundImage:
+                user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
+            child: user.photoUrl == null
+                ? const Icon(Icons.store, size: 60)
+                : null,
           ),
           const SizedBox(height: 16),
-          Text(user.name, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+          Text(user.name,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center),
           if (user.description != null && user.description!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
-              child: Text(user.description!, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600])),
+              child: Text(user.description!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(color: Colors.grey[600])),
             ),
           if (user.businessType != null && user.businessType!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Chip(
                 label: Text(user.businessType!),
-                labelStyle: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSecondaryContainer),
+                labelStyle: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSecondaryContainer),
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                backgroundColor:
+                    Theme.of(context).colorScheme.secondaryContainer,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
           const SizedBox(height: 16),
-          // Business specific elements always shown
           Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildStatColumn("Followers", _firestoreService.getFollowerCount(widget.userId)),
+                  _buildStatColumn("Followers",
+                      _firestoreService.getFollowerCount(widget.userId)),
                   _buildReviewStatColumn(widget.userId),
                   isOwnProfile
-                      ? ElevatedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const BusinessDashboardPage())), icon: const Icon(Icons.dashboard_outlined, size: 16), label: const Text('Dashboard'))
+                      ? ElevatedButton.icon(
+                          onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const BusinessDashboardPage())),
+                          icon: const Icon(Icons.dashboard_outlined, size: 16),
+                          label: const Text('Dashboard'))
                       : _buildFollowButton(widget.userId),
                 ],
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
-                child: isOwnProfile ? _buildManageLocationsButton(context) : _buildLocationsButton(context, widget.userId),
+                child: isOwnProfile
+                    ? _buildManageLocationsButton(context)
+                    : _buildLocationsButton(context, widget.userId),
               ),
             ],
           ),
@@ -174,13 +235,20 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
     );
   }
 
-  Widget _buildManageLocationsButton(BuildContext context) => OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageLocationsPage())), icon: const Icon(Icons.edit_location_alt_outlined, size: 16), label: const Text('Manage Store Locations'));
+  Widget _buildManageLocationsButton(BuildContext context) =>
+      OutlinedButton.icon(
+          onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const ManageLocationsPage())),
+          icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
+          label: const Text('Manage Store Locations'));
 
   Widget _buildLocationsButton(BuildContext context, String businessId) {
     return StreamBuilder<List<LocationModel>>(
       stream: _firestoreService.getLocations(businessId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
         final locations = snapshot.data!;
         return OutlinedButton.icon(
           onPressed: () {
@@ -189,7 +257,10 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
               builder: (_) => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Padding(padding: const EdgeInsets.all(16.0), child: Text('Store Locations', style: Theme.of(context).textTheme.titleLarge)),
+                  Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text('Store Locations',
+                          style: Theme.of(context).textTheme.titleLarge)),
                   Flexible(
                     child: ListView.builder(
                       shrinkWrap: true,
@@ -197,15 +268,19 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                       itemBuilder: (context, index) {
                         final location = locations[index];
                         return ListTile(
-                          leading: const Icon(Icons.store_mall_directory_outlined),
+                          leading:
+                              const Icon(Icons.store_mall_directory_outlined),
                           title: Text(location.name),
                           subtitle: Text(location.address),
                           onTap: () async {
-                            final Uri mapsUrl = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location.address)}');
+                            final Uri mapsUrl = Uri.parse(
+                                'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location.address)}');
                             if (await canLaunchUrl(mapsUrl)) {
                               await launchUrl(mapsUrl);
                             } else if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open map.')));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('Could not open map.')));
                             }
                           },
                         );
@@ -222,6 +297,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
       },
     );
   }
+
   Widget _buildStatColumn(String label, Stream<int> stream) {
     return StreamBuilder<int>(
       stream: stream,
@@ -287,6 +363,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
   }
 }
 
+
 class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
   final TabBar _tabBar;
   _TabBarHeaderDelegate(this._tabBar);
@@ -328,6 +405,7 @@ class _PostsTab extends StatelessWidget {
     );
   }
 }
+
 
 class _ReviewsTab extends StatelessWidget {
   final String userId;
@@ -391,7 +469,8 @@ class _ReviewsTab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16.0, vertical: 8.0),
                   child: ReviewCard(
-                      review: reviews[index], showBusinessName: isCustomerView),
+                      review: reviews[index],
+                      showBusinessName: isCustomerView),
                 ),
               );
             },
@@ -401,5 +480,3 @@ class _ReviewsTab extends StatelessWidget {
     );
   }
 }
-
-

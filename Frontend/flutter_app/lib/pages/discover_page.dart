@@ -1,99 +1,48 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/pages/business_profile.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
-import '../widgets/app_drawer.dart';
 
-class DiscoverPage extends StatefulWidget {
-  const DiscoverPage({super.key});
 
-  @override
-  State<DiscoverPage> createState() => _DiscoverPageState();
-}
+class DiscoverPageWrapper extends StatelessWidget {
+  final String searchQuery;
+  final Function(BuildContext, String) onNavigate;
 
-class _DiscoverPageState extends State<DiscoverPage> {
-  final FirestoreService _firestoreService = FirestoreService();
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  final User? _user = FirebaseAuth.instance.currentUser;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(() {
-      if (_searchQuery != _searchController.text) {
-        setState(() {
-          _searchQuery = _searchController.text;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+  const DiscoverPageWrapper({
+    super.key,
+    required this.searchQuery,
+    required this.onNavigate,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (_user == null) {
-      return const Scaffold(body: Center(child: Text("Not Logged In")));
-    }
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        title: Container(
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(38),
-            borderRadius: BorderRadius.circular(30),
+    return Stack(
+      children: [
+        const DiscoverFeed(), 
+        if (searchQuery.trim().isNotEmpty)
+          DiscoverSearchResults( 
+            searchQuery: searchQuery,
+            onNavigate: onNavigate,
           ),
-          child: TextField(
-            controller: _searchController,
-            style: const TextStyle(color: Colors.white),
-            textAlignVertical: TextAlignVertical.center,
-            decoration: InputDecoration(
-              prefixIcon:
-                  const Icon(Icons.search, color: Colors.white, size: 20),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear,
-                          color: Colors.white, size: 20),
-                      onPressed: () {
-                        _searchController.clear();
-                        FocusScope.of(context).unfocus();
-                      },
-                    )
-                  : null,
-              hintText: 'Search Businesses...',
-              hintStyle: TextStyle(color: Colors.white.withAlpha(179)),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(10),
-            ),
-          ),
-        ),
-      ),
-      drawer: const AppDrawer(),
-      body: Stack(
-        children: [
-          _buildDiscoverFeed(),
-          if (_searchQuery.trim().isNotEmpty) _buildSearchResults(),
-        ],
-      ),
+      ],
     );
   }
+}
 
-  Widget _buildDiscoverFeed() {
+
+class DiscoverFeed extends StatelessWidget {
+  const DiscoverFeed({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final FirestoreService firestoreService = FirestoreService();
     final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
     return StreamBuilder<List<PostModel>>(
-      stream: _firestoreService.getAllPosts(),
+      stream: firestoreService.getAllPosts(),
       builder: (context, postSnapshot) {
         if (postSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -121,13 +70,26 @@ class _DiscoverPageState extends State<DiscoverPage> {
       },
     );
   }
+}
 
-  Widget _buildSearchResults() {
+
+class DiscoverSearchResults extends StatelessWidget {
+  final String searchQuery;
+  final Function(BuildContext, String) onNavigate;
+  final FirestoreService _firestoreService = FirestoreService();
+
+  DiscoverSearchResults({
+    super.key,
+    required this.searchQuery,
+    required this.onNavigate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
-      // StreamBuilder now expects List<UserModel>
+      color: Theme.of(context).scaffoldBackgroundColor, 
       child: StreamBuilder<List<UserModel>>(
-        stream: _firestoreService.searchBusinesses(_searchQuery),
+        stream: _firestoreService.searchBusinesses(searchQuery),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const LinearProgressIndicator();
@@ -135,18 +97,15 @@ class _DiscoverPageState extends State<DiscoverPage> {
           if (snapshot.hasError) {
             return const ListTile(title: Text('Error searching businesses.'));
           }
-          // Check the list directly instead of snapshot.data!.docs
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const ListTile(title: Text('No businesses found.'));
           }
 
-          // The data is already a List<UserModel>!
           final results = snapshot.data!;
 
           return ListView.builder(
             itemCount: results.length,
             itemBuilder: (context, index) {
-              // No more manual parsing! 'business' is already a UserModel.
               final UserModel business = results[index];
 
               return ListTile(
@@ -160,15 +119,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 ),
                 title: Text(business.name),
                 onTap: () {
-                  FocusScope.of(context).unfocus();
-                  _searchController.clear();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          BusinessProfilePage(userId: business.uid),
-                    ),
-                  );
+
+                  onNavigate(context, business.uid);
                 },
               );
             },

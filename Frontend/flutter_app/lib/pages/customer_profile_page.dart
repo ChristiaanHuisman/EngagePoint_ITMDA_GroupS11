@@ -1,16 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/post_model.dart';
-import 'package:flutter_app/pages/write_review_page.dart';
-import 'package:flutter_app/widgets/post_card.dart';
+import 'package:flutter_app/pages/write_review_page.dart'; 
 import '../models/review_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/review_card.dart';
 import 'edit_profile_page.dart';
-import '../widgets/app_drawer.dart';
 
-// (Level struct can be copied here if needed for _RewardsTab)
+
+// Level struct
 class Level {
   final int level;
   final String name;
@@ -21,8 +19,13 @@ class Level {
 
 class CustomerProfilePage extends StatefulWidget {
   final String userId;
+  final bool isMainPage; 
 
-  const CustomerProfilePage({super.key, required this.userId});
+  const CustomerProfilePage({
+    super.key,
+    required this.userId,
+    this.isMainPage = false, 
+  });
 
   @override
   State<CustomerProfilePage> createState() => _CustomerProfilePageState();
@@ -31,7 +34,7 @@ class CustomerProfilePage extends StatefulWidget {
 class _CustomerProfilePageState extends State<CustomerProfilePage> {
   final FirestoreService _firestoreService = FirestoreService();
 
-  // (Level data and _getLevelData function remain the same)
+  // Level data 
   final List<Level> _levels = [
     Level(level: 1, name: 'Bronze', pointsRequired: 0),
     Level(level: 2, name: 'Silver', pointsRequired: 500),
@@ -80,125 +83,134 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       stream: _firestoreService.getUserProfileStream(widget.userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+
+          return widget.isMainPage
+              ? const Center(child: CircularProgressIndicator())
+              : const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasError) {
-          return const Scaffold(
-              body: Center(child: Text("Error loading profile.")));
+          return widget.isMainPage
+              ? const Center(child: Text("Error loading profile."))
+              : const Scaffold(body: Center(child: Text("Error loading profile.")));
         }
         final UserModel? user = snapshot.data;
 
         if (user == null || user.isBusiness) {
-          // Ensure it's a customer profile
-          return const Scaffold(
-              body: Center(child: Text("Customer profile not found.")));
+          return widget.isMainPage
+              ? const Center(child: Text("Customer profile not found."))
+              : const Scaffold(body: Center(child: Text("Customer profile not found.")));
+        }
+        
+
+        if (!widget.isMainPage) {
+          return Scaffold(
+            appBar: _buildAppBar(context, user, isOwnProfile),
+            body: _buildBody(context, user, isOwnProfile),
+          );
         }
 
-        final bool canViewContent = !user.isPrivate || isOwnProfile;
 
-        // Customer profile always has 2 tabs: Reviews & Rewards
-        return DefaultTabController(
-            length: 2,
-            child: Scaffold(
-                appBar: AppBar(
-                  title: Text(isOwnProfile ? "My Profile" : user.name),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  leading: Navigator.canPop(context)
-                      ? IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () => Navigator.pop(context))
-                      : (isOwnProfile
-                          ? Builder(
-                              builder: (context) => IconButton(
-                                  icon: const Icon(Icons.menu),
-                                  onPressed: () =>
-                                      Scaffold.of(context).openDrawer()))
-                          : null),
-                  actions: [
-                    if (isOwnProfile)
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => EditProfilePage(user: user)),
-                          );
-                        },
-                      ),
-                  ],
-                ),
-                drawer: isOwnProfile ? const AppDrawer() : null,
-                body: SafeArea(
-                  child: NestedScrollView(
-                    headerSliverBuilder: (context, innerBoxIsScrolled) {
-                      return <Widget>[
-                        SliverToBoxAdapter(
-                            child: _buildProfileHeader(
-                                context, user, isOwnProfile)),
-                        SliverPersistentHeader(
-                          pinned: true,
-                          delegate: _TabBarHeaderDelegate(
-                            TabBar(
-                              tabs: const [
-                                // Tabs are fixed for customer
-                                Tab(
-                                    icon: Icon(Icons.reviews_outlined),
-                                    text: 'Reviews'),
-                                Tab(
-                                    icon: Icon(Icons.emoji_events_outlined),
-                                    text: 'Rewards'),
-                              ],
-                              indicatorColor:
-                                  Theme.of(context).colorScheme.primary,
-                              labelColor: Theme.of(context).colorScheme.primary,
-                              unselectedLabelColor: Colors.grey,
-                            ),
-                          ),
-                        ),
-                      ];
-                    },
-                    body: SafeArea(
-                      child: canViewContent
-                          ? TabBarView(
-                              children: [
-                                // Pass the user object to _ReviewsTab
-                                _ReviewsTab(
-                                  userId: widget.userId,
-                                  isCustomerView: true,
-                                  firestoreService: _firestoreService,
-                                  profileOwnerUser:
-                                      user, // Pass the owner's data
-                                ),
-                                _RewardsTab(
-                                  user: user,
-                                  getLevelData: _getLevelData,
-                                  firestoreService: _firestoreService,
-                                ),
-                              ],
-                            )
-                          : const Center(
-                              // Show privacy message if content is hidden
-                              child: Padding(
-                                padding: EdgeInsets.all(20.0),
-                                child: Text(
-                                  "This profile is private.",
-                                  style: TextStyle(
-                                      fontSize: 18, color: Colors.grey),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                    ),
-                  ),
-                )));
+        return _buildBody(context, user, isOwnProfile);
       },
     );
   }
 
-  // --- Helper Widgets --- (Simplified for Customer)
+
+  PreferredSizeWidget _buildAppBar(BuildContext context, UserModel user, bool isOwnProfile) {
+    return AppBar(
+      title: Text(isOwnProfile ? "My Profile" : user.name),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+
+      actions: [
+        if (isOwnProfile)
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => EditProfilePage(user: user)),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+
+  Widget _buildBody(BuildContext context, UserModel user, bool isOwnProfile) {
+    final bool canViewContent = !user.isPrivate || isOwnProfile;
+
+    return DefaultTabController(
+      length: 2,
+      child: SafeArea(
+
+        top: !widget.isMainPage,
+        bottom: !widget.isMainPage,
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return <Widget>[
+              SliverToBoxAdapter(
+                  child: _buildProfileHeader(
+                      context, user, isOwnProfile)),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _TabBarHeaderDelegate(
+                  TabBar(
+                    tabs: const [
+                      Tab(
+                          icon: Icon(Icons.reviews_outlined),
+                          text: 'Reviews'),
+                      Tab(
+                          icon: Icon(Icons.emoji_events_outlined),
+                          text: 'Rewards'),
+                    ],
+                    indicatorColor:
+                        Theme.of(context).colorScheme.primary,
+                    labelColor: Theme.of(context).colorScheme.primary,
+                    unselectedLabelColor: Colors.grey,
+                  ),
+                ),
+              ),
+            ];
+          },
+          body: SafeArea(
+            child: canViewContent
+                ? TabBarView(
+                    children: [
+                      _ReviewsTab(
+                        userId: widget.userId,
+                        isCustomerView: true,
+                        firestoreService: _firestoreService,
+                        profileOwnerUser:
+                            user,
+                      ),
+                      _RewardsTab(
+                        user: user,
+                        getLevelData: _getLevelData,
+                        firestoreService: _firestoreService,
+                      ),
+                    ],
+                  )
+                : const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text(
+                        "This profile is private.",
+                        style: TextStyle(
+                            fontSize: 18, color: Colors.grey),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  //  Helper Widgets
 
   Widget _buildProfileHeader(
       BuildContext context, UserModel user, bool isOwnProfile) {
@@ -212,7 +224,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                 user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
             child: user.photoUrl == null
                 ? const Icon(Icons.person, size: 60)
-                : null, // Always person icon
+                : null,
           ),
           const SizedBox(height: 16),
           Text(user.name,
@@ -231,13 +243,13 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                       .bodyLarge
                       ?.copyWith(color: Colors.grey[600])),
             ),
-          // No business-specific info (type, stats, buttons) needed here
-          const SizedBox(height: 16), // Add some spacing at the bottom
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 }
+
 
 class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
   final TabBar _tabBar;
@@ -255,32 +267,6 @@ class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(covariant _TabBarHeaderDelegate oldDelegate) => false;
 }
 
-// ignore: unused_element
-class _PostsTab extends StatelessWidget {
-  final String userId;
-  final FirestoreService firestoreService;
-  const _PostsTab({required this.userId, required this.firestoreService});
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<List<PostModel>>(
-      stream: firestoreService.getPostsForBusiness(userId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text("No posts yet."));
-        }
-        final posts = snapshot.data!;
-        return ListView.builder(
-          padding: const EdgeInsets.all(0),
-          itemCount: posts.length,
-          itemBuilder: (context, index) => PostCard(post: posts[index]),
-        );
-      },
-    );
-  }
-}
 
 class _ReviewsTab extends StatelessWidget {
   final String userId;
