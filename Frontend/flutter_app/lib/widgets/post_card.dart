@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/services/logging_service.dart';
 import 'package:intl/intl.dart';
-import '../models/post_model.dart'; 
+import '../models/post_model.dart';
 import '../services/firestore_service.dart';
 import '../pages/user_profile_page.dart';
 import '../pages/post_page.dart';
@@ -22,7 +22,8 @@ class PostCard extends StatelessWidget {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Post?'),
-          content: const Text('Are you sure you want to permanently delete this post?'),
+          content: const Text(
+              'Are you sure you want to permanently delete this post?'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -46,7 +47,8 @@ class PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // access properties directly from the `post` object.
-    final String formattedDate = DateFormat('MMM dd, yyyy').format(post.createdAt.toDate());
+    final String formattedDate =
+        DateFormat('MMM dd, yyyy').format(post.createdAt.toDate());
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -68,8 +70,8 @@ class PostCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               PostHeader(
-                businessId: post.businessId, 
-                onDelete: () => _showDeleteConfirmation(context, post.id), 
+                businessId: post.businessId,
+                onDelete: () => _showDeleteConfirmation(context, post.id),
                 onEdit: () {
                   Navigator.push(
                     context,
@@ -88,19 +90,21 @@ class PostCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.title, 
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          post.title,
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           post.content,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[700],
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey[700],
+                                  ),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -150,23 +154,27 @@ class PostCard extends StatelessWidget {
                         builder: (context, snapshot) {
                           final hasReacted = snapshot.data ?? false;
                           return IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            icon: Icon(
-                              hasReacted ? Icons.favorite : Icons.favorite_border,
-                              color: hasReacted ? Colors.red : Colors.grey,
-                            ),
-                            onPressed: () => {
-                              _firestoreService.togglePostReaction(post.id),
-                              _loggingService.logAnalyticsEvent(
-                                eventName: hasReacted ? 'post_reaction_removed' : 'post_reaction_added',
-                                parameters: {
-                                  'post_id': post.id,
-                                  'business_id': post.businessId,
-                                },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              icon: Icon(
+                                hasReacted
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: hasReacted ? Colors.red : Colors.grey,
                               ),
-                            }
-                          );
+                              onPressed: () => {
+                                    _firestoreService
+                                        .togglePostReaction(post.id),
+                                    _loggingService.logAnalyticsEvent(
+                                      eventName: hasReacted
+                                          ? 'post_reaction_removed'
+                                          : 'post_reaction_added',
+                                      parameters: {
+                                        'post_id': post.id,
+                                        'business_id': post.businessId,
+                                      },
+                                    ),
+                                  });
                         },
                       ),
                       const SizedBox(width: 4),
@@ -203,6 +211,7 @@ class PostHeader extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final FirestoreService _firestoreService = FirestoreService();
+  final LoggingService _loggingService = LoggingService();
 
   PostHeader({
     required this.businessId,
@@ -240,6 +249,13 @@ class PostHeader extends StatelessWidget {
         return GestureDetector(
           onTap: () {
             if (businessId.isNotEmpty) {
+              _loggingService.logAnalyticsEvent(
+                eventName: 'click_through',
+                parameters: {
+                  'business_id': businessId,
+                },
+              );
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -251,9 +267,13 @@ class PostHeader extends StatelessWidget {
           child: Row(
             children: [
               CircleAvatar(
-                backgroundImage: businessPhotoUrl != null ? NetworkImage(businessPhotoUrl) : null,
+                backgroundImage: businessPhotoUrl != null
+                    ? NetworkImage(businessPhotoUrl)
+                    : null,
                 radius: 20,
-                child: businessPhotoUrl == null ? const Icon(Icons.store, size: 20) : null,
+                child: businessPhotoUrl == null
+                    ? const Icon(Icons.store, size: 20)
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(

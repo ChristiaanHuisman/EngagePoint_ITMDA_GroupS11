@@ -104,6 +104,13 @@ class _PostPageState extends State<PostPage> {
                 GestureDetector(
                   onTap: () {
                     if (businessId.isNotEmpty) {
+                      _loggingService.logAnalyticsEvent(
+                         eventName: 'click_through',
+                          parameters: {
+                            'business_id': businessId,
+                          },
+                     );
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
