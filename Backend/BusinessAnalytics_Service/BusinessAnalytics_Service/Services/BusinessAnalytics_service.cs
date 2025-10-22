@@ -196,7 +196,19 @@ namespace BusinessAnalytics_Service.Services
 
                     }
                 },
-                DateRanges = { new DateRange { StartDate = startDate, EndDate = endDate } }
+                DateRanges = { new DateRange { StartDate = startDate, EndDate = endDate } },
+
+                OrderBys =
+                {
+                    new OrderBy
+                    {
+                        Dimension = new OrderBy.Types.DimensionOrderBy
+                        {
+                            DimensionName="date"
+                        },
+                        Desc=false
+                    }
+                }
             };
 
             var response = await _analyticsDataClient.RunReportAsync(request); //uses the client created in the previous function to access data
@@ -261,7 +273,19 @@ namespace BusinessAnalytics_Service.Services
 
                     }
                 },
-                DateRanges = { new DateRange { StartDate = startDate, EndDate = endDate } }
+                DateRanges = { new DateRange { StartDate = startDate, EndDate = endDate } },
+
+                OrderBys =
+                {
+                    new OrderBy
+                    {
+                        Dimension = new OrderBy.Types.DimensionOrderBy
+                        {
+                            DimensionName="date"
+                        },
+                        Desc=false
+                    }
+                }
             };
 
             var response = await _analyticsDataClient.RunReportAsync(request); //uses the client created in the previous function to access data
