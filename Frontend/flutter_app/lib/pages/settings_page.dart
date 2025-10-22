@@ -16,7 +16,12 @@ class SettingsPage extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-        appBar: AppBar(title: const Text("Settings")),
+      
+        appBar: AppBar(
+        title: const Text("Settings"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      ),
         body: SafeArea(
           child: StreamBuilder<UserModel?>(
             stream: firestoreService.getUserStream(),
@@ -165,6 +170,7 @@ class SettingsPage extends StatelessWidget {
               );
             },
           ),
-        ));
+        ),
+      );
   }
 }

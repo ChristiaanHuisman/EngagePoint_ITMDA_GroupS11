@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/pages/business_profile.dart';
+import 'package:flutter_app/pages/business_profile_page.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';

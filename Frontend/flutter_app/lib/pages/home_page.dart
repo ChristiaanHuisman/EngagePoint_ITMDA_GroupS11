@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/pages/business_profile.dart'; 
+import 'package:flutter_app/pages/business_profile_page.dart'; 
 import 'package:flutter_app/pages/customer_profile_page.dart';
 import 'package:flutter_app/pages/edit_profile_page.dart';
 import 'package:flutter_app/widgets/app_drawer.dart';
@@ -196,8 +196,7 @@ class MainAppNavigatorState extends State<MainAppNavigator> {
   }
 
   //  HELPER METHOD 
-  void _navigateToUserProfileFromSearch(
-      BuildContext context, String userId) async {
+  void _navigateToUserProfileFromSearch(String userId) async {
     // Clear search and unfocus
     _searchController.clear();
     FocusScope.of(context).unfocus();
@@ -210,8 +209,10 @@ class MainAppNavigatorState extends State<MainAppNavigator> {
     }
 
     UserModel? user = await _firestoreService.getUserProfile(userId);
-    if (user != null && context.mounted) {
+    if (!mounted) return;
+    if (user != null) {
       Navigator.push(
+        
         context,
         MaterialPageRoute(
           builder: (context) => user.isBusiness

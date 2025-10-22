@@ -26,7 +26,11 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Notification Settings")),
+      appBar: AppBar(
+        title: const Text("Notification Settings"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      ),
       body: SafeArea(
         child: StreamBuilder<UserModel?>(
           stream: _firestoreService.getUserStream(),

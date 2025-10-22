@@ -1,14 +1,150 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/pages/business_profile_page.dart';
+import 'package:flutter_app/pages/customer_profile_page.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
+import '../widgets/app_drawer.dart';
 
+// This is the main page, which holds the state
+class DiscoverPage extends StatefulWidget {
+  final GlobalKey<ScaffoldState>? scaffoldKey;
+  const DiscoverPage({super.key, this.scaffoldKey});
 
+  @override
+  State<DiscoverPage> createState() => _DiscoverPageState();
+}
+
+class _DiscoverPageState extends State<DiscoverPage> {
+  final FirestoreService _firestoreService = FirestoreService();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      if (_searchQuery != _searchController.text) {
+        setState(() {
+          _searchQuery = _searchController.text;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  
+  void _navigateToUserProfile(String userId) async {
+    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (userId == currentUserId) {
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+      return;
+    }
+    
+
+    if (!mounted) return; 
+    
+    UserModel? user = await _firestoreService.getUserProfile(userId);
+
+    if (!mounted) return; 
+    
+    if (user != null) {
+
+    
+
+      await Navigator.push(      
+        context, 
+        MaterialPageRoute(
+          builder: (context) => user.isBusiness
+              ? BusinessProfilePage(userId: userId)
+              : CustomerProfilePage(userId: userId),
+        ),
+      );
+
+      if (!mounted) return; 
+
+      _searchController.clear();
+
+      
+
+      FocusScope.of(context).unfocus();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        leading: widget.scaffoldKey != null
+            ? IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => widget.scaffoldKey!.currentState?.openDrawer(),
+              )
+            : Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              ),
+        title: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(38),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: TextField(
+            controller: _searchController,
+            style: const TextStyle(color: Colors.white),
+            textAlignVertical: TextAlignVertical.center,
+            decoration: InputDecoration(
+              prefixIcon:
+                  const Icon(Icons.search, color: Colors.white, size: 20),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear,
+                          color: Colors.white, size: 20),
+                      onPressed: () {
+                        _searchController.clear();
+                        FocusScope.of(context).unfocus();
+                      },
+                    )
+                  : null,
+              hintText: 'Search Businesses...',
+              hintStyle: TextStyle(color: Colors.white.withAlpha(179)),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(10),
+            ),
+          ),
+        ),
+      ),
+      drawer: const AppDrawer(),
+      body: SafeArea(
+        child: DiscoverPageWrapper(
+          searchQuery: _searchQuery,
+          // We pass the actual navigation function to the child
+          onNavigate: _navigateToUserProfile,
+        ),
+      ),
+    );
+  }
+}
+
+// This wrapper widget correctly passes the onNavigate function down
 class DiscoverPageWrapper extends StatelessWidget {
   final String searchQuery;
-  final Function(BuildContext, String) onNavigate;
+  // 🔽 THE FIX: The function signature is now simpler. 🔽
+  final Function(String) onNavigate;
 
   const DiscoverPageWrapper({
     super.key,
@@ -18,21 +154,20 @@ class DiscoverPageWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Stack(
       children: [
-        const DiscoverFeed(), 
+        const DiscoverFeed(),
         if (searchQuery.trim().isNotEmpty)
-          DiscoverSearchResults( 
+          DiscoverSearchResults(
             searchQuery: searchQuery,
-            onNavigate: onNavigate,
+            onNavigate: onNavigate, // Pass the function to the results
           ),
       ],
     );
   }
 }
 
-
+// This feed widget shows all posts
 class DiscoverFeed extends StatelessWidget {
   const DiscoverFeed({super.key});
 
@@ -72,10 +207,11 @@ class DiscoverFeed extends StatelessWidget {
   }
 }
 
-
+// This results widget correctly calls the onNavigate function
 class DiscoverSearchResults extends StatelessWidget {
   final String searchQuery;
-  final Function(BuildContext, String) onNavigate;
+  // 🔽 THE FIX: The function signature is now simpler. 🔽
+  final Function(String) onNavigate;
   final FirestoreService _firestoreService = FirestoreService();
 
   DiscoverSearchResults({
@@ -87,7 +223,7 @@ class DiscoverSearchResults extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Theme.of(context).scaffoldBackgroundColor, 
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: StreamBuilder<List<UserModel>>(
         stream: _firestoreService.searchBusinesses(searchQuery),
         builder: (context, snapshot) {
@@ -102,25 +238,23 @@ class DiscoverSearchResults extends StatelessWidget {
           }
 
           final results = snapshot.data!;
-
           return ListView.builder(
             itemCount: results.length,
             itemBuilder: (context, index) {
               final UserModel business = results[index];
-
               return ListTile(
                 leading: CircleAvatar(
                   backgroundImage: business.photoUrl != null
                       ? NetworkImage(business.photoUrl!)
                       : null,
                   child: business.photoUrl == null
-                      ? const Icon(Icons.store)
+                      ? Icon(business.isBusiness ? Icons.store : Icons.person)
                       : null,
                 ),
                 title: Text(business.name),
                 onTap: () {
-
-                  onNavigate(context, business.uid);
+                  // 🔽 THE FIX: Only pass the ID. 🔽
+                  onNavigate(business.uid);
                 },
               );
             },

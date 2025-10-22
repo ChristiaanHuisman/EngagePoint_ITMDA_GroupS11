@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/pages/business_profile.dart';
+import 'package:flutter_app/pages/business_profile_page.dart';
 import 'package:flutter_app/pages/customer_profile_page.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart'; 
