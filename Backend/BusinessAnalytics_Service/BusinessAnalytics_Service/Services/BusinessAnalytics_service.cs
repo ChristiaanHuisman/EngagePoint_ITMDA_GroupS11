@@ -1,0 +1,76 @@
+using Microsoft.AspNetCore.Mvc;
+using Google.Analytics.Data.V1Beta;
+using Google.Apis.Auth.OAuth2;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.ComponentModel.DataAnnotations;
+using Backend.BusinessAnalytics_Service.BusinessAnalytics_Service.Models;
+
+
+namespace BusinessAnalytics_Service.Services
+{
+
+    public class GoogleAnalyticsService
+    {
+        private readonly BetaAnalyticsDataClient _analyticsDataClient;
+
+        public GoogleAnalyticsService()//used to connect to the Google Analytics Data API
+        {
+
+                GoogleCredential credential = GoogleCredential.FromFile(@"C:\Group Assignment\engagepoint-a2c47-d2ea64cf2f21.json")
+                .CreateScoped(BetaAnalyticsDataClient.DefaultScopes); //creates a Google Credential from the service account JSON file to allow API access
+
+
+            _analyticsDataClient = new BetaAnalyticsDataClientBuilder
+            {
+                Credential = credential
+            }.Build(); //builds the Analytics Data API client using the provided credentials
+
+
+        }
+        
+        public async Task<ViewPerPostResponse> ViewsPerPostAsync(string businessID, string startDate, string endDate) //Method to return the total views per post for a given business
+        {
+            RunReportRequest request = new RunReportRequest
+            {
+                Property = "properties/508197648", //GA4 property ID. For this API will always remain the same 
+                    Dimensions = { new Dimension { Name = "customEvent:post_name" } }, //tells the API to group data by post ID (Note ""customEvent:"" is required for custom dimensions and events)
+
+                        Metrics = { new Metric { Name = "eventCount" } },  //returns the total number of events (views) for each post
+
+                        DimensionFilter = new FilterExpression //filters data based on business ID
+                        {
+                            Filter = new Filter
+                            {
+                                FieldName = "customEvent:business_id",
+                                StringFilter = new Filter.Types.StringFilter
+                                {
+                                    MatchType = Filter.Types.StringFilter.Types.MatchType.Exact,
+                                    Value = businessID
+                                }
+                            }
+                        },
+
+                        DateRanges = { new DateRange { StartDate = startDate, EndDate = endDate} }
+                    };
+
+            RunReportResponse response = await _analyticsDataClient.RunReportAsync(request); //uses the client created in the previous function to access data
+
+            var AnalyticsResponse = new ViewPerPostResponse
+            {
+                businessID = businessID,
+                StartDate = startDate,
+                EndDate = endDate,
+                DataPoints = response.Rows.Select(d => new viewPerPostDatapoint
+                {
+                    PostName = d.DimensionValues[0].Value,
+                    Views = int.Parse(d.MetricValues[0].Value)
+                }).ToList()
+            };
+
+            return AnalyticsResponse; 
+        }
+    }
+}

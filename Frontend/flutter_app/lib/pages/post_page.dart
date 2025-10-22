@@ -38,6 +38,7 @@ class _PostPageState extends State<PostPage> {
       eventName: 'post_view',
       parameters: {
         'post_id': widget.post.id,
+        'post_name': widget.post.title,
         'business_id': widget.post.businessId,
       },
     );
