@@ -35,9 +35,7 @@ def get_review_sentiment(text):
         return 'neutral'
 
 def get_timestamp():
-    stamp = datetime.datetime.now()
-    stamp = stamp.strftime("%Y-%m-%d %H:%M:%S")
-    return stamp
+    return datetime.datetime.now()
 
 good = ["Thank you so much for your kind words! We're thrilled you had a great experience and look forward to serving you again. 😊",
             "We really appreciate your feedback! Your support motivates us to keep improving and providing the best service possible. 🙌",
