@@ -43,7 +43,7 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
           title: const Text('Business Dashboard'),
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          bottom:  TabBar(
+          bottom: TabBar(
             tabs: [
               Tab(icon: Icon(Icons.groups_outlined), text: 'Engagement'),
               Tab(icon: Icon(Icons.emoji_emotions_outlined), text: 'Sentiment'),
@@ -105,57 +105,60 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
     );
   }
 
-Widget _buildSentimentView() {
-  final currentUser = FirebaseAuth.instance.currentUser;
-  final businessId = currentUser?.uid ?? '';
-  final statsFuture = FirestoreService().getReviewSentimentStats(businessId);
+  Widget _buildSentimentView() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final businessId = currentUser?.uid ?? '';
+    final statsFuture = FirestoreService().getReviewSentimentStats(businessId);
 
-  return SingleChildScrollView(
-    padding: const EdgeInsets.all(16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Review Sentiment Analysis',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        FutureBuilder<Map<String, int>>(
-          future: statsFuture,
-          builder: (context, snapshot) {
-            final stats = snapshot.data ?? {'positive': 0, 'negative': 0, 'neutral': 0};
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Review Sentiment Analysis',
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          FutureBuilder<Map<String, int>>(
+            future: statsFuture,
+            builder: (context, snapshot) {
+              final stats =
+                  snapshot.data ?? {'positive': 0, 'negative': 0, 'neutral': 0};
 
-            return Column(
-              children: [
-                _buildStatCard(
-                  icon: Icons.thumb_up,
-                  label: 'Positive Reviews',
-                  future: Future.value(stats['positive']),
-                  color: Colors.green,
-                ),
-                const SizedBox(height: 12),
-                _buildStatCard(
-                  icon: Icons.thumb_down,
-                  label: 'Negative Reviews',
-                  future: Future.value(stats['negative']),
-                  color: Colors.red,
-                ),
-                const SizedBox(height: 12),
-                _buildStatCard(
-                  icon: Icons.remove,
-                  label: 'Neutral Reviews',
-                  future: Future.value(stats['neutral']),
-                  color: Colors.grey,
-                ),
-              ],
-            );
-          },
-        ),
-      ],
-    ),
-  );
-}
-
+              return Column(
+                children: [
+                  _buildStatCard(
+                    icon: Icons.thumb_up,
+                    label: 'Positive Reviews',
+                    future: Future.value(stats['positive']),
+                    color: Colors.green,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStatCard(
+                    icon: Icons.thumb_down,
+                    label: 'Negative Reviews',
+                    future: Future.value(stats['negative']),
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStatCard(
+                    icon: Icons.remove,
+                    label: 'Neutral Reviews',
+                    future: Future.value(stats['neutral']),
+                    color: Colors.grey,
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildStatCard({
     required IconData icon,
@@ -265,10 +268,11 @@ Widget _buildSentimentView() {
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else
-            SizedBox(height: 300, 
-            child: _selectedMetric == 'ViewsPerPost'
-              ? _buildAnalyticsBarChart()  // Show Bar Chart for Posts
-              : _buildAnalyticsLineChart(),
+            SizedBox(
+              height: 300,
+              child: _selectedMetric == 'ViewsPerPost'
+                  ? _buildAnalyticsBarChart() // Show Bar Chart for Posts
+                  : _buildAnalyticsLineChart(),
             ),
         ],
       ),
@@ -336,61 +340,59 @@ Widget _buildSentimentView() {
     }
   }
 
- Future<void> _downloadPdf() async {
-  final scaffoldMessenger = ScaffoldMessenger.of(context);
+  Future<void> _downloadPdf() async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-  
-  if (!kIsWeb && Platform.isIOS) {
-    var status = await Permission.photos.request(); 
-    
-    if (!status.isGranted) {
-      if (status.isPermanentlyDenied) {
+    if (!kIsWeb && Platform.isIOS) {
+      var status = await Permission.photos.request();
 
-        scaffoldMessenger.showSnackBar(
-          const SnackBar(
-            content: Text('Permission denied. Please enable Photos access in settings.'),
-            duration: Duration(seconds: 5),
-          ),
-        );
-        await openAppSettings();
-      } else {
-
-        scaffoldMessenger.showSnackBar(
-          const SnackBar(content: Text('Photos permission is required to save files on iOS.')),
-        );
+      if (!status.isGranted) {
+        if (status.isPermanentlyDenied) {
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Permission denied. Please enable Photos access in settings.'),
+              duration: Duration(seconds: 5),
+            ),
+          );
+          await openAppSettings();
+        } else {
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(
+                content: Text(
+                    'Photos permission is required to save files on iOS.')),
+          );
+        }
+        return;
       }
-      return; 
+    }
+
+    final start = DateFormat('yyyy-MM-dd').format(_startDate);
+    final end = DateFormat('yyyy-MM-dd').format(_endDate);
+    final id = _businessId!;
+    final String reportName = 'Report_${_selectedMetric}_$start.pdf';
+
+    try {
+      final Uint8List pdfBytes = await _analyticsService.downloadReportPdf(
+          _selectedMetric, id, start, end);
+
+      await FileSaver.instance.saveFile(
+        name: reportName,
+        bytes: pdfBytes,
+        fileExtension: 'pdf',
+        mimeType: MimeType.pdf,
+      );
+
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Report saved as $reportName')),
+      );
+    } catch (e) {
+      debugPrint('Error downloading PDF: $e');
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Failed to download PDF: $e')),
+      );
     }
   }
-
-
-  final start = DateFormat('yyyy-MM-dd').format(_startDate);
-  final end = DateFormat('yyyy-MM-dd').format(_endDate);
-  final id = _businessId!;
-  final String reportName = 'Report_${_selectedMetric}_$start.pdf';
-
-  try {
-    final Uint8List pdfBytes =
-        await _analyticsService.downloadReportPdf(_selectedMetric, id, start, end);
-
-
-    await FileSaver.instance.saveFile(
-      name: reportName,
-      bytes: pdfBytes,
-      fileExtension: 'pdf',
-      mimeType: MimeType.pdf,
-    );
-
-    scaffoldMessenger.showSnackBar(
-      SnackBar(content: Text('Report saved as $reportName')),
-    );
-  } catch (e) {
-    debugPrint('Error downloading PDF: $e');
-    scaffoldMessenger.showSnackBar(
-      SnackBar(content: Text('Failed to download PDF: $e')),
-    );
-  }
-}
 
   Widget _buildAnalyticsLineChart() {
     if (_analyticsData == null) {
@@ -407,24 +409,30 @@ Widget _buildSentimentView() {
     // Data Parsing Simplified for Line Charts
     final keyMap = {
       'VisitorsPerAccount': 'visitors',
-      'ClickThrough': 'clicks', 
+      'ClickThrough': 'clicks',
       'FollowsByDay': 'follows',
     };
     final String dataKey = keyMap[_selectedMetric] ?? 'value';
-    final String labelKey = 'date'; 
+    final String labelKey = 'date';
 
     final spots = <FlSpot>[];
     final bottomLabels = <int, String>{};
+    double dataPeak = 0;
 
     for (int i = 0; i < dataPoints.length; i++) {
       final y = double.tryParse(dataPoints[i][dataKey]?.toString() ?? '0') ?? 0;
+
+      if (y > dataPeak) {
+        dataPeak = y; 
+      }
+
       spots.add(FlSpot(i.toDouble(), y));
 
       final label = dataPoints[i][labelKey]?.toString() ?? '';
       if (label.isNotEmpty) {
         try {
           final dt = DateTime.parse(label);
-          bottomLabels[i] = DateFormat('MMM d').format(dt); 
+          bottomLabels[i] = DateFormat('MMM d').format(dt);
         } catch (e) {
           bottomLabels[i] = label;
         }
@@ -433,18 +441,35 @@ Widget _buildSentimentView() {
       }
     }
 
-    // Styling 
+
+    //  Calculate new maxY with padding
+    double newMaxY = 5; 
+    if (dataPeak > 0) {
+      double paddedPeak = dataPeak * 1.25; 
+
+      if (paddedPeak <= 10) {
+          newMaxY = paddedPeak.ceil().toDouble(); 
+      } else if (paddedPeak <= 50) {
+          newMaxY = (paddedPeak / 5).ceil() * 5;
+      } else {
+          newMaxY = (paddedPeak / 10).ceil() * 10;
+      }
+    }
+
+    // Styling
     final primaryColor = Theme.of(context).colorScheme.primary;
-    
 
     return LineChart(
       LineChartData(
+        minY: 0,
+        maxY: newMaxY,
+        clipData: FlClipData.all(),
         // Interactive Tooltips
         lineTouchData: LineTouchData(
           handleBuiltInTouches: true,
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (LineBarSpot touchedSpot) {
-              return Colors.blueGrey[800]!;
+              return Colors.blueGrey;
             },
             getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
               return touchedBarSpots.map((barSpot) {
@@ -468,7 +493,7 @@ Widget _buildSentimentView() {
           ),
         ),
 
-        // Cleaner Grid and Titles 
+        // Cleaner Grid and Titles
         gridData: FlGridData(
           show: true,
           drawVerticalLine: true,
@@ -487,17 +512,30 @@ Widget _buildSentimentView() {
             );
           },
         ),
-        
+
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 40,
+              reservedSize: 42,
               getTitlesWidget: (value, meta) {
+                if ((value % 1).abs() > 0.01) {
+                  return const Text('');
+                }
+
+                String text;
+                if (value >= 1000) {
+                  text = NumberFormat.compact().format(value.toInt());
+                } else {
+                  text = value.toInt().toString();
+                }
+
                 return Text(
-                  value.toInt().toString(),
+                  text,
                   style: const TextStyle(fontSize: 12),
                   textAlign: TextAlign.left,
                 );
@@ -533,13 +571,13 @@ Widget _buildSentimentView() {
             ),
           ),
         ),
-        
+
         borderData: FlBorderData(
           show: true,
           border: Border.all(color: Colors.grey, width: 1),
         ),
-        
-        // The Line and Gradient Fill 
+
+        // The Line and Gradient Fill
         lineBarsData: [
           LineChartBarData(
             spots: spots,
@@ -548,9 +586,19 @@ Widget _buildSentimentView() {
               colors: [primaryColor, primaryColor],
             ),
             barWidth: 4,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: true), // Show the nodes
-            belowBarData: BarAreaData(show: false), // Hide the fill
+            isStrokeCapRound: true,          
+            belowBarData: BarAreaData(show: false),
+            dotData: FlDotData(
+              show: true, 
+              getDotPainter: (spot, percent, barData, index) {
+                return FlDotCirclePainter(
+                  radius: 4, 
+                  color: Colors.white, 
+                  strokeWidth: 2, 
+                  strokeColor: primaryColor, 
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -568,9 +616,9 @@ Widget _buildSentimentView() {
       return const Center(child: Text('No data available for this range.'));
     }
 
-    //  Data Parsing 
-    final String dataKey = 'views'; 
-    final String labelKey = 'postName'; 
+    //  Data Parsing
+    final String dataKey = 'views';
+    final String labelKey = 'postName';
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     final List<BarChartGroupData> barGroups = [];
@@ -630,11 +678,13 @@ Widget _buildSentimentView() {
             },
           ),
         ),
-        
-        // Titles 
+
+        // Titles
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -652,16 +702,15 @@ Widget _buildSentimentView() {
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 final String text = bottomLabels[index] ?? '';
-                
 
                 if (dataPoints.length > 10 && index % 2 != 0) {
-                   return const Text('');
+                  return const Text('');
                 }
 
                 return SideTitleWidget(
                   axisSide: meta.axisSide,
                   space: 8,
-                  angle: -0.5, 
+                  angle: -0.5,
                   child: Text(text,
                       style: const TextStyle(
                           fontSize: 10, fontWeight: FontWeight.w600)),
@@ -670,11 +719,11 @@ Widget _buildSentimentView() {
             ),
           ),
         ),
-        
-        // Grid & Border 
+
+        // Grid & Border
         gridData: FlGridData(
           show: true,
-          drawVerticalLine: false, 
+          drawVerticalLine: false,
           getDrawingHorizontalLine: (value) => FlLine(
             color: Colors.grey,
             strokeWidth: 1,
@@ -685,7 +734,7 @@ Widget _buildSentimentView() {
           show: true,
           border: Border.all(color: Colors.grey, width: 1),
         ),
-        
+
         // --- 6. The Bars ---
         barGroups: barGroups,
         alignment: BarChartAlignment.spaceAround,
