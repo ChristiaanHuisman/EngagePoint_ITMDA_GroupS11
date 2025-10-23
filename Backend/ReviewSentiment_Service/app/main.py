@@ -6,6 +6,7 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 from model import ReviewModel
 import os
 
+
 nltk.download('vader_lexicon')
 
 profanity.load_censor_words()
@@ -136,19 +137,3 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0",port = port)
     
-    
-import requests
-
-url = "https://review-sentiment-service-570976278139.africa-south1.run.app/reviews"
-
-data = {
-    "businessId": "b1",
-    "customerId": "c1",
-    "rating": 5,
-    "comment": "Great service!"
-}
-
-response = requests.post(url, json=data)
-
-print(response.status_code)
-print(response.json())
