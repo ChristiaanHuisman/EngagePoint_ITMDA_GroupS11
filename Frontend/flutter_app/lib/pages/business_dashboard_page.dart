@@ -38,17 +38,18 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
             unselectedLabelColor: Colors.white70,
           ),
         ),
-        body: TabBarView(
+        body: SafeArea(child: TabBarView(
           children: [
             _buildEngagementView(),
             _buildSentimentView(),
           ],
-        ),
+        )),
       ),
     );
   }
 
   Widget _buildEngagementView() {
+    // (This widget was already correct and needs no changes)
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -141,6 +142,7 @@ Widget _buildSentimentView() {
     Stream<int>? stream,
     Future<int>? future,
   }) {
+    // (This widget was already correct and needs no changes)
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -150,29 +152,31 @@ Widget _buildSentimentView() {
           children: [
             Icon(icon, color: color, size: 30),
             const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(fontSize: 16)),
-                if (stream != null)
-                  StreamBuilder<int>(
-                    stream: stream,
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const Text('...');
-                      return Text(snapshot.data.toString(),
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold));
-                    },
-                  )
-                else if (future != null)
-                  FutureBuilder<int>(
-                    future: future,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) return const Text('...');
-                      return Text(snapshot.data.toString(),
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold));
-                    },
-                  ),
-              ],
+            Expanded( // Wrapped in Expanded to prevent overflow
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: const TextStyle(fontSize: 16)),
+                  if (stream != null)
+                    StreamBuilder<int>(
+                      stream: stream,
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return const Text('...');
+                        return Text(snapshot.data.toString(),
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold));
+                      },
+                    )
+                  else if (future != null)
+                    FutureBuilder<int>(
+                      future: future,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) return const Text('...');
+                        return Text(snapshot.data?.toString() ?? '0',
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold));
+                      },
+                    ),
+                ],
+              ),
             ),
           ],
         ),

@@ -1,6 +1,5 @@
-// lib/models/user_model.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'notification_preferences_model.dart';
 
 class UserModel {
   final String uid;
@@ -13,6 +12,15 @@ class UserModel {
   final String? description;
   final int points;
   final int spinsAvailable;
+  final List<String> notificationTags;
+  final Timestamp createdAt;
+  
+  final String? timezone;
+  final String? timezoneOffset;
+  final Timestamp? verifiedAt;
+  final NotificationPreferences notificationPreferences;
+  final bool isPrivate;
+  
 
   UserModel({
     required this.uid,
@@ -25,10 +33,15 @@ class UserModel {
     this.description,
     this.points = 0,
     this.spinsAvailable = 0,
+    this.notificationTags = const [],
+    required this.createdAt,
+    this.timezone,
+    this.timezoneOffset,
+    this.verifiedAt,
+    required this.notificationPreferences,
+    this.isPrivate = false,
   });
 
-  // This "factory constructor" is a helper that builds a UserModel
-  // from a Firestore document, providing default values for safety.
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return UserModel(
@@ -42,9 +55,50 @@ class UserModel {
       description: data['description'],
       points: data['points'] ?? 0,
       spinsAvailable: data['spinsAvailable'] ?? 0,
+      notificationTags: List<String>.from(data['notificationTags'] ?? []),
+      createdAt: data['createdAt'] ?? Timestamp.now(),
+      timezone: data['timezone'],
+      timezoneOffset: data['timezoneOffset'],
+      verifiedAt: data['verifiedAt'],
+      notificationPreferences: NotificationPreferences.fromMap(data['notificationPreferences']),
+      isPrivate: data['isPrivate'] ?? false,
     );
   }
-  
+
   // Helper getter to make role checks cleaner in the UI
   bool get isBusiness => role == 'business';
+
+  // Helper to convert the model to a map for writing to Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'searchName': name.toLowerCase(),
+      'email': email,
+      'photoUrl': photoUrl,
+      'role': role,
+      'status': status,
+      'businessType': businessType,
+      'description': description,
+      'points': points,
+      'spinsAvailable': spinsAvailable,
+      'notificationTags': notificationTags,
+      'createdAt': createdAt,
+      'timezone': timezone,
+      'timezoneOffset': timezoneOffset, 
+      'verifiedAt': verifiedAt,
+      'isPrivate': isPrivate,
+
+      "notificationPreferences": {
+        "onNewPost": true,
+        "onReviewResponse": true,
+        "onNewReview": true,
+        "onPostLike": false,
+        "onNewFollower": true,
+        "subscribedTags": [],
+        "quietTimeEnabled": false,
+        "quietTimeStart": "22:00",
+        "quietTimeEnd": "08:00"
+      }
+    };
+  }
 }

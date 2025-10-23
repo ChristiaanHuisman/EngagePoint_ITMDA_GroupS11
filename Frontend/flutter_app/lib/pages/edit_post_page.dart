@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import '../services/firestore_service.dart';
@@ -22,17 +22,25 @@ class _EditPostPageState extends State<EditPostPage> {
   late TextEditingController _contentController;
 
   bool _isLoading = false;
-  File? _imageFile;
+  Uint8List? _imageData;
   String? _existingImageUrl;
-  double? _newImageAspectRatio;
+
+  String? _selectedTag;
+  final List<String> _postTags = [
+    'Promotion',
+    'Sale',
+    'Event',
+    'New Stock',
+    'Update'
+  ];
 
   @override
   void initState() {
     super.initState();
-    //  Initializing controllers from the PostModel.
     _titleController = TextEditingController(text: widget.post.title);
     _contentController = TextEditingController(text: widget.post.content);
     _existingImageUrl = widget.post.imageUrl;
+    _selectedTag = widget.post.tag;
   }
 
   @override
@@ -42,18 +50,17 @@ class _EditPostPageState extends State<EditPostPage> {
     super.dispose();
   }
 
-  Future<double> _getImageAspectRatio(File imageFile) async {
-    final image = await decodeImageFromList(imageFile.readAsBytesSync());
+  Future<double> _getImageAspectRatio(Uint8List imageData) async {
+    final image = await decodeImageFromList(imageData);
     return image.width / image.height;
   }
 
   Future<void> _pickImage() async {
-    final file = await _storageService.pickImage();
-    if (file != null) {
-      _newImageAspectRatio = await _getImageAspectRatio(file);
+    final data = await _storageService.pickImageAsBytes();
+    if (data != null) {
       setState(() {
-        _imageFile = file;
-        _existingImageUrl = null;
+        _imageData = data;
+        _existingImageUrl = null; // Clear the existing image URL
       });
     }
   }
@@ -67,13 +74,12 @@ class _EditPostPageState extends State<EditPostPage> {
 
     try {
       String? imageUrl = _existingImageUrl;
-      
       double? imageAspectRatio = widget.post.imageAspectRatio;
 
-      if (_imageFile != null) {
+      if (_imageData != null) {
         final path = 'post_images/${widget.post.id}.jpg';
-        imageUrl = await _storageService.uploadFile(path, _imageFile!);
-        imageAspectRatio = _newImageAspectRatio;
+        imageUrl = await _storageService.uploadImageData(path, _imageData!);
+        imageAspectRatio = await _getImageAspectRatio(_imageData!);
       }
 
       await _firestoreService.updatePost(
@@ -82,6 +88,7 @@ class _EditPostPageState extends State<EditPostPage> {
         content: _contentController.text,
         imageUrl: imageUrl,
         imageAspectRatio: imageAspectRatio,
+        tag: _selectedTag,
       );
 
       if (mounted) {
@@ -115,7 +122,7 @@ class _EditPostPageState extends State<EditPostPage> {
           ),
         ],
       ),
-      body: Form(
+      body: SafeArea(
         key: _formKey,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -130,21 +137,57 @@ class _EditPostPageState extends State<EditPostPage> {
                 ),
                 child: InkWell(
                   onTap: _pickImage,
-                  child: _imageFile != null
-                      ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(_imageFile!, fit: BoxFit.cover))
-                      : (_existingImageUrl != null
-                          ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(_existingImageUrl!, fit: BoxFit.cover))
-                          : const Center(child: Text('Add an image'))),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: _imageData != null
+                        ? Image.memory(_imageData!,
+                            fit: BoxFit.cover, width: double.infinity)
+                        : (_existingImageUrl != null
+                            ? Image.network(_existingImageUrl!,
+                                fit: BoxFit.cover, width: double.infinity)
+                            : const Center(
+                                child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add_a_photo_outlined,
+                                      size: 40, color: Colors.grey),
+                                  SizedBox(height: 8),
+                                  Text('Change image (optional)'),
+                                ],
+                              ))),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedTag,
+                decoration: const InputDecoration(
+                  labelText: 'Post Category / Tag',
+                  border: OutlineInputBorder(),
+                ),
+                hint: const Text('Select a tag (optional)'),
+                items: _postTags.map((String tag) {
+                  return DropdownMenuItem<String>(
+                    value: tag,
+                    child: Text(tag),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedTag = newValue;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
                   labelText: 'Post Title',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) => value == null || value.isEmpty ? 'Please enter a title' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter a title'
+                    : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -155,7 +198,9 @@ class _EditPostPageState extends State<EditPostPage> {
                   alignLabelWithHint: true,
                 ),
                 maxLines: 8,
-                validator: (value) => value == null || value.isEmpty ? 'Please enter content' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter content'
+                    : null,
               ),
             ],
           ),

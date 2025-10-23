@@ -13,71 +13,24 @@ import 'edit_profile_page.dart';
 import 'manage_locations_page.dart';
 import 'write_review_page.dart';
 import '../services/logging_service.dart';
-import '../widgets/app_drawer.dart';
 
-// Level struct
-class Level {
-  final int level;
-  final String name;
-  final int pointsRequired;
-
-  Level(
-      {required this.level, required this.name, required this.pointsRequired});
-}
-
-// Main StatefulWidget
-class UserProfilePage extends StatefulWidget {
+class BusinessProfilePage extends StatefulWidget {
   final String userId;
+  final bool isMainPage; 
 
-  const UserProfilePage({super.key, required this.userId});
+  const BusinessProfilePage({
+    super.key,
+    required this.userId,
+    this.isMainPage = false, 
+  });
 
   @override
-  State<UserProfilePage> createState() => _UserProfilePageState();
+  State<BusinessProfilePage> createState() => _BusinessProfilePageState();
 }
 
-class _UserProfilePageState extends State<UserProfilePage> {
+class _BusinessProfilePageState extends State<BusinessProfilePage> {
   final FirestoreService _firestoreService = FirestoreService();
   final LoggingService _loggingService = LoggingService();
-
-  // Level data
-  final List<Level> _levels = [
-    Level(level: 1, name: 'Bronze', pointsRequired: 0),
-    Level(level: 2, name: 'Silver', pointsRequired: 500),
-    Level(level: 3, name: 'Gold', pointsRequired: 1500),
-    Level(level: 4, name: 'Platinum', pointsRequired: 3000),
-    Level(level: 5, name: 'Diamond', pointsRequired: 5000),
-  ];
-  Map<String, dynamic> _getLevelData(int points) {
-    Level currentLevel = _levels.first;
-    for (var level in _levels.reversed) {
-      if (points >= level.pointsRequired) {
-        currentLevel = level;
-        break;
-      }
-    }
-    int nextLevelIndex = currentLevel.level;
-    Level? nextLevel =
-        (nextLevelIndex < _levels.length) ? _levels[nextLevelIndex] : null;
-    if (nextLevel == null) {
-      return {
-        'currentLevel': currentLevel,
-        'nextLevel': null,
-        'progress': 1.0,
-        'pointsToNextLevel': 0
-      };
-    }
-    final int pointsInCurrent = points - currentLevel.pointsRequired;
-    final int pointsForNext =
-        nextLevel.pointsRequired - currentLevel.pointsRequired;
-    final double progress =
-        pointsForNext == 0 ? 1.0 : pointsInCurrent / pointsForNext;
-    return {
-      'currentLevel': currentLevel,
-      'nextLevel': nextLevel,
-      'progress': progress.clamp(0.0, 1.0),
-      'pointsToNextLevel': nextLevel.pointsRequired - points
-    };
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,22 +41,25 @@ class _UserProfilePageState extends State<UserProfilePage> {
       stream: _firestoreService.getUserProfileStream(widget.userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+          return widget.isMainPage
+              ? const Center(child: CircularProgressIndicator())
+              : const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasError) {
-          return const Scaffold(
-              body: Center(child: Text("Error loading profile.")));
+          return widget.isMainPage
+              ? const Center(child: Text("Error loading profile."))
+              : const Scaffold(body: Center(child: Text("Error loading profile.")));
         }
 
         final UserModel? user = snapshot.data;
 
-        if (user == null) {
-          return const Scaffold(
-              body: Center(child: Text("User profile not found.")));
+        if (user == null || !user.isBusiness) {
+          return widget.isMainPage
+              ? const Center(child: Text("Business profile not found."))
+              : const Scaffold(body: Center(child: Text("Business profile not found.")));
         }
 
-        if (user.isBusiness && !isOwnProfile) {
+        if (!isOwnProfile) {
           _loggingService.logAnalyticsEvent(
             eventName: 'View_business_profile',
             parameters: {
@@ -113,106 +69,92 @@ class _UserProfilePageState extends State<UserProfilePage> {
           );
         }
 
-        return DefaultTabController(
-            length: user.isBusiness ? 2 : 2,
-            child: Scaffold(
-                appBar: AppBar(
-                  title: Text(isOwnProfile ? "My Profile" : "Profile"),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  leading: Navigator.canPop(context)
-                      ? IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () => Navigator.pop(context))
-                      : (isOwnProfile
-                          ? Builder(
-                              builder: (context) => IconButton(
-                                  icon: const Icon(Icons.menu),
-                                  onPressed: () =>
-                                      Scaffold.of(context).openDrawer()))
-                          : null),
-                  actions: [
-                    if (isOwnProfile)
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => EditProfilePage(user: user)),
-                          );
-                        },
-                      ),
-                  ],
-                ),
-                drawer: isOwnProfile ? const AppDrawer() : null,
-                body: SafeArea(
-                  child: NestedScrollView(
-                    headerSliverBuilder: (context, innerBoxIsScrolled) {
-                      return <Widget>[
-                        SliverToBoxAdapter(
-                            child: _buildProfileHeader(
-                                context, user, isOwnProfile)),
-                        SliverPersistentHeader(
-                          pinned: true,
-                          delegate: _TabBarHeaderDelegate(
-                            TabBar(
-                              tabs: user.isBusiness
-                                  ? const [
-                                      Tab(
-                                          icon: Icon(Icons.post_add_outlined),
-                                          text: 'Posts'),
-                                      Tab(
-                                          icon: Icon(Icons.reviews_outlined),
-                                          text: 'Reviews')
-                                    ]
-                                  : const [
-                                      Tab(
-                                          icon: Icon(Icons.reviews_outlined),
-                                          text: 'Reviews'),
-                                      Tab(
-                                          icon:
-                                              Icon(Icons.emoji_events_outlined),
-                                          text: 'Rewards')
-                                    ],
-                              indicatorColor:
-                                  Theme.of(context).colorScheme.primary,
-                              labelColor: Theme.of(context).colorScheme.primary,
-                              unselectedLabelColor: Colors.grey,
-                            ),
-                          ),
-                        ),
-                      ];
-                    },
-                    body: SafeArea(
-                      child: TabBarView(
-                        children: user.isBusiness
-                            ? [
-                                _PostsTab(
-                                    userId: widget.userId,
-                                    firestoreService: _firestoreService),
-                                _ReviewsTab(
-                                    userId: widget.userId,
-                                    isCustomerView: false,
-                                    firestoreService: _firestoreService),
-                              ]
-                            : [
-                                _ReviewsTab(
-                                    userId: widget.userId,
-                                    isCustomerView: true,
-                                    firestoreService: _firestoreService),
-                                _RewardsTab(
-                                    user: user,
-                                    getLevelData: _getLevelData,
-                                    firestoreService: _firestoreService),
-                              ],
-                      ),
-                    ),
-                  ),
-                )));
+        
+        
+        if (!widget.isMainPage) {
+          return Scaffold(
+            appBar: _buildAppBar(context, user, isOwnProfile),
+            body: _buildBody(context, user, isOwnProfile),
+          );
+        }
+
+        
+        return _buildBody(context, user, isOwnProfile);
       },
     );
   }
+
+  
+  PreferredSizeWidget _buildAppBar(BuildContext context, UserModel user, bool isOwnProfile) {
+    return AppBar(
+      title: Text(isOwnProfile ? "My Business Profile" : user.name),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      actions: [
+        if (isOwnProfile)
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => EditProfilePage(user: user)),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+ 
+  Widget _buildBody(BuildContext context, UserModel user, bool isOwnProfile) {
+    return DefaultTabController(
+      length: 2,
+      child: SafeArea(
+        top: !widget.isMainPage,
+        bottom: !widget.isMainPage,
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            return <Widget>[
+              SliverToBoxAdapter(
+                  child: _buildProfileHeader(context, user, isOwnProfile)),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _TabBarHeaderDelegate(
+                  TabBar(
+                    tabs: const [
+                      Tab(
+                          icon: Icon(Icons.post_add_outlined),
+                          text: 'Posts'),
+                      Tab(
+                          icon: Icon(Icons.reviews_outlined),
+                          text: 'Reviews'),
+                    ],
+                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    labelColor: Theme.of(context).colorScheme.primary,
+                    unselectedLabelColor: Colors.grey,
+                  ),
+                ),
+              ),
+            ];
+          },
+          body: TabBarView(
+            children: [
+              _PostsTab(
+                  userId: widget.userId,
+                  firestoreService: _firestoreService),
+              _ReviewsTab(
+                  userId: widget.userId,
+                  isCustomerView: false,
+                  firestoreService: _firestoreService),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper Widgets 
 
   Widget _buildProfileHeader(
       BuildContext context, UserModel user, bool isOwnProfile) {
@@ -225,7 +167,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             backgroundImage:
                 user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
             child: user.photoUrl == null
-                ? Icon(user.isBusiness ? Icons.store : Icons.person, size: 60)
+                ? const Icon(Icons.store, size: 60)
                 : null,
           ),
           const SizedBox(height: 16),
@@ -245,9 +187,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       .bodyLarge
                       ?.copyWith(color: Colors.grey[600])),
             ),
-          if (user.isBusiness &&
-              user.businessType != null &&
-              user.businessType!.isNotEmpty)
+          if (user.businessType != null && user.businessType!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Chip(
@@ -262,36 +202,34 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
             ),
           const SizedBox(height: 16),
-          if (user.isBusiness)
-            Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildStatColumn("Followers",
-                        _firestoreService.getFollowerCount(widget.userId)),
-                    _buildReviewStatColumn(widget.userId),
-                    isOwnProfile
-                        ? ElevatedButton.icon(
-                            onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        const BusinessDashboardPage())),
-                            icon:
-                                const Icon(Icons.dashboard_outlined, size: 16),
-                            label: const Text('Dashboard'))
-                        : _buildFollowButton(widget.userId),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 16.0),
-                  child: isOwnProfile
-                      ? _buildManageLocationsButton(context)
-                      : _buildLocationsButton(context, widget.userId),
-                ),
-              ],
-            ),
+          Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildStatColumn("Followers",
+                      _firestoreService.getFollowerCount(widget.userId)),
+                  _buildReviewStatColumn(widget.userId),
+                  isOwnProfile
+                      ? ElevatedButton.icon(
+                          onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const BusinessDashboardPage())),
+                          icon: const Icon(Icons.dashboard_outlined, size: 16),
+                          label: const Text('Dashboard'))
+                      : _buildFollowButton(widget.userId),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: isOwnProfile
+                    ? _buildManageLocationsButton(context)
+                    : _buildLocationsButton(context, widget.userId),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -319,16 +257,16 @@ class _UserProfilePageState extends State<UserProfilePage> {
               builder: (_) => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('Store Locations')),
+                  Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text('Store Locations',
+                          style: Theme.of(context).textTheme.titleLarge)),
                   Flexible(
                     child: ListView.builder(
                       shrinkWrap: true,
                       itemCount: locations.length,
                       itemBuilder: (context, index) {
                         final location = locations[index];
-
                         return ListTile(
                           leading:
                               const Icon(Icons.store_mall_directory_outlined),
@@ -425,6 +363,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 }
 
+
 class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
   final TabBar _tabBar;
   _TabBarHeaderDelegate(this._tabBar);
@@ -466,6 +405,7 @@ class _PostsTab extends StatelessWidget {
     );
   }
 }
+
 
 class _ReviewsTab extends StatelessWidget {
   final String userId;
@@ -529,71 +469,14 @@ class _ReviewsTab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16.0, vertical: 8.0),
                   child: ReviewCard(
-                      review: reviews[index], showBusinessName: isCustomerView),
+                      review: reviews[index],
+                      showBusinessName: isCustomerView),
                 ),
               );
             },
           ),
         ),
       ],
-    );
-  }
-}
-
-class _RewardsTab extends StatelessWidget {
-  final UserModel user;
-  final Map<String, dynamic> Function(int) getLevelData;
-  final FirestoreService firestoreService;
-
-  const _RewardsTab(
-      {required this.user,
-      required this.getLevelData,
-      required this.firestoreService});
-
-  @override
-  Widget build(BuildContext context) {
-    final int points = user.points;
-    final levelData = getLevelData(points);
-    final Level currentLevel = levelData['currentLevel'];
-    final double progress = levelData['progress'];
-    final Level? nextLevel = levelData['nextLevel'];
-    final int pointsToNext = levelData['pointsToNextLevel'];
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text("Current Rank",
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              currentLevel.name,
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            LinearProgressIndicator(
-              value: progress,
-              borderRadius: BorderRadius.circular(10),
-              minHeight: 12,
-              backgroundColor: Colors.grey[300],
-              valueColor:
-                  AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              nextLevel == null
-                  ? "Max Level Achieved!"
-                  : "Level ${currentLevel.level} → ${nextLevel.level} ($pointsToNext pts to next)",
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
