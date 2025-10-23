@@ -469,20 +469,20 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
           handleBuiltInTouches: true,
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (LineBarSpot touchedSpot) {
-              return Colors.blueGrey;
+              return Theme.of(context).colorScheme.primary;
             },
             getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
               return touchedBarSpots.map((barSpot) {
                 final flSpot = barSpot;
                 return LineTooltipItem(
                   '${bottomLabels[flSpot.x.toInt()] ?? ''}\n',
-                  const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
+                  TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
                   children: [
                     TextSpan(
                       text: flSpot.y.toStringAsFixed(0),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -660,18 +660,19 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
             getTooltipColor: (group) {
-              return Colors.blueGrey[800]!;
+              return (Theme.of(context).colorScheme.primary);
             },
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               return BarTooltipItem(
                 '${bottomLabels[group.x.toInt()] ?? ''}\n',
-                const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold),
+                TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
                 children: [
                   TextSpan(
                     text: rod.toY.toStringAsFixed(0),
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w500),
                   ),
                 ],
               );
