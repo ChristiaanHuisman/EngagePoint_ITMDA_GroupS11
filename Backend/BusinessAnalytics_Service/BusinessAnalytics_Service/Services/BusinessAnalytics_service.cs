@@ -13,14 +13,31 @@ namespace BusinessAnalytics_Service.Services
         public GoogleAnalyticsService()//used to connect to the Google Analytics Data API
         {
 
-            GoogleCredential credential = GoogleCredential.FromFile(@"C:\Group Assignment\engagepoint-a2c47-d2ea64cf2f21.json")
-            .CreateScoped(BetaAnalyticsDataClient.DefaultScopes); //creates a Google Credential from the service account JSON file to allow API access
+            GoogleCredential credential = null;
 
-
-            _analyticsDataClient = new BetaAnalyticsDataClientBuilder
+        // Prefer Application Default Credentials (Cloud Run or GCE will provide these when a service account is attached)
+        try
+        {
+            credential = GoogleCredential.GetApplicationDefault().CreateScoped(BetaAnalyticsDataClient.DefaultScopes);
+        }
+        catch
+        {
+            // If ADC not available (e.g., local dev), optionally read JSON from env var GOOGLE_SERVICE_ACCOUNT_JSON.
+            var json = Environment.GetEnvironmentVariable("GOOGLE_SERVICE_ACCOUNT_JSON");
+            if (!string.IsNullOrEmpty(json))
             {
-                Credential = credential
-            }.Build(); //builds the Analytics Data API client using the provided credentials
+                credential = GoogleCredential.FromJson(json).CreateScoped(BetaAnalyticsDataClient.DefaultScopes);
+            }
+            else
+            {
+                throw new InvalidOperationException("No Google credentials found. Set ADC or GOOGLE_SERVICE_ACCOUNT_JSON.");
+            }
+        }
+
+        _analyticsDataClient = new BetaAnalyticsDataClientBuilder
+        {
+            Credential = credential
+        }.Build();//builds the Analytics Data API client using the provided credentials
 
 
         }
