@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/user_model.dart'; 
+import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 
 class AdminPage extends StatefulWidget {
@@ -23,7 +23,9 @@ class _AdminPageState extends State<AdminPage> {
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
           bottom: const TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.verified_user_outlined), text: 'Verification'),
+              Tab(
+                  icon: Icon(Icons.verified_user_outlined),
+                  text: 'Verification'),
               Tab(icon: Icon(Icons.flag_outlined), text: 'Moderation'),
             ],
             indicatorColor: Colors.white,
@@ -34,10 +36,7 @@ class _AdminPageState extends State<AdminPage> {
         body: SafeArea(
           child: TabBarView(
             children: [
-              // Content for the "Business Verification" tab
               _buildBusinessVerificationView(),
-
-              // Content for the "Content Moderation" tab
               _buildContentModerationView(),
             ],
           ),
@@ -66,13 +65,11 @@ class _AdminPageState extends State<AdminPage> {
           );
         }
 
-        // The snapshot data is now a clean list of UserModel objects!
         final pendingBusinesses = snapshot.data!;
 
         return ListView.builder(
           itemCount: pendingBusinesses.length,
           itemBuilder: (context, index) {
-            // No more manual parsing needed.
             final business = pendingBusinesses[index];
 
             return Card(
@@ -82,23 +79,29 @@ class _AdminPageState extends State<AdminPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(business.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(business.name,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text(business.email, style: TextStyle(color: Colors.grey[600])),
+                    Text(business.email,
+                        style: TextStyle(color: Colors.grey[600])),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
                           onPressed: () {
-                            _firestoreService.updateUserStatus(business.uid, 'rejected');
+                            _firestoreService.updateUserStatus(
+                                business.uid, 'rejected');
                           },
-                          child: const Text('Reject', style: TextStyle(color: Colors.red)),
+                          child: const Text('Reject',
+                              style: TextStyle(color: Colors.red)),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: () {
-                            _firestoreService.updateUserStatus(business.uid, 'verified');
+                            _firestoreService.updateUserStatus(
+                                business.uid, 'verified');
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
@@ -117,11 +120,8 @@ class _AdminPageState extends State<AdminPage> {
       },
     );
   }
- 
 
-  /// Builds the placeholder UI for the content moderation queue.
   Widget _buildContentModerationView() {
-    // (No changes needed here as it's a placeholder)
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -138,7 +138,10 @@ class _AdminPageState extends State<AdminPage> {
             const SizedBox(height: 8),
             Text(
               "Posts flagged by the Python moderation service for review will appear here.",
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
           ],

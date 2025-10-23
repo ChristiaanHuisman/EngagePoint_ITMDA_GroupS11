@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/review_model.dart';
 import '../services/firestore_service.dart';
 
+
 class EditReviewPage extends StatefulWidget {
   final ReviewModel review;
 
@@ -46,9 +47,9 @@ class _EditReviewPageState extends State<EditReviewPage> {
     try {
       
       await _firestoreService.addOrUpdateReview(
-        businessId: widget.review.businessId, // Get businessId from the original review
-        rating: _rating, // Use the updated rating
-        comment: _commentController.text, // Use the updated comment
+        businessId: widget.review.businessId, 
+        rating: _rating, 
+        comment: _commentController.text, 
       );
       
 

@@ -65,7 +65,7 @@ class FirestoreService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final LoggingService _loggingService = LoggingService();
 
-  // Creates a new post document in the 'posts' collection.
+  // Creates a new post document in the 'posts' collection
   Future<void> createPost({
     required String title,
     required String content,
@@ -137,13 +137,13 @@ class FirestoreService {
     });
   }
 
-  // Fetches a user's profile data from the 'users' collection by their UID.
+  // Fetches a users profile data from the 'users' collection by their UID
   Future<UserModel?> getUserProfile(String uid) async {
     final doc = await _db.collection('users').doc(uid).get();
     return doc.exists ? UserModel.fromFirestore(doc) : null;
   }
 
-  // Follows a business by creating a document in the 'follows' collection.
+  // Follows a business by creating a document in the 'follows' collection
   Future<void> followBusiness(String businessId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
@@ -154,7 +154,6 @@ class FirestoreService {
     });
 
     _loggingService.logAnalyticsEvent(
-      //analytics logging
       eventName: 'business_follow',
       parameters: {
         'customer_id': currentUser.uid,
@@ -163,7 +162,7 @@ class FirestoreService {
     );
   }
 
-  // Unfollows a business by deleting the corresponding document.
+  // Unfollows a business by deleting the corresponding document
   Future<void> unfollowBusiness(String businessId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
@@ -173,7 +172,7 @@ class FirestoreService {
         .delete();
   }
 
-  // Checks if the current user is following a specific business.
+  // Checks if the current user is following a specific business
   Stream<bool> isFollowing(String businessId) {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return Stream.value(false);
@@ -184,7 +183,7 @@ class FirestoreService {
         .map((snapshot) => snapshot.exists);
   }
 
-  // Gets the real-time follower count for a business.
+  // Gets the real-time follower count for a business
   Stream<int> getFollowerCount(String businessId) {
     return _db
         .collection('follows')
@@ -193,7 +192,7 @@ class FirestoreService {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  // Returns a stream containing a list of business IDs the current user follows.
+  // Returns a stream containing a list of business IDs the current user follows
   Stream<List<String>> getFollowedBusinesses() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return Stream.value([]);
@@ -208,7 +207,7 @@ class FirestoreService {
     });
   }
 
-  // Searches for businesses by name.
+  // Searches for businesses by name
   Stream<List<UserModel>> searchBusinesses(String query) {
     if (query.isEmpty) {
       return Stream.value([]);
@@ -228,32 +227,35 @@ class FirestoreService {
 
   // Adds a new review or updates an existing one for a business using Python API.
   Future<void> addOrUpdateReview({
-    required String businessId,
-    required double rating,
-    required String comment,
-  }) async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) {
-      throw Exception("You must be logged in to leave a review.");
-    }
 
-    final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'},
-      body: jsonEncode({
-        'businessId': businessId,
-        'customerId': currentUser.uid,
-        'rating': rating,
-        'comment': comment,
-      }),
-    );
-
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to submit review: ${response.body}');
-    }
+  required String businessId,
+  required double rating,
+  required String comment,
+}) async {
+  final currentUser = _auth.currentUser;
+  if (currentUser == null) {
+    throw Exception("You must be logged in to leave a review.");
   }
 
+  final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
+  final response = await http.post(
+    url,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'
+    },
+    body: jsonEncode({
+      'businessId': businessId,
+      'customerId': currentUser.uid, 
+      'rating': rating,
+      'comment': comment,
+    }),
+  );
+
+  if (response.statusCode != 200 && response.statusCode != 201) {
+    throw Exception('Failed to submit review: ${response.body}');
+  }
+}
   // Gets all reviews for a business using Python API (for non-stream use).
   Future<List<Map<String, dynamic>>> getReviewsForBusinessApi(String businessId) async {
     final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews/$businessId');
@@ -309,7 +311,7 @@ class FirestoreService {
     });
   }
 
-  // Gets the real-time average rating and review count for a business.
+  // Gets the updated average rating and review count for a business
   Stream<Map<String, double>> getReviewStats(String businessId) {
     return _db
         .collection('reviews')

@@ -8,10 +8,9 @@ import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
 import '../widgets/app_drawer.dart';
 
-// This is the main page, which holds the state
 class DiscoverPage extends StatefulWidget {
   final GlobalKey<ScaffoldState>? scaffoldKey;
-  const DiscoverPage({super.key, this.scaffoldKey});
+  const DiscoverPage({super.key, required this.scaffoldKey});
 
   @override
   State<DiscoverPage> createState() => _DiscoverPageState();
@@ -40,7 +39,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
     super.dispose();
   }
 
-  
   void _navigateToUserProfile(String userId) async {
     final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
     if (userId == currentUserId) {
@@ -49,43 +47,43 @@ class _DiscoverPageState extends State<DiscoverPage> {
       }
       return;
     }
-    
 
-    if (!mounted) return; 
-    
+    if (!mounted) return;
+
     UserModel? user = await _firestoreService.getUserProfile(userId);
 
-    if (!mounted) return; 
-    
+    if (!mounted) return;
+
     if (user != null) {
-
-    
-
-      await Navigator.push(      
-        context, 
+      await Navigator.push(
+        context,
         MaterialPageRoute(
           builder: (context) => user.isBusiness
-              ? BusinessProfilePage(userId: userId)
-              : CustomerProfilePage(userId: userId),
+              ? BusinessProfilePage(
+                  userId: userId,
+                  scaffoldKey: widget.scaffoldKey ?? GlobalKey<ScaffoldState>())
+              : CustomerProfilePage(
+                  userId: userId,
+                  scaffoldKey:
+                      widget.scaffoldKey ?? GlobalKey<ScaffoldState>()),
         ),
       );
 
-      if (!mounted) return; 
+      if (!mounted) return;
 
       _searchController.clear();
-
-      
-
       FocusScope.of(context).unfocus();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final Color onPrimaryColor = Theme.of(context).colorScheme.onPrimary;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        foregroundColor: onPrimaryColor,
         leading: widget.scaffoldKey != null
             ? IconButton(
                 icon: const Icon(Icons.menu),
@@ -100,20 +98,18 @@ class _DiscoverPageState extends State<DiscoverPage> {
         title: Container(
           height: 40,
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(38),
+            color: onPrimaryColor.withAlpha(38),
             borderRadius: BorderRadius.circular(30),
           ),
           child: TextField(
             controller: _searchController,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: onPrimaryColor),
             textAlignVertical: TextAlignVertical.center,
             decoration: InputDecoration(
-              prefixIcon:
-                  const Icon(Icons.search, color: Colors.white, size: 20),
+              prefixIcon: Icon(Icons.search, color: onPrimaryColor, size: 20),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear,
-                          color: Colors.white, size: 20),
+                      icon: Icon(Icons.clear, color: onPrimaryColor, size: 20),
                       onPressed: () {
                         _searchController.clear();
                         FocusScope.of(context).unfocus();
@@ -121,7 +117,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     )
                   : null,
               hintText: 'Search Businesses...',
-              hintStyle: TextStyle(color: Colors.white.withAlpha(179)),
+              hintStyle: TextStyle(color: onPrimaryColor.withAlpha(179)),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(10),
             ),
@@ -132,7 +128,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
       body: SafeArea(
         child: DiscoverPageWrapper(
           searchQuery: _searchQuery,
-          // We pass the actual navigation function to the child
           onNavigate: _navigateToUserProfile,
         ),
       ),
@@ -140,10 +135,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
   }
 }
 
-// This wrapper widget correctly passes the onNavigate function down
+// Wrapper widget passes the onNavigate function down
 class DiscoverPageWrapper extends StatelessWidget {
   final String searchQuery;
-  // 🔽 THE FIX: The function signature is now simpler. 🔽
   final Function(String) onNavigate;
 
   const DiscoverPageWrapper({
@@ -207,10 +201,8 @@ class DiscoverFeed extends StatelessWidget {
   }
 }
 
-// This results widget correctly calls the onNavigate function
 class DiscoverSearchResults extends StatelessWidget {
   final String searchQuery;
-  // 🔽 THE FIX: The function signature is now simpler. 🔽
   final Function(String) onNavigate;
   final FirestoreService _firestoreService = FirestoreService();
 
@@ -253,7 +245,6 @@ class DiscoverSearchResults extends StatelessWidget {
                 ),
                 title: Text(business.name),
                 onTap: () {
-                  // 🔽 THE FIX: Only pass the ID. 🔽
                   onNavigate(business.uid);
                 },
               );

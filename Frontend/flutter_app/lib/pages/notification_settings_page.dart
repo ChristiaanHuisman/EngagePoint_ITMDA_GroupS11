@@ -39,8 +39,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
               return const Center(child: CircularProgressIndicator());
             }
           final user = snapshot.data!;
-          final prefs = user.notificationPreferences; // Get the clean preferences object
-
+          final prefs = user.notificationPreferences;
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [

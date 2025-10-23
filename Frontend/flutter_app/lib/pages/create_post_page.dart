@@ -13,7 +13,7 @@ class CreatePostPage extends StatefulWidget {
 class _CreatePostPageState extends State<CreatePostPage> {
   final FirestoreService _firestoreService = FirestoreService();
   final StorageService _storageService = StorageService();
-  final _formKey = GlobalKey<FormState>(); // This key needs a Form widget
+  final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   bool _isLoading = false;
@@ -37,9 +37,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
     super.dispose();
   }
 
-  // Method to handle picking an image from the gallery.
+  // Method to handle picking an image from the gallery
   Future<void> _pickImage() async {
-    // Use the new service method that returns bytes.
     final data = await _storageService.pickImageAsBytes();
     if (data != null) {
       setState(() {
@@ -48,14 +47,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
     }
   }
 
-  // Helper function to get the aspect ratio from image data.
+  // Helper function to get the aspect ratio from image data
   Future<double> _getImageAspectRatio(Uint8List imageData) async {
     final image = await decodeImageFromList(imageData);
     return image.width / image.height;
   }
 
   Future<void> _submitPost() async {
-    // This line will now work because the key is attached to a Form.
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -66,12 +64,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
       String? imageUrl;
       double? imageAspectRatio;
 
-      // Check for _imageData instead of _imageFile.
       if (_imageData != null) {
         final path = 'post_images/${DateTime.now().millisecondsSinceEpoch}.jpg';
-        // Use the new upload method.
         imageUrl = await _storageService.uploadImageData(path, _imageData!);
-        // Calculate aspect ratio from the image data.
         imageAspectRatio = await _getImageAspectRatio(_imageData!);
       }
 
@@ -112,7 +107,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       ),
       body: SafeArea(
         child: Form(
-          key: _formKey, // Assign the key here
+          key: _formKey,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -126,7 +121,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   ),
                   child: InkWell(
                     onTap: _pickImage,
-                    // Use Image.memory to display the image from bytes.
                     child: _imageData != null
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(8),
@@ -147,7 +141,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-
                 DropdownButtonFormField<String>(
                   initialValue: _selectedTag,
                   decoration: const InputDecoration(
@@ -168,7 +161,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-
                 TextFormField(
                   controller: _titleController,
                   decoration: const InputDecoration(
@@ -180,7 +172,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                       : null,
                 ),
                 const SizedBox(height: 16),
-
                 TextFormField(
                   controller: _contentController,
                   decoration: const InputDecoration(
@@ -194,7 +185,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                       : null,
                 ),
                 const SizedBox(height: 24),
-
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submitPost,
                   style: ElevatedButton.styleFrom(

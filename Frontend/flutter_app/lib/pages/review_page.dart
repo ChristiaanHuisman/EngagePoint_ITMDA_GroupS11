@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/pages/business_profile_page.dart';
+import 'package:flutter_app/pages/customer_profile_page.dart';
 import '../models/review_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
@@ -74,10 +75,32 @@ class _ReviewPageState extends State<ReviewPage> {
     }
   }
 
+  // Helper function to handle navigation
+  void _navigateToUserProfile(String userId, bool isBusiness) async {
+    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (userId == currentUserId) {
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+      return;
+    }
+
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => isBusiness
+              ? BusinessProfilePage(
+                  userId: userId, scaffoldKey: GlobalKey<ScaffoldState>())
+              : CustomerProfilePage(
+                  userId: userId, scaffoldKey: GlobalKey<ScaffoldState>()),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-
     final String customerName = _customerProfile?.name ?? 'Anonymous';
     final String businessName = _businessProfile?.name ?? 'The Business';
     final String? customerPhotoUrl = _customerProfile?.photoUrl;
@@ -101,20 +124,7 @@ class _ReviewPageState extends State<ReviewPage> {
                     onTap: () {
                       final String targetUserId = widget.review.customerId;
                       if (targetUserId.isNotEmpty) {
-                        if (targetUserId == currentUserId) {
-                          if (Navigator.canPop(context)) {
-                            Navigator.of(context)
-                                .popUntil((route) => route.isFirst);
-                          }
-                        } else {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  BusinessProfilePage(userId: targetUserId),
-                            ),
-                          );
-                        }
+                        _navigateToUserProfile(targetUserId, false);
                       }
                     },
                     child: Row(
@@ -135,7 +145,21 @@ class _ReviewPageState extends State<ReviewPage> {
                             Text(customerName,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 18)),
-                            Text('Reviewed $businessName'),
+                            // Add tap handler for business name
+                            GestureDetector(
+                              onTap: () {
+                                final String targetUserId =
+                                    widget.review.businessId;
+                                if (targetUserId.isNotEmpty) {
+                                  _navigateToUserProfile(targetUserId, true);
+                                }
+                              },
+                              child: Text('Reviewed $businessName',
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  )),
+                            ),
                           ],
                         ),
                       ],
@@ -203,19 +227,33 @@ class _ReviewPageState extends State<ReviewPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Response from $businessName:',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        Text(widget.review.response!),
+                        Text(
+                          widget.review.response!,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onPrimaryContainer,
+                          ),
+                        )
                       ],
                     ),
                   ),
