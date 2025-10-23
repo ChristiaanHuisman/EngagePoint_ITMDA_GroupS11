@@ -5,15 +5,11 @@ import com.google.cloud.firestore.Firestore;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.cloud.FirestoreClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 @Service
 public class FirestoreService {
     private final FirebaseApp firebaseApp;
-    @Value ("classpath:firebase/google-services.json")
-    private Resource serviceAccount;
 
    @Autowired
     public FirestoreService(FirebaseApp firebaseApp) {

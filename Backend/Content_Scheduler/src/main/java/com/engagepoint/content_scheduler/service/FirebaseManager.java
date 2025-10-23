@@ -12,14 +12,15 @@ import java.io.IOException;
 
 @Configuration
 public class FirebaseManager {
-    @Value("classpath:firebase/google-services.json")
+    @Value("classpath:firebase/engagepoint-a2c47-firebase-adminsdk-fbsvc-e9a19fca1e.json")
     private Resource serviceAccount;
 
     @Bean
     public FirebaseApp initializeFirebase() throws IOException {
+        GoogleCredentials fromStream = GoogleCredentials.fromStream(serviceAccount.getInputStream());
         FirebaseOptions options = FirebaseOptions.builder()
-                .setCredentials(GoogleCredentials.fromStream(serviceAccount.getInputStream()))
-                .setDatabaseUrl("https://YOUR_PROJECT_ID.firebaseio.com")
+                .setCredentials(fromStream)
+                .setDatabaseUrl("https://engagepoint-a2c47-default-rtdb.firebaseio.com")
                 .build();
 
         if (FirebaseApp.getApps().isEmpty()) {

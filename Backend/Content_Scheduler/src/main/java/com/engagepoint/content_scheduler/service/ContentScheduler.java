@@ -35,10 +35,13 @@ public class ContentScheduler {
                         .get();
                 }
                 
-            } 
+            }
+
         }   catch (Exception e) {
                 System.err.println("Error scheduling posts: " + e.getMessage());
         }
+
+        System.out.println("Scheduled posts checked and published if due.");
     }
 
     public List<Post> getPosts() throws ExecutionException, InterruptedException {
