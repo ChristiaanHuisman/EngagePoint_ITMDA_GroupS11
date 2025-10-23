@@ -81,6 +81,7 @@ class AppDrawer extends StatelessWidget {
                 decoration:
                     BoxDecoration(color: Theme.of(context).colorScheme.primary),
               ),
+              if (role == 'business')
               ListTile(
                 leading: const Icon(Icons.query_stats_outlined),
               title: const Text('Business Dashboard'),
@@ -113,7 +114,7 @@ class AppDrawer extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const SettingsPage()));
                 },
               ),
-              if (role == 'business')
+              
             
               const Divider(),
               if (role == 'admin')
