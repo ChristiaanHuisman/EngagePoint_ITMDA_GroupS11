@@ -17,7 +17,7 @@ class SignUpPageState extends State<SignUpPage> {
   final TextEditingController _confirmController = TextEditingController();
   bool _loading = false;
 
-  // state variable to track if the user is signing up as a business.
+  // state variable to track if the user is signing up as a business
   bool _isBusiness = false;
 
   Future<void> _signUp() async {

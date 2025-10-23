@@ -22,7 +22,7 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
     }
 
     return DefaultTabController(
-      length: 2, // Engagement + Sentiment
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Business Dashboard'),
@@ -38,7 +38,8 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
             unselectedLabelColor: Colors.white70,
           ),
         ),
-        body: SafeArea(child: TabBarView(
+        body: SafeArea(
+            child: TabBarView(
           children: [
             _buildEngagementView(),
             _buildSentimentView(),
@@ -49,14 +50,16 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
   }
 
   Widget _buildEngagementView() {
-    // (This widget was already correct and needs no changes)
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Engagement Analytics',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           _buildStatCard(
             icon: Icons.people,
@@ -85,7 +88,7 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
 
   Widget _buildSentimentView() {
     return FutureBuilder<Map<String, int>>(
-      // Use the function from your FirestoreService
+      // Use function from FirestoreService
       future: _firestoreService.getReviewSentimentStats(_businessId!),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -103,13 +106,15 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Review Sentiment Analysis',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               // Pass the fetched data to the stat cards
               _buildStatCard(
                 icon: Icons.thumb_up,
                 label: 'Positive Reviews',
-                // Use Future.value() to pass an already resolved future
                 future: Future.value(sentimentData['positive'] ?? 0),
                 color: Colors.green,
               ),
@@ -133,7 +138,7 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
       },
     );
   }
- 
+
   Widget _buildStatCard({
     required IconData icon,
     required String label,
@@ -141,7 +146,6 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
     Stream<int>? stream,
     Future<int>? future,
   }) {
-    // (This widget was already correct and needs no changes)
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -151,7 +155,7 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
           children: [
             Icon(icon, color: color, size: 30),
             const SizedBox(width: 16),
-            Expanded( // Wrapped in Expanded to prevent overflow
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -162,16 +166,24 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) return const Text('...');
                         return Text(snapshot.data.toString(),
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold));
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(fontWeight: FontWeight.bold));
                       },
                     )
                   else if (future != null)
                     FutureBuilder<int>(
                       future: future,
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) return const Text('...');
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Text('...');
+                        }
                         return Text(snapshot.data?.toString() ?? '0',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold));
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(fontWeight: FontWeight.bold));
                       },
                     ),
                 ],

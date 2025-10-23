@@ -19,7 +19,7 @@ Color _getTagColor(String? tag) {
     case 'New Stock':
       return Colors.purple.shade300;
     case 'Update':
-      return Colors.grey.shade500; // Use grey for 'Update'
+      return Colors.grey.shade500;
     default:
       return Colors.transparent;
   }
@@ -79,7 +79,7 @@ class _PostPageState extends State<PostPage> {
     }
   }
 
-  // Helper function to handle navigation correctly
+  // Helper function to handle navigation
   void _navigateToUserProfile(String userId) async {
     final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
     if (userId == currentUserId) {
@@ -88,20 +88,21 @@ class _PostPageState extends State<PostPage> {
       }
       return;
     }
-    
-    // We already have the user model in _businessProfile, so we check its role
+
+    // Check user model role
     if (_businessProfile != null && mounted) {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => _businessProfile!.isBusiness
-              ? BusinessProfilePage(userId: userId)
-              : CustomerProfilePage(userId: userId),
+              ? BusinessProfilePage(
+                  userId: userId, scaffoldKey: GlobalKey<ScaffoldState>())
+              : CustomerProfilePage(
+                  userId: userId, scaffoldKey: GlobalKey<ScaffoldState>()),
         ),
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +115,6 @@ class _PostPageState extends State<PostPage> {
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
       ),
-      // Add SafeArea to prevent content from hiding behind system navigation
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -122,7 +122,6 @@ class _PostPageState extends State<PostPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Business Banner
                 if (_isLoading)
                   const Center(child: CircularProgressIndicator())
                 else if (_businessProfile != null)
@@ -150,12 +149,11 @@ class _PostPageState extends State<PostPage> {
                                 : null,
                           ),
                           const SizedBox(width: 12),
-                          // This Column was missing in your broken code
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _businessProfile!.name, // Get name from model
+                                _businessProfile!.name,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 16),
                               ),
@@ -168,7 +166,7 @@ class _PostPageState extends State<PostPage> {
                               ),
                             ],
                           ),
-                          const Spacer(), // This was missing
+                          const Spacer(),
                           if (widget.post.tag != null &&
                               widget.post.tag!.isNotEmpty)
                             Chip(
@@ -219,10 +217,8 @@ class _PostPageState extends State<PostPage> {
                                 ),
                               );
                             },
-                            // The child of the GestureDetector should be the image, not the banner
                             child: ConstrainedBox(
-                              constraints:
-                                  const BoxConstraints(maxHeight: 300),
+                              constraints: const BoxConstraints(maxHeight: 300),
                               child: AspectRatio(
                                 aspectRatio:
                                     widget.post.imageAspectRatio ?? 16 / 9,
@@ -248,7 +244,6 @@ class _PostPageState extends State<PostPage> {
                       ),
                     ),
                   ),
-
 
                 const SizedBox(height: 16),
 

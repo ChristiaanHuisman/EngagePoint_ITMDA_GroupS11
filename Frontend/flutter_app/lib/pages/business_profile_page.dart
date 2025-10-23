@@ -16,12 +16,14 @@ import '../services/logging_service.dart';
 
 class BusinessProfilePage extends StatefulWidget {
   final String userId;
-  final bool isMainPage; 
+  final bool isMainPage;
+  final GlobalKey<ScaffoldState> scaffoldKey;
 
   const BusinessProfilePage({
     super.key,
     required this.userId,
-    this.isMainPage = false, 
+    this.isMainPage = false,
+    required this.scaffoldKey,
   });
 
   @override
@@ -41,22 +43,16 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
       stream: _firestoreService.getUserProfileStream(widget.userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return widget.isMainPage
-              ? const Center(child: CircularProgressIndicator())
-              : const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasError) {
-          return widget.isMainPage
-              ? const Center(child: Text("Error loading profile."))
-              : const Scaffold(body: Center(child: Text("Error loading profile.")));
+          return const Scaffold(body: Center(child: Text("Error loading profile.")));
         }
 
         final UserModel? user = snapshot.data;
 
         if (user == null || !user.isBusiness) {
-          return widget.isMainPage
-              ? const Center(child: Text("Business profile not found."))
-              : const Scaffold(body: Center(child: Text("Business profile not found.")));
+          return const Scaffold(body: Center(child: Text("Business profile not found.")));
         }
 
         if (!isOwnProfile) {
@@ -68,94 +64,97 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
             },
           );
         }
+        
 
         
         
-        if (!widget.isMainPage) {
-          return Scaffold(
-            appBar: _buildAppBar(context, user, isOwnProfile),
-            body: _buildBody(context, user, isOwnProfile),
-          );
-        }
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(isOwnProfile ? "My Business Profile" : user.name),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              
+              
+              leading: !widget.isMainPage
+                  ? IconButton( 
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.pop(context))
+                  : (isOwnProfile
+                      ? Builder( 
+                          builder: (context) => IconButton(
+                            icon: const Icon(Icons.menu),
+                            onPressed: () => widget.scaffoldKey.currentState?.openDrawer(),
+                          ),
+                        )
+                      : null),
 
-        
-        return _buildBody(context, user, isOwnProfile);
+              actions: [
+                if (isOwnProfile)
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => EditProfilePage(user: user)),
+                      );
+                    },
+                  ),
+              ],
+            ),
+            
+
+
+            
+            
+            body: SafeArea(
+              child: NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return <Widget>[
+                    SliverToBoxAdapter(
+                        child: _buildProfileHeader(context, user, isOwnProfile)),
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _TabBarHeaderDelegate(
+                        TabBar(
+                          tabs: const [
+                            Tab(
+                                icon: Icon(Icons.post_add_outlined),
+                                text: 'Posts'),
+                            Tab(
+                                icon: Icon(Icons.reviews_outlined),
+                                text: 'Reviews'),
+                          ],
+                          indicatorColor: Theme.of(context).colorScheme.primary,
+                          labelColor: Theme.of(context).colorScheme.primary,
+                          unselectedLabelColor: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ];
+                },
+                body: TabBarView(
+                  children: [
+                    _PostsTab(
+                        userId: widget.userId,
+                        firestoreService: _firestoreService),
+                    _ReviewsTab(
+                        userId: widget.userId,
+                        isCustomerView: false,
+                        firestoreService: _firestoreService),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
       },
     );
   }
 
-  
-  PreferredSizeWidget _buildAppBar(BuildContext context, UserModel user, bool isOwnProfile) {
-    return AppBar(
-      title: Text(isOwnProfile ? "My Business Profile" : user.name),
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-      actions: [
-        if (isOwnProfile)
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => EditProfilePage(user: user)),
-              );
-            },
-          ),
-      ],
-    );
-  }
-
- 
-  Widget _buildBody(BuildContext context, UserModel user, bool isOwnProfile) {
-    return DefaultTabController(
-      length: 2,
-      child: SafeArea(
-        top: !widget.isMainPage,
-        bottom: !widget.isMainPage,
-        child: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return <Widget>[
-              SliverToBoxAdapter(
-                  child: _buildProfileHeader(context, user, isOwnProfile)),
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _TabBarHeaderDelegate(
-                  TabBar(
-                    tabs: const [
-                      Tab(
-                          icon: Icon(Icons.post_add_outlined),
-                          text: 'Posts'),
-                      Tab(
-                          icon: Icon(Icons.reviews_outlined),
-                          text: 'Reviews'),
-                    ],
-                    indicatorColor: Theme.of(context).colorScheme.primary,
-                    labelColor: Theme.of(context).colorScheme.primary,
-                    unselectedLabelColor: Colors.grey,
-                  ),
-                ),
-              ),
-            ];
-          },
-          body: TabBarView(
-            children: [
-              _PostsTab(
-                  userId: widget.userId,
-                  firestoreService: _firestoreService),
-              _ReviewsTab(
-                  userId: widget.userId,
-                  isCustomerView: false,
-                  firestoreService: _firestoreService),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // Helper Widgets 
-
   Widget _buildProfileHeader(
       BuildContext context, UserModel user, bool isOwnProfile) {
     return Padding(
@@ -363,7 +362,6 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
   }
 }
 
-
 class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
   final TabBar _tabBar;
   _TabBarHeaderDelegate(this._tabBar);
@@ -377,7 +375,7 @@ class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
       Container(
           color: Theme.of(context).scaffoldBackgroundColor, child: _tabBar);
   @override
-  bool shouldRebuild(covariant _TabBarHeaderDelegate oldDelegate) => false;
+  bool shouldRebuild(covariant _TabBarHeaderDelegate oldDelegate) => true;
 }
 
 class _PostsTab extends StatelessWidget {
@@ -405,7 +403,6 @@ class _PostsTab extends StatelessWidget {
     );
   }
 }
-
 
 class _ReviewsTab extends StatelessWidget {
   final String userId;
@@ -469,8 +466,7 @@ class _ReviewsTab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16.0, vertical: 8.0),
                   child: ReviewCard(
-                      review: reviews[index],
-                      showBusinessName: isCustomerView),
+                      review: reviews[index], showBusinessName: isCustomerView),
                 ),
               );
             },

@@ -24,15 +24,13 @@ class AuthService {
     final dynamic tzRaw = await FlutterTimezone.getLocalTimezone();
     debugPrint('DEBUG → getLocalTimezone raw: $tzRaw (${tzRaw.runtimeType})');
 
-    //  normalize to IANA timezone string 
+    //  normalize to IANA timezone string
     String normalizeTimezone(dynamic tz) {
       if (tz == null) return 'UTC';
 
-      
       if (tz is String) {
         final s = tz.trim();
-        if (s.contains('/')) return s; 
-
+        if (s.contains('/')) return s;
       }
 
       final str = tz.toString();
@@ -42,11 +40,9 @@ class AuthService {
         return m.group(1)!;
       }
 
-
       final tokenMatch =
           RegExp(r'([A-Za-z_\/\-]+\/[A-Za-z_\/\-]+)').firstMatch(str);
       if (tokenMatch != null) return tokenMatch.group(1)!;
-
 
       return 'UTC';
     }
@@ -54,7 +50,7 @@ class AuthService {
     final String localTimezone = normalizeTimezone(tzRaw);
     debugPrint('DEBUG → Normalized timezone to save: $localTimezone');
 
-    // (Optional) compute offset if you still want it
+    // compute offset
     final now = DateTime.now();
     final String timezoneOffset = now.timeZoneOffset.isNegative
         ? '-${now.timeZoneOffset.inHours.abs().toString().padLeft(2, '0')}:${(now.timeZoneOffset.inMinutes.abs() % 60).toString().padLeft(2, '0')}'
@@ -87,7 +83,7 @@ class AuthService {
       await userRef.set({
         'timezone': localTimezone,
         'timezoneOffset': timezoneOffset,
-      }, SetOptions(merge: true)); 
+      }, SetOptions(merge: true));
     }
   }
 
@@ -100,7 +96,6 @@ class AuthService {
         password: password,
       );
       if (result.user != null) {
-
         await _createUserDocument(result.user!);
         await _notificationService.initAndSaveToken();
       }

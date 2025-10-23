@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/pages/business_profile_page.dart';
-import 'package:flutter_app/pages/customer_profile_page.dart'; 
+import 'package:flutter_app/pages/customer_profile_page.dart';
 import 'package:flutter_app/services/logging_service.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
@@ -20,7 +20,7 @@ Color _getTagColor(String? tag) {
     case 'New Stock':
       return Colors.purple.shade300;
     case 'Update':
-      return Colors.grey.shade500; 
+      return Colors.grey.shade500;
     default:
       return Colors.transparent;
   }
@@ -63,7 +63,6 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use the helper getter from the model for a cleaner build method
     final String formattedDate = post.formattedDate;
 
     return Card(
@@ -86,7 +85,6 @@ class PostCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               PostHeader(
-                // FIX: Pass the full 'post' object, not just 'businessId'
                 post: post,
                 onDelete: () => _showDeleteConfirmation(context, post.id),
                 onEdit: () {
@@ -208,7 +206,7 @@ class PostCard extends StatelessWidget {
                     ],
                   ),
                   Text(
-                    formattedDate, // Use the variable
+                    formattedDate,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey[500],
                         ),
@@ -238,7 +236,8 @@ class PostHeader extends StatelessWidget {
   });
 
   // Helper function for navigation to handle role check
-  void _navigateToUserProfile(BuildContext context, String userId, bool isBusiness) async {
+  void _navigateToUserProfile(
+      BuildContext context, String userId, bool isBusiness) async {
     final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
     if (userId == currentUserId) {
       if (Navigator.canPop(context)) {
@@ -246,15 +245,16 @@ class PostHeader extends StatelessWidget {
       }
       return;
     }
-    
-    // We already know the role from the 'business' object, so we navigate
+
     if (context.mounted) {
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => isBusiness
-              ? BusinessProfilePage(userId: userId)
-              : CustomerProfilePage(userId: userId),
+              ? BusinessProfilePage(
+                  userId: userId, scaffoldKey: GlobalKey<ScaffoldState>())
+              : CustomerProfilePage(
+                  userId: userId, scaffoldKey: GlobalKey<ScaffoldState>()),
         ),
       );
     }
@@ -286,7 +286,6 @@ class PostHeader extends StatelessWidget {
 
         return GestureDetector(
           onTap: () {
-            // FIX: Use the 'business' object's uid
             if (business.uid.isNotEmpty) {
               _loggingService.logAnalyticsEvent(
                 eventName: 'click_through',
@@ -294,14 +293,13 @@ class PostHeader extends StatelessWidget {
                   'business_id': business.uid,
                 },
               );
-              // FIX: Use the helper to navigate
-              _navigateToUserProfile(context, business.uid, business.isBusiness);
+              _navigateToUserProfile(
+                  context, business.uid, business.isBusiness);
             }
           },
           child: Row(
             children: [
               CircleAvatar(
-                // FIX: Use business.photoUrl
                 backgroundImage: business.photoUrl != null
                     ? NetworkImage(business.photoUrl!)
                     : null,
@@ -313,7 +311,7 @@ class PostHeader extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  business.name, // This was already correct
+                  business.name,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -338,6 +336,7 @@ class PostHeader extends StatelessWidget {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                      padding: const EdgeInsets.only(left: 30),
                       onPressed: onEdit,
                     ),
                     IconButton(

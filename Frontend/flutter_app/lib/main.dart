@@ -74,7 +74,7 @@ Future<void> _handleNotificationNavigation(RemoteMessage message) async {
     if (followerId != null && navigatorKey.currentContext != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
-            builder: (context) => CustomerProfilePage(userId: followerId)),
+            builder: (context) => CustomerProfilePage(userId: followerId, scaffoldKey: GlobalKey<ScaffoldState>())),
       );
     }
   }

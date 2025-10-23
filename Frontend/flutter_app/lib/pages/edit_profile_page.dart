@@ -50,7 +50,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (data != null) {
       setState(() {
         _imageData = data;
-        _existingImageUrl = null; // Clear the existing image URL
+        _existingImageUrl = null; 
       });
     }
   }
@@ -73,7 +73,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final Map<String, dynamic> dataToUpdate = {
         'name': _nameController.text.trim(),
         'description': _descriptionController.text.trim(),
-        'photoUrl': newPhotoUrl, // Always include the photoUrl in the update
+        'photoUrl': newPhotoUrl, 
       };
 
       if (widget.user.isBusiness) {
