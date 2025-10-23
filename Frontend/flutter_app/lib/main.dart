@@ -120,7 +120,7 @@ class MyApp extends StatelessWidget {
       builder: (context, themeProvider, child) {
         return MaterialApp(
           navigatorKey: navigatorKey,
-          title: 'Engage Point',
+          title: 'EngagePoint',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             // Light Theme

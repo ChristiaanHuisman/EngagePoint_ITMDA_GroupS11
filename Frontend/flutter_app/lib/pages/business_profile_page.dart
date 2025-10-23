@@ -216,7 +216,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                               MaterialPageRoute(
                                   builder: (context) =>
                                       const BusinessDashboardPage())),
-                          icon: const Icon(Icons.dashboard_outlined, size: 16),
+                          icon: const Icon(Icons.query_stats_outlined, size: 16),
                           label: const Text('Dashboard'))
                       : _buildFollowButton(widget.userId),
                 ],
