@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../pages/settings_page.dart';
 import '../pages/admin_page.dart';
+import '../pages/business_dashboard_page.dart';
 import '../pages/rewards_page.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -81,6 +82,18 @@ class AppDrawer extends StatelessWidget {
                     BoxDecoration(color: Theme.of(context).colorScheme.primary),
               ),
               ListTile(
+                leading: const Icon(Icons.query_stats_outlined),
+              title: const Text('Business Dashboard'),
+              onTap: () {
+                Navigator.pop(context); 
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const BusinessDashboardPage()),
+                );
+              },
+            ),
+              ListTile(
                 leading: const Icon(Icons.leaderboard_outlined),
                 title: const Text('Rewards & Progression'),
                 onTap: () {
@@ -100,6 +113,8 @@ class AppDrawer extends StatelessWidget {
                       MaterialPageRoute(builder: (_) => const SettingsPage()));
                 },
               ),
+              if (role == 'business')
+            
               const Divider(),
               if (role == 'admin')
                 ListTile(

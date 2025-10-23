@@ -28,6 +28,8 @@ dependencies:
   flutter_timezone: ^5.0.0
   fl_chart: ^0.68.0
   http: ^1.2.0
+  permission_handler: ^11.3.1
+  file_saver: ^0.3.1
 
   
 
