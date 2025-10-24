@@ -285,7 +285,14 @@ class FirestoreService {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to delete review: ${response.body}');
+      String errorMessage;
+      try {
+        Map<String, dynamic> errorData = jsonDecode(response.body);
+        errorMessage = errorData['message'] ?? 'Unknown error occurred';
+      } catch (e) {
+        errorMessage = response.body;
+      }
+      throw Exception('Failed to delete review (Status: ${response.statusCode}). Error: $errorMessage');
     }
   }
 
