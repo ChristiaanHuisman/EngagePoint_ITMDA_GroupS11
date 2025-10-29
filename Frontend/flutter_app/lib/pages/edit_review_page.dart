@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/review_model.dart';
 import '../services/firestore_service.dart';
 
+
 class EditReviewPage extends StatefulWidget {
   final ReviewModel review;
 
@@ -23,7 +24,6 @@ class _EditReviewPageState extends State<EditReviewPage> {
   @override
   void initState() {
     super.initState();
-
     _commentController = TextEditingController(text: widget.review.comment);
     _rating = widget.review.rating;
   }
@@ -45,18 +45,13 @@ class _EditReviewPageState extends State<EditReviewPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Create a new ReviewModel with the updated values
-      final updatedReview = ReviewModel(
-        id: widget.review.id,
-        businessId: widget.review.businessId,
-        customerId: widget.review.customerId,
-        createdAt: widget.review.createdAt,
-        rating: _rating,
-        comment: _commentController.text,
+      
+      await _firestoreService.addOrUpdateReview(
+        businessId: widget.review.businessId, 
+        rating: _rating, 
+        comment: _commentController.text, 
       );
-
-      // Pass the single, updated model to firestore service
-      await _firestoreService.addOrUpdateReview(review: updatedReview);
+      
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

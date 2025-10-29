@@ -4,6 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/firestore_service.dart';
 import '../services/analytics_service.dart';
+import 'dart:typed_data';
+import 'package:file_saver/file_saver.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class BusinessDashboardPage extends StatefulWidget {
   const BusinessDashboardPage({super.key});
@@ -38,15 +43,15 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
           title: const Text('Business Dashboard'),
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.bar_chart_outlined), text: 'Engagement'),
+              Tab(icon: Icon(Icons.groups_outlined), text: 'Engagement'),
               Tab(icon: Icon(Icons.emoji_emotions_outlined), text: 'Sentiment'),
               Tab(icon: Icon(Icons.analytics_outlined), text: 'Analytics'),
             ],
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
+            indicatorColor: Theme.of(context).colorScheme.onPrimary,
+            labelColor: Theme.of(context).colorScheme.onPrimary,
+            unselectedLabelColor: Theme.of(context).colorScheme.onPrimary,
           ),
         ),
         body: SafeArea(
@@ -100,55 +105,58 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
     );
   }
 
-  // SENTIMENT TAB
   Widget _buildSentimentView() {
-    return FutureBuilder<Map<String, int>>(
-      // Use function from FirestoreService
-      future: _firestoreService.getReviewSentimentStats(_businessId!),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError || !snapshot.hasData) {
-          return const Center(child: Text('Could not load sentiment data.'));
-        }
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final businessId = currentUser?.uid ?? '';
+    final statsFuture = FirestoreService().getReviewSentimentStats(businessId);
 
-        final sentimentData = snapshot.data!;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Review Sentiment Analysis',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              _buildStatCard(
-                icon: Icons.thumb_up,
-                label: 'Positive Reviews',
-                future: Future.value(sentimentData['positive'] ?? 0),
-                color: Colors.green,
-              ),
-              const SizedBox(height: 12),
-              _buildStatCard(
-                icon: Icons.thumb_down,
-                label: 'Negative Reviews',
-                future: Future.value(sentimentData['negative'] ?? 0),
-                color: Colors.red,
-              ),
-              const SizedBox(height: 12),
-              _buildStatCard(
-                icon: Icons.remove,
-                label: 'Neutral Reviews',
-                future: Future.value(sentimentData['neutral'] ?? 0),
-                color: Colors.grey,
-              ),
-            ],
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Review Sentiment Analysis',
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
-        );
-      },
+          const SizedBox(height: 16),
+          FutureBuilder<Map<String, int>>(
+            future: statsFuture,
+            builder: (context, snapshot) {
+              final stats =
+                  snapshot.data ?? {'positive': 0, 'negative': 0, 'neutral': 0};
+
+              return Column(
+                children: [
+                  _buildStatCard(
+                    icon: Icons.thumb_up,
+                    label: 'Positive Reviews',
+                    future: Future.value(stats['positive']),
+                    color: Colors.green,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStatCard(
+                    icon: Icons.thumb_down,
+                    label: 'Negative Reviews',
+                    future: Future.value(stats['negative']),
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStatCard(
+                    icon: Icons.remove,
+                    label: 'Neutral Reviews',
+                    future: Future.value(stats['neutral']),
+                    color: Colors.grey,
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -260,7 +268,12 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else
-            SizedBox(height: 300, child: _buildAnalyticsChart()),
+            SizedBox(
+              height: 300,
+              child: _selectedMetric == 'ViewsPerPost'
+                  ? _buildAnalyticsBarChart() // Show Bar Chart for Posts
+                  : _buildAnalyticsLineChart(),
+            ),
         ],
       ),
     );
@@ -330,29 +343,62 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
   Future<void> _downloadPdf() async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
+    if (!kIsWeb && Platform.isIOS) {
+      var status = await Permission.photos.request();
+
+      if (!status.isGranted) {
+        if (status.isPermanentlyDenied) {
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Permission denied. Please enable Photos access in settings.'),
+              duration: Duration(seconds: 5),
+            ),
+          );
+          await openAppSettings();
+        } else {
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(
+                content: Text(
+                    'Photos permission is required to save files on iOS.')),
+          );
+        }
+        return;
+      }
+    }
+
     final start = DateFormat('yyyy-MM-dd').format(_startDate);
     final end = DateFormat('yyyy-MM-dd').format(_endDate);
     final id = _businessId!;
+    final String reportName = 'Report_${_selectedMetric}_$start.pdf';
 
     try {
-      await _analyticsService.downloadReportPdf(
+      final Uint8List pdfBytes = await _analyticsService.downloadReportPdf(
           _selectedMetric, id, start, end);
 
+      await FileSaver.instance.saveFile(
+        name: reportName,
+        bytes: pdfBytes,
+        fileExtension: 'pdf',
+        mimeType: MimeType.pdf,
+      );
+
       scaffoldMessenger.showSnackBar(
-        const SnackBar(content: Text('PDF download started.')),
+        SnackBar(content: Text('Report saved as $reportName')),
       );
     } catch (e) {
       debugPrint('Error downloading PDF: $e');
-
       scaffoldMessenger.showSnackBar(
         SnackBar(content: Text('Failed to download PDF: $e')),
       );
     }
   }
 
-  Widget _buildAnalyticsChart() {
+  Widget _buildAnalyticsLineChart() {
     if (_analyticsData == null) {
-      return const Center(child: Text('No data yet.'));
+      return const Center(
+        child: Text('Press "Show Data" to load analytics.'),
+      );
     }
 
     final dataPoints = (_analyticsData!['dataPoints'] ?? []) as List;
@@ -360,51 +406,339 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
       return const Center(child: Text('No data available for this range.'));
     }
 
+    // Data Parsing Simplified for Line Charts
+    final keyMap = {
+      'VisitorsPerAccount': 'visitors',
+      'ClickThrough': 'clicks',
+      'FollowsByDay': 'follows',
+    };
+    final String dataKey = keyMap[_selectedMetric] ?? 'value';
+    final String labelKey = 'date';
+
     final spots = <FlSpot>[];
+    final bottomLabels = <int, String>{};
+    double dataPeak = 0;
+
     for (int i = 0; i < dataPoints.length; i++) {
-      final y = double.tryParse(dataPoints[i]['views']?.toString() ??
-              dataPoints[i]['visitors']?.toString() ??
-              dataPoints[i]['follows']?.toString() ??
-              '0') ??
-          0;
+      final y = double.tryParse(dataPoints[i][dataKey]?.toString() ?? '0') ?? 0;
+
+      if (y > dataPeak) {
+        dataPeak = y; 
+      }
+
       spots.add(FlSpot(i.toDouble(), y));
+
+      final label = dataPoints[i][labelKey]?.toString() ?? '';
+      if (label.isNotEmpty) {
+        try {
+          final dt = DateTime.parse(label);
+          bottomLabels[i] = DateFormat('MMM d').format(dt);
+        } catch (e) {
+          bottomLabels[i] = label;
+        }
+      } else {
+        bottomLabels[i] = label;
+      }
     }
+
+
+    //  Calculate new maxY with padding
+    double newMaxY = 5; 
+    if (dataPeak > 0) {
+      double paddedPeak = dataPeak * 1.25; 
+
+      if (paddedPeak <= 10) {
+          newMaxY = paddedPeak.ceil().toDouble(); 
+      } else if (paddedPeak <= 50) {
+          newMaxY = (paddedPeak / 5).ceil() * 5;
+      } else {
+          newMaxY = (paddedPeak / 10).ceil() * 10;
+      }
+    }
+
+    // Styling
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return LineChart(
       LineChartData(
-        gridData: const FlGridData(show: true),
+        minY: 0,
+        maxY: newMaxY,
+        clipData: FlClipData.all(),
+        // Interactive Tooltips
+        lineTouchData: LineTouchData(
+          handleBuiltInTouches: true,
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (LineBarSpot touchedSpot) {
+              return Theme.of(context).colorScheme.primary;
+            },
+            getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+              return touchedBarSpots.map((barSpot) {
+                final flSpot = barSpot;
+                return LineTooltipItem(
+                  '${bottomLabels[flSpot.x.toInt()] ?? ''}\n',
+                  TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
+                  children: [
+                    TextSpan(
+                      text: flSpot.y.toStringAsFixed(0),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                );
+              }).toList();
+            },
+          ),
+        ),
+
+        // Cleaner Grid and Titles
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: true,
+          drawHorizontalLine: true,
+          getDrawingHorizontalLine: (value) {
+            return FlLine(
+              color: Colors.grey,
+              strokeWidth: 1,
+              dashArray: [5, 5],
+            );
+          },
+          getDrawingVerticalLine: (value) {
+            return FlLine(
+              color: Colors.grey,
+              strokeWidth: 1,
+            );
+          },
+        ),
+
         titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
+              reservedSize: 42,
               getTitlesWidget: (value, meta) {
-                final index = value.toInt();
-                if (index >= 0 && index < dataPoints.length) {
-                  return Text(
-                    dataPoints[index]['date']?.toString() ??
-                        dataPoints[index]['postName']?.toString() ??
-                        '',
-                    style: const TextStyle(fontSize: 10),
-                  );
+                if ((value % 1).abs() > 0.01) {
+                  return const Text('');
                 }
-                return const Text('');
+
+                String text;
+                if (value >= 1000) {
+                  text = NumberFormat.compact().format(value.toInt());
+                } else {
+                  text = value.toInt().toString();
+                }
+
+                return Text(
+                  text,
+                  style: const TextStyle(fontSize: 12),
+                  textAlign: TextAlign.left,
+                );
               },
             ),
           ),
-          leftTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: true),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              interval: 1,
+              getTitlesWidget: (value, meta) {
+                final index = value.toInt();
+                final String text = bottomLabels[index] ?? '';
+
+                if (dataPoints.length > 10 && index % 2 != 0) {
+                  return const Text('');
+                }
+
+                return SideTitleWidget(
+                  axisSide: meta.axisSide,
+                  space: 8,
+                  angle: -0.5,
+                  child: Text(
+                    text,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ),
-        borderData: FlBorderData(show: true),
+
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: Colors.grey, width: 1),
+        ),
+
+        // The Line and Gradient Fill
         lineBarsData: [
           LineChartBarData(
-            isCurved: true,
-            color: Colors.blueAccent,
-            barWidth: 3,
             spots: spots,
-            dotData: const FlDotData(show: false),
+            isCurved: true,
+            gradient: LinearGradient(
+              colors: [primaryColor, primaryColor],
+            ),
+            barWidth: 4,
+            isStrokeCapRound: true,          
+            belowBarData: BarAreaData(show: false),
+            dotData: FlDotData(
+              show: true, 
+              getDotPainter: (spot, percent, barData, index) {
+                return FlDotCirclePainter(
+                  radius: 4, 
+                  color: Colors.white, 
+                  strokeWidth: 2, 
+                  strokeColor: primaryColor, 
+                );
+              },
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsBarChart() {
+    if (_analyticsData == null) {
+      return const Center(
+        child: Text('Press "Show Data" to load analytics.'),
+      );
+    }
+    final dataPoints = (_analyticsData!['dataPoints'] ?? []) as List;
+    if (dataPoints.isEmpty) {
+      return const Center(child: Text('No data available for this range.'));
+    }
+
+    //  Data Parsing
+    final String dataKey = 'views';
+    final String labelKey = 'postName';
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    final List<BarChartGroupData> barGroups = [];
+    final Map<int, String> bottomLabels = {};
+
+    for (int i = 0; i < dataPoints.length; i++) {
+      final dataPoint = dataPoints[i];
+      final y = double.tryParse(dataPoint[dataKey]?.toString() ?? '0') ?? 0;
+      final label = dataPoint[labelKey]?.toString() ?? 'Post ${i + 1}';
+      bottomLabels[i] = label;
+
+      barGroups.add(
+        BarChartGroupData(
+          x: i,
+          barRods: [
+            BarChartRodData(
+              toY: y,
+              // Use a gradient for style
+              gradient: LinearGradient(
+                colors: [primaryColor, primaryColor],
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+              ),
+              width: 16,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(4),
+              ),
+            )
+          ],
+        ),
+      );
+    }
+
+    // Chart Building
+    return BarChart(
+      BarChartData(
+        // Tooltips
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (group) {
+              return (Theme.of(context).colorScheme.primary);
+            },
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              return BarTooltipItem(
+                '${bottomLabels[group.x.toInt()] ?? ''}\n',
+                TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold),
+                children: [
+                  TextSpan(
+                    text: rod.toY.toStringAsFixed(0),
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w500),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+
+        // Titles
+        titlesData: FlTitlesData(
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) {
+                return Text(value.toInt().toString(),
+                    style: const TextStyle(fontSize: 12));
+              },
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) {
+                final index = value.toInt();
+                final String text = bottomLabels[index] ?? '';
+
+                if (dataPoints.length > 10 && index % 2 != 0) {
+                  return const Text('');
+                }
+
+                return SideTitleWidget(
+                  axisSide: meta.axisSide,
+                  space: 8,
+                  angle: -0.5,
+                  child: Text(text,
+                      style: const TextStyle(
+                          fontSize: 10, fontWeight: FontWeight.w600)),
+                );
+              },
+            ),
+          ),
+        ),
+
+        // Grid & Border
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: Colors.grey,
+            strokeWidth: 1,
+            dashArray: [5, 5],
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: Colors.grey, width: 1),
+        ),
+
+        // --- 6. The Bars ---
+        barGroups: barGroups,
+        alignment: BarChartAlignment.spaceAround,
       ),
     );
   }

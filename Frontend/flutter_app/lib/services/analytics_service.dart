@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 // Connects the Flutter app to the Google Cloud Run-hosted Business Analytics API.
@@ -11,8 +12,8 @@ class BusinessAnalyticsService {
   // Fetches total views per post for a business.
   Future<Map<String, dynamic>?> getViewsPerPost(
       String businessId, String startDate, String endDate) async {
-    final url =
-        Uri.parse('$_baseUrl/api/Analytics/ViewsPerPost/$businessId/$startDate/$endDate');
+    final url = Uri.parse(
+        '$_baseUrl/api/Analytics/ViewsPerPost/$businessId/$startDate/$endDate');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -29,8 +30,8 @@ class BusinessAnalyticsService {
   // Fetches unique visitors per account for a business.
   Future<Map<String, dynamic>?> getVisitorsPerAccount(
       String businessId, String startDate, String endDate) async {
-    final url =
-        Uri.parse('$_baseUrl/api/Analytics/VisitorsPerAccount/$businessId/$startDate/$endDate');
+    final url = Uri.parse(
+        '$_baseUrl/api/Analytics/VisitorsPerAccount/$businessId/$startDate/$endDate');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -47,8 +48,8 @@ class BusinessAnalyticsService {
   // Fetches click-throughs per day for a business.
   Future<Map<String, dynamic>?> getClickThroughs(
       String businessId, String startDate, String endDate) async {
-    final url =
-        Uri.parse('$_baseUrl/api/Analytics/ClickThrough/$businessId/$startDate/$endDate');
+    final url = Uri.parse(
+        '$_baseUrl/api/Analytics/ClickThrough/$businessId/$startDate/$endDate');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -65,8 +66,8 @@ class BusinessAnalyticsService {
   // Fetches follows per day for a business.
   Future<Map<String, dynamic>?> getFollowsByDay(
       String businessId, String startDate, String endDate) async {
-    final url =
-        Uri.parse('$_baseUrl/api/Analytics/FollowsByDay/$businessId/$startDate/$endDate');
+    final url = Uri.parse(
+        '$_baseUrl/api/Analytics/FollowsByDay/$businessId/$startDate/$endDate');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -80,16 +81,19 @@ class BusinessAnalyticsService {
     return null;
   }
 
-  // Downloads a PDF report from the given endpoint.
-  Future<http.Response> downloadReportPdf(String reportType, String businessId,
+  // Downloads a PDF report and returns its bytes.
+  Future<Uint8List> downloadReportPdf(String reportType, String businessId,
       String startDate, String endDate) async {
-    final url =
-        Uri.parse('$_baseUrl/api/Analytics/$reportType/$businessId/$startDate/$endDate/pdf');
+    final url = Uri.parse(
+        '$_baseUrl/api/Analytics/$reportType/$businessId/$startDate/$endDate/pdf');
     final response = await http.get(url);
+
     if (response.statusCode == 200) {
-      return response;
+      return response.bodyBytes;
     } else {
-      throw Exception('Failed to download $reportType report PDF');
+      debugPrint('API Error: ${response.statusCode} - ${response.body}');
+      throw Exception(
+          'Failed to download report. Server responded with ${response.statusCode}: ${response.body}');
     }
   }
 }
