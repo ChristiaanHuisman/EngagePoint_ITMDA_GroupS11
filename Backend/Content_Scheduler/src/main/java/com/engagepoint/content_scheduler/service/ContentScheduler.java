@@ -2,7 +2,6 @@ package com.engagepoint.content_scheduler.service;
 
 import com.engagepoint.content_scheduler.model.Post;
 
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,19 +11,22 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import com.google.firebase.cloud.FirestoreClient;
+import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.DocumentSnapshot;
 
 @EnableScheduling
 @Component
 public class ContentScheduler {
-    @Scheduled(cron = "0 0/30 * * * ?") // Every 30 minutes
+    @Scheduled(cron = "0 0/1 * * * ?") // Every 30 minutes, adjested to a minute for testing
     public void scheduleContentPosts() {
         // Logic to check for scheduled posts and publish them
         try {
             List<Post> postsToPublish = getPosts();
 
             for (Post post : postsToPublish) {
-                if (!post.getPublished() && post.getPostDate().isBefore(ZonedDateTime.now())) {
+                ZonedDateTime postDateTime = ZonedDateTime.parse(post.getPostDate().toString());
+
+                if (!post.getPublished() && postDateTime.isBefore(ZonedDateTime.now())) {
                     // Publish the post
                     post.setPublished(true);
                     // Update the post in Firestore
@@ -37,11 +39,12 @@ public class ContentScheduler {
                 
             }
 
+            System.out.println("Scheduled posts checked and published if due.");
+            
+
         }   catch (Exception e) {
                 System.err.println("Error scheduling posts: " + e.getMessage());
         }
-
-        System.out.println("Scheduled posts checked and published if due.");
     }
 
     public List<Post> getPosts() throws ExecutionException, InterruptedException {
@@ -49,7 +52,7 @@ public class ContentScheduler {
         
         QuerySnapshot querySnapshot = FirestoreClient.getFirestore()
                 .collection("posts")
-                .whereLessThanOrEqualTo("postDate", LocalDateTime.now())
+                .whereLessThanOrEqualTo("postDate", Timestamp.now())
                 .whereEqualTo("published", false)
                 .get()
                 .get();
