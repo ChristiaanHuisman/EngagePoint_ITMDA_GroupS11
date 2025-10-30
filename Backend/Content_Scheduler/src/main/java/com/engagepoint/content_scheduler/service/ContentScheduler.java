@@ -3,65 +3,66 @@ package com.engagepoint.content_scheduler.service;
 import com.engagepoint.content_scheduler.model.Post;
 
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import com.google.cloud.firestore.QuerySnapshot;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import com.google.firebase.cloud.FirestoreClient;
-import com.google.cloud.Timestamp;
-import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
 
 @EnableScheduling
 @Component
 public class ContentScheduler {
-    @Scheduled(cron = "0 0/1 * * * ?") // Every 30 minutes, adjested to a minute for testing
+    @Scheduled(cron = "0 0/1 * * * ?") // Every 30 minutes, adjusted to a minute for testing
     public void scheduleContentPosts() {
         // Logic to check for scheduled posts and publish them
         try {
-            List<Post> postsToPublish = getPosts();
+            Firestore db = FirestoreClient.getFirestore();
 
-            for (Post post : postsToPublish) {
-                ZonedDateTime postDateTime = ZonedDateTime.parse(post.getPostDate().toString());
-
-                if (!post.getPublished() && postDateTime.isBefore(ZonedDateTime.now())) {
-                    // Publish the post
-                    post.setPublished(true);
-                    // Update the post in Firestore
-                    FirestoreClient.getFirestore()
-                        .collection("posts")
-                        .document(post.getPostID())
-                        .set(post)
-                        .get();
-                }
-                
-            }
-
-            System.out.println("Scheduled posts checked and published if due.");
-            
-
-        }   catch (Exception e) {
-                System.err.println("Error scheduling posts: " + e.getMessage());
-        }
-    }
-
-    public List<Post> getPosts() throws ExecutionException, InterruptedException {
-        List<Post> posts = new ArrayList<>();
-        
-        QuerySnapshot querySnapshot = FirestoreClient.getFirestore()
-                .collection("posts")
-                .whereLessThanOrEqualTo("postDate", Timestamp.now())
+            QuerySnapshot querySnapshot = db.collection("posts")
                 .whereEqualTo("published", false)
                 .get()
                 .get();
-        
-        for (DocumentSnapshot document : querySnapshot.getDocuments()) {
-            Post post = document.toObject(Post.class);
-            posts.add(post);
-        }
 
-        return posts;
+            List<QueryDocumentSnapshot> documents = querySnapshot.getDocuments();
+
+            for (QueryDocumentSnapshot document : documents) {
+                Post post = document.toObject(Post.class);
+
+                // Skip posts with no postDate (createdAt) set
+                if (post.getCreatedAt() == null) {
+                    System.out.println("Skipping post " + document.getId() + " (no postDate set)");
+                    continue;
+                }
+
+                ZonedDateTime postDateTime = post.getCreatedAt().toDate()
+                    .toInstant()
+                    .atZone(java.time.ZoneId.systemDefault());
+
+                if (!post.getPublished() && postDateTime.isBefore(ZonedDateTime.now())) {
+                    // Update the post in Firestore
+                    try {
+                        db.collection("posts").document(document.getId())
+                            .update("published", true)
+                            .get();
+                        System.out.println("Updated " + document.getId());
+                    } catch (Exception ex) {
+                        System.err.println("Update failed for " + document.getId());
+                        ex.printStackTrace();
+                    }
+                    
+                    System.out.println("Published post: " + post.getPostID());
+                }
+                
+            }
+            
+            System.out.println("Checked " + documents.size() + " posts at " + ZonedDateTime.now());
+
+        }   catch (Exception e) {
+                System.err.println("Error scheduling posts: " + e.getMessage());
+                e.printStackTrace();
+        }
     }
 }

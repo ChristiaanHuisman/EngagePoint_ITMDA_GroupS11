@@ -5,7 +5,7 @@ import com.google.cloud.Timestamp;
 public class Post {
     private String businessID;
     private String content;
-    private Timestamp postDate;
+    private Timestamp createdAt;
     private String postTitle;
     private String postTag;
     private String postID;
@@ -15,10 +15,10 @@ public class Post {
     public Post() {
     }
 
-    public Post(String businessID, String content, Timestamp postDate, String postTitle, String postTag, String postID, boolean published) {
+    public Post(String businessID, String content, Timestamp createdAt, String postTitle, String postTag, String postID, boolean published) {
         this.businessID = businessID;
         this.content = content;
-        this.postDate = postDate;
+        this.createdAt = createdAt;
         this.postTitle = postTitle;
         this.postTag = postTag;
         this.postID = postID;
@@ -42,12 +42,12 @@ public class Post {
         this.content = content;
     }
 
-    public Timestamp getPostDate() {
-        return postDate;
+    public Timestamp getCreatedAt() {
+        return createdAt;
     }
 
-    public void setPostDate(Timestamp postDate) {
-        this.postDate = postDate;
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
     }
 
     public String getPostTitle() {
@@ -88,7 +88,7 @@ public class Post {
         return "Post{" +
                 "businessID='" + businessID + '\'' +
                 ", content='" + content + '\'' +
-                ", postDate=" + postDate +
+                ", postDate=" + createdAt +
                 ", postTitle='" + postTitle + '\'' +
                 ", postTag='" + postTag + '\'' +
                 ", postID='" + postID + '\'' +
