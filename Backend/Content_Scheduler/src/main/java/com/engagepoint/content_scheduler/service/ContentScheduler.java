@@ -49,7 +49,7 @@ public class ContentScheduler {
                             .get();
 
                         db.collection("posts").document(document.getId())
-                            .update("scheduled", "published")
+                            .update("status", "published")
                             .get();
 
                         System.out.println("Updated " + document.getId());
