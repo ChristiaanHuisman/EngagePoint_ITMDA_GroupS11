@@ -47,6 +47,11 @@ public class ContentScheduler {
                         db.collection("posts").document(document.getId())
                             .update("published", true)
                             .get();
+
+                        db.collection("posts").document(document.getId())
+                            .update("scheduled", "published")
+                            .get();
+
                         System.out.println("Updated " + document.getId());
                     } catch (Exception ex) {
                         System.err.println("Update failed for " + document.getId());
