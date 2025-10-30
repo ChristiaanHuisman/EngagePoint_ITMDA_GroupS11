@@ -12,6 +12,7 @@ class PostModel {
   final String status;
   final String? tag; 
   final int reactionCount;
+  final String businessStatus;
 
   PostModel({
     required this.id,
@@ -24,6 +25,7 @@ class PostModel {
     required this.status,
     this.tag, 
     this.reactionCount = 0,
+    required this.businessStatus,
   });
 
   factory PostModel.fromFirestore(DocumentSnapshot doc) {
@@ -39,11 +41,12 @@ class PostModel {
       status: data['status'] ?? 'published',
       tag: data['tag'], 
       reactionCount: data['reactionCount'] ?? 0,
+      businessStatus: data['businessStatus'] ?? 'pending',
     );
   }
   
   // Helper getter for formatted date
   String get formattedDate => DateFormat('MMM dd, yyyy').format(createdAt.toDate());
 
-  data() {}
+  
 }

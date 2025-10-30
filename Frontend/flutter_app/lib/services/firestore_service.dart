@@ -97,7 +97,6 @@ class FirestoreService {
     });
   }
 
-  
   Stream<List<PostModel>> getAllPosts(
       {String? tag, String sortBy = 'createdAt'}) {
     // Start with the base query
@@ -128,33 +127,26 @@ class FirestoreService {
   }
 
   Stream<List<PostModel>> getFollowedPosts(
-  List<String> businessIds, {
-  String sortBy = 'createdAt', // sortBy parameter
-  String? tag, //  tag parameter
-}) {
-  if (businessIds.isEmpty) {
-    return Stream.value([]);
+    List<String> businessIds, {
+    String sortBy = 'createdAt',
+  }) {
+    if (businessIds.isEmpty) {
+      return Stream.value([]);
+    }
+
+    Query postsQuery = _db.collection('posts');
+
+    // Apply 'followed' filter
+    postsQuery = postsQuery.where('businessId', whereIn: businessIds);
+
+    // Apply sorting
+    postsQuery = postsQuery.orderBy(sortBy, descending: true);
+
+    // Return the stream
+    return postsQuery.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => PostModel.fromFirestore(doc)).toList();
+    });
   }
-
-  //  Start building the query dynamically
-  Query postsQuery = _db.collection('posts');
-
-  // Apply tag filter (if one is selected)
-  if (tag != null) {
-    postsQuery = postsQuery.where('tags', arrayContains: tag);
-  }
-
-  // Apply 'followed' filter (must come after 'tags' filter)
-  postsQuery = postsQuery.where('businessId', whereIn: businessIds);
-
-  // Apply sorting (this will require new indexes)
-  postsQuery = postsQuery.orderBy(sortBy, descending: true);
-
-  // Return the stream with the new query
-  return postsQuery.snapshots().map((snapshot) {
-    return snapshot.docs.map((doc) => PostModel.fromFirestore(doc)).toList();
-  });
-}
 
   // Fetches a users profile data from the 'users' collection by their UID
   Future<UserModel?> getUserProfile(String uid) async {

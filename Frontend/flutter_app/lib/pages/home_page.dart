@@ -91,14 +91,14 @@ class MainAppNavigatorState extends State<MainAppNavigator> {
   }
 }
 
-
 // This wrapper checks the users role and loads the correct profile page
 class ProfilePageWrapper extends StatelessWidget {
   final String userId;
   final GlobalKey<ScaffoldState> scaffoldKey;
   final FirestoreService _firestoreService = FirestoreService();
 
-  ProfilePageWrapper({super.key, required this.userId, required this.scaffoldKey});
+  ProfilePageWrapper(
+      {super.key, required this.userId, required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {
@@ -115,14 +115,14 @@ class ProfilePageWrapper extends StatelessWidget {
 
         if (user.isBusiness) {
           return BusinessProfilePage(
-            userId: userId, 
-            scaffoldKey: scaffoldKey, 
+            userId: userId,
+            scaffoldKey: scaffoldKey,
             isMainPage: true,
           );
         } else {
           return CustomerProfilePage(
-            userId: userId, 
-            scaffoldKey: scaffoldKey, 
+            userId: userId,
+            scaffoldKey: scaffoldKey,
             isMainPage: true,
           );
         }
@@ -145,14 +145,22 @@ class _FollowingFeedState extends State<FollowingFeed> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-
   String _sortBy = 'createdAt'; // Default sort by date
   String? _selectedTag;
-  final List<String> _postTags = ['Promotion', 'Sale', 'Event', 'New Stock', 'Update'];
+  final List<String> _postTags = [
+    'Promotion',
+    'Sale',
+    'Event',
+    'New Stock',
+    'Update'
+  ];
+
+  late Stream<List<String>> _followedBusinessesStream;
 
   @override
   void initState() {
     super.initState();
+    _followedBusinessesStream = _firestoreService.getFollowedBusinesses();
     _searchController.addListener(() {
       if (_searchQuery != _searchController.text) {
         setState(() {
@@ -161,14 +169,12 @@ class _FollowingFeedState extends State<FollowingFeed> {
       }
     });
   }
-  
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
-
 
  Widget _buildFilterBar() {
     final Color borderColor = Colors.grey.shade400;
@@ -237,10 +243,6 @@ class _FollowingFeedState extends State<FollowingFeed> {
     );
   }
 
-
-
-
-
   @override
   Widget build(BuildContext context) {
     if (widget.user == null) {
@@ -272,7 +274,6 @@ class _FollowingFeedState extends State<FollowingFeed> {
               ),
             ),
           ),
-          
           floatingActionButton: userModel.isBusiness
               ? FloatingActionButton(
                   onPressed: () {
@@ -284,12 +285,11 @@ class _FollowingFeedState extends State<FollowingFeed> {
                   child: const Icon(Icons.add),
                 )
               : null,
-          
           body: SafeArea(
-            child: Column( 
+            child: Column(
               children: [
-                _buildFilterBar(), 
-                Expanded( 
+                _buildFilterBar(),
+                Expanded(
                   child: _buildFollowedFeed(),
                 ),
               ],
@@ -301,73 +301,94 @@ class _FollowingFeedState extends State<FollowingFeed> {
   }
 
   Widget _buildFollowedFeed() {
-    return StreamBuilder<List<String>>(
-      stream: _firestoreService.getFollowedBusinesses(),
-      builder: (context, followedSnapshot) {
-        if (followedSnapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (followedSnapshot.hasError ||
-            !followedSnapshot.hasData ||
-            followedSnapshot.data!.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                "Your feed is empty.\nGo to Discover to find and follow businesses!",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, color: Colors.grey),
-              ),
+  return StreamBuilder<List<String>>(
+    stream: _followedBusinessesStream,
+    builder: (context, followedSnapshot) {
+      if (followedSnapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (followedSnapshot.hasError ||
+          !followedSnapshot.hasData ||
+          followedSnapshot.data!.isEmpty) {
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              "Your feed is empty.\nGo to Discover to find and follow businesses!",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, color: Colors.grey),
             ),
-          );
-        }
-        final followedBusinessIds = followedSnapshot.data!;
-
-        return StreamBuilder<List<PostModel>>(
-          stream: _firestoreService.getFollowedPosts(
-            followedBusinessIds,
-            sortBy: _sortBy,
-            tag: _selectedTag,
           ),
-          builder: (context, postSnapshot) {
-            if (postSnapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+        );
+      }
+
+      final followedBusinessIds = followedSnapshot.data!;
+
+      return StreamBuilder<List<PostModel>>(
+        stream: _firestoreService.getFollowedPosts(
+          followedBusinessIds,
+          sortBy: _sortBy,
+        ),
+        builder: (context, postSnapshot) {
+          if (postSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!postSnapshot.hasData || postSnapshot.data!.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "The businesses you follow haven't posted anything yet.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+              ),
+            );
+          }
+
+          final allPosts = postSnapshot.data!;
+          final filteredPosts = allPosts.where((post) {
+            if (_selectedTag == null) {
+              return true;
             }
-            if (!postSnapshot.hasData || postSnapshot.data!.isEmpty) {
 
-              if (_selectedTag != null) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text(
-                      "No posts match that tag.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                  ),
-                );
-              }
+            return post.tag!.contains(_selectedTag!);
+          }).toList();
 
+          if (filteredPosts.isEmpty) {
+            if (_selectedTag != null) {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Text(
-                    "The businesses you follow haven't posted anything yet.",
+                    "No posts match that tag.",
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                 ),
               );
             }
-
-            final posts = postSnapshot.data!;
-            return ListView.builder(
-              itemCount: posts.length,
-              itemBuilder: (context, index) => PostCard(post: posts[index]),
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "The businesses you follow haven't posted anything yet.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+              ),
             );
-          },
-        );
-      },
-    );
-  }
+          }
+
+          return ListView.builder(
+            itemCount: filteredPosts.length, // Use filtered list
+            itemBuilder: (context, index) =>
+                PostCard(post: filteredPosts[index]), // Use filtered list
+          );
+        },
+      );
+    },
+  );
+}
 }
