@@ -21,6 +21,10 @@ class _DiscoverPageState extends State<DiscoverPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  String _sortBy = 'createdAt'; // Default sort by date
+  String? _selectedTag;
+  final List<String> _postTags = ['Promotion', 'Sale', 'Event', 'New Stock', 'Update'];
+
   @override
   void initState() {
     super.initState();
@@ -126,10 +130,86 @@ class _DiscoverPageState extends State<DiscoverPage> {
       ),
       drawer: const AppDrawer(),
       body: SafeArea(
-        child: DiscoverPageWrapper(
-          searchQuery: _searchQuery,
-          onNavigate: _navigateToUserProfile,
+        child: Column(
+          children: [
+            _buildFilterBar(),
+            Expanded(
+              child: DiscoverPageWrapper(
+                searchQuery: _searchQuery,
+                onNavigate: _navigateToUserProfile,
+                sortBy: _sortBy,
+                tag: _selectedTag,
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+ Widget _buildFilterBar() {
+    final Color borderColor = Colors.grey.shade400;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 5.0),
+      child: Row(
+        children: [
+          // Sort By Dropdown (Date & Likes)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0), 
+            
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _sortBy,
+                items: const [
+                  DropdownMenuItem(value: 'createdAt', child: Text('Most Recent')),
+                  DropdownMenuItem(value: 'reactionCount', child: Text('Most Liked')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _sortBy = value;
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Horizontal Tag List
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _postTags.map((tag) {
+                  final bool isSelected = _selectedTag == tag;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: FilterChip(
+                      label: Text(tag),
+                      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                      selected: isSelected,
+
+                      shape: StadiumBorder(
+                        side: BorderSide(color: borderColor, width: 1.0),
+                      ),
+
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedTag = tag;
+                          } else {
+                            _selectedTag = null; // De-select
+                          }
+                        });
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -139,22 +219,27 @@ class _DiscoverPageState extends State<DiscoverPage> {
 class DiscoverPageWrapper extends StatelessWidget {
   final String searchQuery;
   final Function(String) onNavigate;
+  final String sortBy;
+  final String? tag;
 
   const DiscoverPageWrapper({
     super.key,
     required this.searchQuery,
     required this.onNavigate,
+    required this.sortBy,
+    this.tag,
   });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        const DiscoverFeed(),
+        
+        DiscoverFeed(sortBy: sortBy, tag: tag),
         if (searchQuery.trim().isNotEmpty)
           DiscoverSearchResults(
             searchQuery: searchQuery,
-            onNavigate: onNavigate, // Pass the function to the results
+            onNavigate: onNavigate,
           ),
       ],
     );
@@ -163,7 +248,10 @@ class DiscoverPageWrapper extends StatelessWidget {
 
 // This feed widget shows all posts
 class DiscoverFeed extends StatelessWidget {
-  const DiscoverFeed({super.key});
+  final String sortBy;
+  final String? tag;
+  const DiscoverFeed({super.key, required this.sortBy, this.tag});
+  
 
   @override
   Widget build(BuildContext context) {
@@ -171,7 +259,7 @@ class DiscoverFeed extends StatelessWidget {
     final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
     return StreamBuilder<List<PostModel>>(
-      stream: firestoreService.getAllPosts(),
+      stream: firestoreService.getAllPosts(sortBy: sortBy, tag: tag),
       builder: (context, postSnapshot) {
         if (postSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

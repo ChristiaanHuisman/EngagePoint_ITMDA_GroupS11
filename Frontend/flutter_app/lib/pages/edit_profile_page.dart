@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/user_model.dart';
+import 'package:flutter_app/models/user_model.dart'; // Make sure this path is correct
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 
@@ -21,6 +21,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _businessTypeController;
+  late final TextEditingController _websiteController;
 
   Uint8List? _imageData;
   String? _existingImageUrl;
@@ -34,6 +35,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         TextEditingController(text: widget.user.description ?? '');
     _businessTypeController =
         TextEditingController(text: widget.user.businessType ?? '');
+        
+    _websiteController = TextEditingController(text: widget.user.website ?? '');
+    
     _existingImageUrl = widget.user.photoUrl;
   }
 
@@ -42,6 +46,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _nameController.dispose();
     _descriptionController.dispose();
     _businessTypeController.dispose();
+    
+    _websiteController.dispose();
+    
     super.dispose();
   }
 
@@ -50,7 +57,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (data != null) {
       setState(() {
         _imageData = data;
-        _existingImageUrl = null; 
+        _existingImageUrl = null;
       });
     }
   }
@@ -73,11 +80,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final Map<String, dynamic> dataToUpdate = {
         'name': _nameController.text.trim(),
         'description': _descriptionController.text.trim(),
-        'photoUrl': newPhotoUrl, 
+        'photoUrl': newPhotoUrl,
       };
 
       if (widget.user.isBusiness) {
         dataToUpdate['businessType'] = _businessTypeController.text.trim();
+        
+        dataToUpdate['website'] = _websiteController.text.trim();
       }
 
       await _firestoreService.updateUserProfile(widget.user.uid, dataToUpdate);
@@ -164,6 +173,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         : null,
                   ),
                   const SizedBox(height: 16),
+                  
+                  // Business-Only Fields
                   if (widget.user.isBusiness)
                     TextFormField(
                       controller: _businessTypeController,
@@ -174,6 +185,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                     ),
                   if (widget.user.isBusiness) const SizedBox(height: 16),
+
+                  if (widget.user.isBusiness)
+                    TextFormField(
+                      controller: _websiteController,
+                      decoration: const InputDecoration(
+                        labelText: 'Website',
+                        hintText: 'https://www.yourbusiness.com',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.language),
+                      ),
+                      keyboardType: TextInputType.url,
+
+                    ),
+                  if (widget.user.isBusiness) const SizedBox(height: 16),
+                  // End Business-Only Fields
                   TextFormField(
                     controller: _descriptionController,
                     decoration: InputDecoration(

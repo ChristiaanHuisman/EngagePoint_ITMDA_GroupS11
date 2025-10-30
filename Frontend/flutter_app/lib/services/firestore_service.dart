@@ -13,14 +13,12 @@ import '../models/location_model.dart';
 
 // Top-level function to get the token
 Future<String> getCloudRunIdToken(String cloudRunUrl) async {
-  // 1️⃣ Load the service account JSON
   final jsonString = await rootBundle.loadString('assets/service_account.json');
   final account = jsonDecode(jsonString);
 
   final clientEmail = account['client_email'];
   final privateKey = account['private_key'];
 
-  // 2️⃣ Create JWT header and claims
   final claimSet = JsonWebTokenClaims.fromJson({
     'iss': clientEmail,
     'sub': clientEmail,
@@ -40,7 +38,6 @@ Future<String> getCloudRunIdToken(String cloudRunUrl) async {
   final jws = builder.build();
   final jwt = jws.toCompactSerialization();
 
-  // 3️⃣ Exchange JWT for an ID token
   final response = await http.post(
     Uri.parse('https://oauth2.googleapis.com/token'),
     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -57,8 +54,6 @@ Future<String> getCloudRunIdToken(String cloudRunUrl) async {
   final data = jsonDecode(response.body);
   return data['id_token'];
 }
-
-
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -102,14 +97,23 @@ class FirestoreService {
     });
   }
 
-  Stream<List<PostModel>> getAllPosts() {
-    return _db
-        .collection('posts')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) => PostModel.fromFirestore(doc)).toList();
-    });
+  
+  Stream<List<PostModel>> getAllPosts(
+      {String? tag, String sortBy = 'createdAt'}) {
+    // Start with the base query
+    Query query = _db.collection('posts');
+
+    // Add a filter for the tag, if one is provided
+    if (tag != null) {
+      query = query.where('tag', isEqualTo: tag);
+    }
+
+    // Add sorting. 'sortBy' will be 'createdAt' (date) or 'reactionCount' (likes)
+    query = query.orderBy(sortBy, descending: true);
+
+    // Return the stream
+    return query.snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) => PostModel.fromFirestore(doc)).toList());
   }
 
   Stream<List<PostModel>> getPostsForBusiness(String businessId) {
@@ -123,19 +127,34 @@ class FirestoreService {
     });
   }
 
-  Stream<List<PostModel>> getFollowedPosts(List<String> businessIds) {
-    if (businessIds.isEmpty) {
-      return Stream.value([]);
-    }
-    return _db
-        .collection('posts')
-        .where('businessId', whereIn: businessIds)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) => PostModel.fromFirestore(doc)).toList();
-    });
+  Stream<List<PostModel>> getFollowedPosts(
+  List<String> businessIds, {
+  String sortBy = 'createdAt', // sortBy parameter
+  String? tag, //  tag parameter
+}) {
+  if (businessIds.isEmpty) {
+    return Stream.value([]);
   }
+
+  //  Start building the query dynamically
+  Query postsQuery = _db.collection('posts');
+
+  // Apply tag filter (if one is selected)
+  if (tag != null) {
+    postsQuery = postsQuery.where('tags', arrayContains: tag);
+  }
+
+  // Apply 'followed' filter (must come after 'tags' filter)
+  postsQuery = postsQuery.where('businessId', whereIn: businessIds);
+
+  // Apply sorting (this will require new indexes)
+  postsQuery = postsQuery.orderBy(sortBy, descending: true);
+
+  // Return the stream with the new query
+  return postsQuery.snapshots().map((snapshot) {
+    return snapshot.docs.map((doc) => PostModel.fromFirestore(doc)).toList();
+  });
+}
 
   // Fetches a users profile data from the 'users' collection by their UID
   Future<UserModel?> getUserProfile(String uid) async {
@@ -223,43 +242,54 @@ class FirestoreService {
             snapshot.docs.map((doc) => UserModel.fromFirestore(doc)).toList());
   }
 
-  // REVIEW METHODS USING PYTHON MiCROSERVICE  
+  // REVIEW METHODS USING PYTHON MiCROSERVICE
 
   // Adds a new review or updates an existing one for a business using Python API.
   Future<void> addOrUpdateReview({
+    required String businessId,
+    required double rating,
+    required String comment,
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception("You must be logged in to leave a review.");
+    }
 
-  required String businessId,
-  required double rating,
-  required String comment,
-}) async {
-  final currentUser = _auth.currentUser;
-  if (currentUser == null) {
-    throw Exception("You must be logged in to leave a review.");
+    final url = Uri.parse(
+        'https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization':
+            'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'
+      },
+      body: jsonEncode({
+        'businessId': businessId,
+        'customerId': currentUser.uid,
+        'rating': rating,
+        'comment': comment,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to submit review: ${response.body}');
+    }
   }
 
-  final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
-  final response = await http.post(
-    url,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'
-    },
-    body: jsonEncode({
-      'businessId': businessId,
-      'customerId': currentUser.uid, 
-      'rating': rating,
-      'comment': comment,
-    }),
-  );
-
-  if (response.statusCode != 200 && response.statusCode != 201) {
-    throw Exception('Failed to submit review: ${response.body}');
-  }
-}
   // Gets all reviews for a business using Python API (for non-stream use).
-  Future<List<Map<String, dynamic>>> getReviewsForBusinessApi(String businessId) async {
-    final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews/$businessId');
-    final response = await http.get(url,headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'},);
+  Future<List<Map<String, dynamic>>> getReviewsForBusinessApi(
+      String businessId) async {
+    final url = Uri.parse(
+        'https://review-sentiment-service-570976278139.africa-south1.run.app/reviews/$businessId');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization':
+            'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'
+      },
+    );
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
@@ -274,10 +304,15 @@ class FirestoreService {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
+    final url = Uri.parse(
+        'https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
     final response = await http.delete(
       url,
-      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization':
+            'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'
+      },
       body: jsonEncode({
         'businessId': businessId,
         'customerId': currentUser.uid,
@@ -292,7 +327,8 @@ class FirestoreService {
       } catch (e) {
         errorMessage = response.body;
       }
-      throw Exception('Failed to delete review (Status: ${response.statusCode}). Error: $errorMessage');
+      throw Exception(
+          'Failed to delete review (Status: ${response.statusCode}). Error: $errorMessage');
     }
   }
 
@@ -531,21 +567,29 @@ class FirestoreService {
     return reviewsQuery.size;
   }
 
-Future<Map<String, int>> getReviewSentimentStats(String businessId) async {
-  final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews/analytics/$businessId');
-  final response = await http.get(url,headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'},);
+  Future<Map<String, int>> getReviewSentimentStats(String businessId) async {
+    final url = Uri.parse(
+        'https://review-sentiment-service-570976278139.africa-south1.run.app/reviews/analytics/$businessId');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization':
+            'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'
+      },
+    );
 
-  if (response.statusCode == 200) {
-    final data = jsonDecode(response.body);
-    return {
-      'positive': data['positive'] ?? 0,
-      'negative': data['negative'] ?? 0,
-      'neutral': data['neutral'] ?? 0,
-    };
-  } else {
-    throw Exception('Failed to fetch sentiment stats: ${response.body}');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return {
+        'positive': data['positive'] ?? 0,
+        'negative': data['negative'] ?? 0,
+        'neutral': data['neutral'] ?? 0,
+      };
+    } else {
+      throw Exception('Failed to fetch sentiment stats: ${response.body}');
+    }
   }
-}
 
   Future<void> addLocation(
       {required String name, required String address}) async {

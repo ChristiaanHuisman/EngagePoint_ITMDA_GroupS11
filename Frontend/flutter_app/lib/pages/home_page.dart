@@ -91,6 +91,7 @@ class MainAppNavigatorState extends State<MainAppNavigator> {
   }
 }
 
+
 // This wrapper checks the users role and loads the correct profile page
 class ProfilePageWrapper extends StatelessWidget {
   final String userId;
@@ -113,9 +114,17 @@ class ProfilePageWrapper extends StatelessWidget {
         final user = snapshot.data!;
 
         if (user.isBusiness) {
-          return BusinessProfilePage(userId: userId, isMainPage: true, scaffoldKey: scaffoldKey);
+          return BusinessProfilePage(
+            userId: userId, 
+            scaffoldKey: scaffoldKey, 
+            isMainPage: true,
+          );
         } else {
-          return CustomerProfilePage(userId: userId, isMainPage: true, scaffoldKey: scaffoldKey);
+          return CustomerProfilePage(
+            userId: userId, 
+            scaffoldKey: scaffoldKey, 
+            isMainPage: true,
+          );
         }
       },
     );
@@ -136,6 +145,11 @@ class _FollowingFeedState extends State<FollowingFeed> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+
+  String _sortBy = 'createdAt'; // Default sort by date
+  String? _selectedTag;
+  final List<String> _postTags = ['Promotion', 'Sale', 'Event', 'New Stock', 'Update'];
+
   @override
   void initState() {
     super.initState();
@@ -154,6 +168,78 @@ class _FollowingFeedState extends State<FollowingFeed> {
     _searchController.dispose();
     super.dispose();
   }
+
+
+ Widget _buildFilterBar() {
+    final Color borderColor = Colors.grey.shade400;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 5.0),
+      child: Row(
+        children: [
+          // Sort By Dropdown (Date & Likes)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0), 
+            
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _sortBy,
+                items: const [
+                  DropdownMenuItem(value: 'createdAt', child: Text('Most Recent')),
+                  DropdownMenuItem(value: 'reactionCount', child: Text('Most Liked')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _sortBy = value;
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Horizontal Tag List
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _postTags.map((tag) {
+                  final bool isSelected = _selectedTag == tag;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: FilterChip(
+                      label: Text(tag),
+                      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                      selected: isSelected,
+
+                      shape: StadiumBorder(
+                        side: BorderSide(color: borderColor, width: 1.0),
+                      ),
+
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedTag = tag;
+                          } else {
+                            _selectedTag = null; // De-select
+                          }
+                        });
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -198,8 +284,16 @@ class _FollowingFeedState extends State<FollowingFeed> {
                   child: const Icon(Icons.add),
                 )
               : null,
+          
           body: SafeArea(
-            child: _buildFollowedFeed(),
+            child: Column( 
+              children: [
+                _buildFilterBar(), 
+                Expanded( 
+                  child: _buildFollowedFeed(),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -230,12 +324,30 @@ class _FollowingFeedState extends State<FollowingFeed> {
         final followedBusinessIds = followedSnapshot.data!;
 
         return StreamBuilder<List<PostModel>>(
-          stream: _firestoreService.getFollowedPosts(followedBusinessIds),
+          stream: _firestoreService.getFollowedPosts(
+            followedBusinessIds,
+            sortBy: _sortBy,
+            tag: _selectedTag,
+          ),
           builder: (context, postSnapshot) {
             if (postSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
             if (!postSnapshot.hasData || postSnapshot.data!.isEmpty) {
+
+              if (_selectedTag != null) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text(
+                      "No posts match that tag.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                  ),
+                );
+              }
+
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(16.0),

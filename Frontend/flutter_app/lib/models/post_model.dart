@@ -11,6 +11,7 @@ class PostModel {
   final Timestamp createdAt;
   final String status;
   final String? tag; 
+  final int reactionCount;
 
   PostModel({
     required this.id,
@@ -22,6 +23,7 @@ class PostModel {
     required this.createdAt,
     required this.status,
     this.tag, 
+    this.reactionCount = 0,
   });
 
   factory PostModel.fromFirestore(DocumentSnapshot doc) {
@@ -36,6 +38,7 @@ class PostModel {
       createdAt: data['createdAt'] ?? Timestamp.now(),
       status: data['status'] ?? 'published',
       tag: data['tag'], 
+      reactionCount: data['reactionCount'] ?? 0,
     );
   }
   
