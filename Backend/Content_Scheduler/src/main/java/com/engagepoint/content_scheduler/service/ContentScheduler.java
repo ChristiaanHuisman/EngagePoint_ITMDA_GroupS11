@@ -58,7 +58,7 @@ public class ContentScheduler {
                         ex.printStackTrace();
                     }
                     
-                    System.out.println("Published post: " + post.getPostID());
+                    System.out.println("Published post: " + document.getId());
                 }
                 
             }
