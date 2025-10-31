@@ -99,7 +99,7 @@ namespace BusinessVerification_Service.Services
                 if (website.Contains("://"))
                 {
                     // Get first part of website address before ://
-                    var scheme = website.Split("://")[0].ToLower();
+                    string scheme = website.Split("://")[0].ToLower();
 
                     // Count number of schemes in website address
                     int schemeCount = website.Split("://").Length - 1;
@@ -261,17 +261,17 @@ namespace BusinessVerification_Service.Services
                 "and website {website} started.",
                 userId, email, website
             );
-
+            
             // Wrapper safety try catch block for the entire method
             try
             {
                 // Get domain only from email address
-                var emailDomain = new MailAddress(email).Host;
-                var emailDomainInfo = _domainParser.Parse(emailDomain);
+                var emailHost = new MailAddress(email).Host;
+                var emailDomainInfo = _domainParser.Parse(emailHost);
 
                 // Get domain only from website URL
-                var websiteDomainTld = new UriBuilder(website).Uri.Host;
-                var websiteDomainInfo = _domainParser.Parse(websiteDomainTld);
+                var websiteHost = new UriBuilder(website).Uri.Host;
+                var websiteDomainInfo = _domainParser.Parse(websiteHost);
 
                 // Handle errors in domain parsing for email and website that follow rules, 
                 // but can still be incorrect

@@ -19,7 +19,7 @@ namespace BusinessVerification_Service.Controllers
             _logger = logger;
             _domainVerificationService = domainVerificationService;
         }
-
+        
         // API call for veryfying the user input domains and business name match, 
         // matches user input to DTO properties
         [HttpPost("requestverify")]

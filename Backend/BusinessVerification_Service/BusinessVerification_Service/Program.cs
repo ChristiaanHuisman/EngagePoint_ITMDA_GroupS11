@@ -14,7 +14,6 @@ namespace BusinessVerification_Service
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Stop the program if getting the public suffix list fails
             try
             {
                 // Register IDomainParser as a Singleton asynchronously
@@ -28,10 +27,10 @@ namespace BusinessVerification_Service
             }
             catch
             {
+                // Stop the program if getting the public suffix list fails
                 throw;
             }
 
-            // Stop the program if the connection to Firestore fails
             try
             {
                 // Register FirestoreDb as a Singleton
@@ -50,6 +49,7 @@ namespace BusinessVerification_Service
             }
             catch
             {
+                // Stop the program if the connection to Firestore fails
                 throw;
             }
             
