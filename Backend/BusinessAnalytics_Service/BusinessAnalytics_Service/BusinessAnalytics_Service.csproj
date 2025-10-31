@@ -7,7 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Analytics.Data.V1Beta" Version="2.0.0-beta09" />
     <PackageReference Include="Google.Apis.AnalyticsData.v1beta" Version="1.51.0.2272" />
+    <PackageReference Include="itext7" Version="9.3.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 

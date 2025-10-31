@@ -1,13 +1,30 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/pages/business_profile_page.dart';
+import 'package:flutter_app/pages/customer_profile_page.dart';
 import 'package:flutter_app/services/logging_service.dart';
-import 'package:intl/intl.dart';
-import '../models/post_model.dart'; 
+import '../models/post_model.dart';
+import '../models/user_model.dart';
 import '../services/firestore_service.dart';
-import '../pages/user_profile_page.dart';
 import '../pages/post_page.dart';
 import '../pages/edit_post_page.dart';
+
+Color _getTagColor(String? tag) {
+  switch (tag) {
+    case 'Promotion':
+      return Colors.blue.shade300;
+    case 'Sale':
+      return Colors.green.shade300;
+    case 'Event':
+      return Colors.orange.shade300;
+    case 'New Stock':
+      return Colors.purple.shade300;
+    case 'Update':
+      return Colors.grey.shade500;
+    default:
+      return Colors.transparent;
+  }
+}
 
 class PostCard extends StatelessWidget {
   final PostModel post;
@@ -22,7 +39,8 @@ class PostCard extends StatelessWidget {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Post?'),
-          content: const Text('Are you sure you want to permanently delete this post?'),
+          content: const Text(
+              'Are you sure you want to permanently delete this post?'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -45,8 +63,7 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // access properties directly from the `post` object.
-    final String formattedDate = DateFormat('MMM dd, yyyy').format(post.createdAt.toDate());
+    final String formattedDate = post.formattedDate;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -68,8 +85,8 @@ class PostCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               PostHeader(
-                businessId: post.businessId, 
-                onDelete: () => _showDeleteConfirmation(context, post.id), 
+                post: post,
+                onDelete: () => _showDeleteConfirmation(context, post.id),
                 onEdit: () {
                   Navigator.push(
                     context,
@@ -88,19 +105,21 @@ class PostCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.title, 
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          post.title,
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           post.content,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[700],
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey[700],
+                                  ),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -150,23 +169,27 @@ class PostCard extends StatelessWidget {
                         builder: (context, snapshot) {
                           final hasReacted = snapshot.data ?? false;
                           return IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            icon: Icon(
-                              hasReacted ? Icons.favorite : Icons.favorite_border,
-                              color: hasReacted ? Colors.red : Colors.grey,
-                            ),
-                            onPressed: () => {
-                              _firestoreService.togglePostReaction(post.id),
-                              _loggingService.logAnalyticsEvent(
-                                eventName: hasReacted ? 'post_reaction_removed' : 'post_reaction_added',
-                                parameters: {
-                                  'post_id': post.id,
-                                  'business_id': post.businessId,
-                                },
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              icon: Icon(
+                                hasReacted
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: hasReacted ? Colors.red : Colors.grey,
                               ),
-                            }
-                          );
+                              onPressed: () => {
+                                    _firestoreService
+                                        .togglePostReaction(post.id),
+                                    _loggingService.logAnalyticsEvent(
+                                      eventName: hasReacted
+                                          ? 'post_reaction_removed'
+                                          : 'post_reaction_added',
+                                      parameters: {
+                                        'post_id': post.id,
+                                        'business_id': post.businessId,
+                                      },
+                                    ),
+                                  });
                         },
                       ),
                       const SizedBox(width: 4),
@@ -199,25 +222,52 @@ class PostCard extends StatelessWidget {
 }
 
 class PostHeader extends StatelessWidget {
-  final String businessId;
+  final PostModel post;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final FirestoreService _firestoreService = FirestoreService();
+  final LoggingService _loggingService = LoggingService();
 
   PostHeader({
-    required this.businessId,
+    required this.post,
     required this.onEdit,
     required this.onDelete,
     super.key,
   });
 
+  // Helper function for navigation to handle role check
+  void _navigateToUserProfile(
+      BuildContext context, String userId, bool isBusiness) async {
+    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (userId == currentUserId) {
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+      return;
+    }
+
+    if (context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => isBusiness
+              ? BusinessProfilePage(
+                  userId: userId, scaffoldKey: GlobalKey<ScaffoldState>())
+              : CustomerProfilePage(
+                  userId: userId, scaffoldKey: GlobalKey<ScaffoldState>()),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final bool isOwner = currentUserId != null && currentUserId == businessId;
+    final bool isOwner =
+        currentUserId != null && currentUserId == post.businessId;
 
-    return FutureBuilder<DocumentSnapshot>(
-      future: _firestoreService.getUserProfile(businessId),
+    return FutureBuilder<UserModel?>(
+      future: _firestoreService.getUserProfile(post.businessId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Row(
@@ -229,48 +279,64 @@ class PostHeader extends StatelessWidget {
           );
         }
 
-        if (!snapshot.hasData || !snapshot.data!.exists) {
+        final business = snapshot.data;
+        if (business == null) {
           return const Text('Unknown Business');
         }
 
-        var businessData = snapshot.data!.data() as Map<String, dynamic>;
-        final String businessName = businessData['name'] ?? 'Unnamed Business';
-        final String? businessPhotoUrl = businessData['photoUrl'];
-
         return GestureDetector(
           onTap: () {
-            if (businessId.isNotEmpty) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UserProfilePage(userId: businessId),
-                ),
+            if (business.uid.isNotEmpty) {
+              _loggingService.logAnalyticsEvent(
+                eventName: 'click_through',
+                parameters: {
+                  'business_id': business.uid,
+                },
               );
+              _navigateToUserProfile(
+                  context, business.uid, business.isBusiness);
             }
           },
           child: Row(
             children: [
               CircleAvatar(
-                backgroundImage: businessPhotoUrl != null ? NetworkImage(businessPhotoUrl) : null,
+                backgroundImage: business.photoUrl != null
+                    ? NetworkImage(business.photoUrl!)
+                    : null,
                 radius: 20,
-                child: businessPhotoUrl == null ? const Icon(Icons.store, size: 20) : null,
+                child: business.photoUrl == null
+                    ? const Icon(Icons.store, size: 20)
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  businessName,
+                  business.name,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
               ),
+              if (post.tag != null && post.tag!.isNotEmpty)
+                Chip(
+                  label: Text(post.tag!),
+                  backgroundColor: _getTagColor(post.tag),
+                  labelStyle: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10.0, vertical: 2.0),
+                  shape: const StadiumBorder(),
+                ),
               if (isOwner)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                      padding: const EdgeInsets.only(left: 30),
                       onPressed: onEdit,
                     ),
                     IconButton(

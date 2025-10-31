@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import 'signup_page.dart';
 
@@ -15,7 +15,7 @@ class LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _loading = false;
-  bool _rememberMe = false; 
+  bool _rememberMe = false;
 
   @override
   void initState() {
@@ -86,16 +86,16 @@ class LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
+        body: SafeArea(
+      child: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-             
               Image.asset(
-                'assets/icon.png', 
-                height: 150,       
+                'assets/icon.png',
+                height: 150,
               ),
               const SizedBox(height: 40),
 
@@ -121,7 +121,7 @@ class LoginPageState extends State<LoginPage> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              
+
               // "Remember Me" Checkbox
               CheckboxListTile(
                 title: const Text("Remember Me"),
@@ -158,7 +158,7 @@ class LoginPageState extends State<LoginPage> {
               // Google login
               OutlinedButton.icon(
                 icon: Image.asset(
-                  'assets/google_logo.svg.png', 
+                  'assets/google_logo.svg.png',
                   height: 20,
                 ),
                 label: const Text("Continue with Google"),
@@ -181,6 +181,6 @@ class LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

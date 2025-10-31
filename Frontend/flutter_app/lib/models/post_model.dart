@@ -1,5 +1,5 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class PostModel {
   final String id;
@@ -10,6 +10,9 @@ class PostModel {
   final double? imageAspectRatio;
   final Timestamp createdAt;
   final String status;
+  final String? tag; 
+  final int reactionCount;
+  final String businessStatus;
 
   PostModel({
     required this.id,
@@ -20,6 +23,9 @@ class PostModel {
     this.imageAspectRatio,
     required this.createdAt,
     required this.status,
+    this.tag, 
+    this.reactionCount = 0,
+    required this.businessStatus,
   });
 
   factory PostModel.fromFirestore(DocumentSnapshot doc) {
@@ -33,6 +39,14 @@ class PostModel {
       imageAspectRatio: (data['imageAspectRatio'] as num?)?.toDouble(),
       createdAt: data['createdAt'] ?? Timestamp.now(),
       status: data['status'] ?? 'published',
+      tag: data['tag'], 
+      reactionCount: data['reactionCount'] ?? 0,
+      businessStatus: data['businessStatus'] ?? 'pending',
     );
   }
+  
+  // Helper getter for formatted date
+  String get formattedDate => DateFormat('MMM dd, yyyy').format(createdAt.toDate());
+
+  
 }

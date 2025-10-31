@@ -56,7 +56,7 @@ Backend (Core):
 - Firebase Analytics + BigQuery – Engagement tracking  
 
 Backend (Microservices):
-- Java – Recommendation engine  
+- Java – Content Scheduler
 - C# (ASP.NET Core) – Engagement analytics & business verification  
 - Python – Sentiment analysis & content moderation  
 
@@ -70,7 +70,7 @@ EngagePoint_ITMDA_GroupS11/
 ├─ Backend/               # Custom microservices
 │   ├─ BusinessAnalytics_Service/     # C#
 │   ├─ BusinessVerification_Service/  # C#
-│   ├─ Recommendation_Service/        # Java
+│   ├─ Content_Scheduler/             # Java 
 │   ├─ ReviewSentiment_Service/       # Python
 │   └─ PostModeration_Service/        # Python
 ├─ Firebase/              # Firebase configs & rules
@@ -131,7 +131,7 @@ This project is licensed under the Apache License 2.0 – see the LICENSE file f
 Possible Future Improvements
 
 * Web dashboard for businesses
-* AI-driven personalized recommendations
+* Scheduled content publishing
 * Advanced AI-driven detection for prohibited content
 * Advanced fraud detection for fake businesses
 
