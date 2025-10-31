@@ -4,11 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/firestore_service.dart';
 import '../services/analytics_service.dart';
+import 'package:printing/printing.dart';
 import 'dart:typed_data';
-import 'package:file_saver/file_saver.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 class BusinessDashboardPage extends StatefulWidget {
   const BusinessDashboardPage({super.key});
@@ -217,6 +214,44 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
     );
   }
 
+  //PDF preview, used for download
+  void _showPdfPreviewBottomSheet(BuildContext context, Uint8List pdfBytes) {
+    debugPrint('Showing PDF preview bottom sheet.');
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.9,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.background,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: PdfPreview(
+                build: (format) async => pdfBytes,
+                canChangeOrientation: false,
+                canChangePageFormat: false,
+                allowPrinting: true,
+                allowSharing: true,
+                pdfFileName: 'AnalyticsReport.pdf',
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+
   // ANALYTICS TAB
   Widget _buildAnalyticsView() {
     final dateFormat = DateFormat('yyyy-MM-dd');
@@ -260,10 +295,12 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
           ),
           const SizedBox(height: 8),
           ElevatedButton.icon(
-            onPressed: _downloadPdf,
-            icon: const Icon(Icons.picture_as_pdf),
-            label: const Text('Download PDF'),
-          ),
+  onPressed: () async {
+    await _downloadPdf();
+  },
+  icon: const Icon(Icons.picture_as_pdf),
+  label: const Text('Download PDF'),
+),
           const SizedBox(height: 24),
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
@@ -278,6 +315,58 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
       ),
     );
   }
+
+  //download the pdf
+  Future<void> _downloadPdf() async {
+  final start = DateFormat('yyyy-MM-dd').format(_startDate);
+  final end = DateFormat('yyyy-MM-dd').format(_endDate);
+  final id = _businessId!;
+  Uint8List? pdfBytes;
+
+  try {
+    // Fetch and generate PDF data
+    switch (_selectedMetric) {
+      case 'ViewsPerPost':
+        pdfBytes = await _analyticsService.downloadViewsPerPostPdf(id, start, end);
+        break;
+      case 'VisitorsPerAccount':
+        pdfBytes = await _analyticsService.downloadVisitorsPerAccountPdf(id, start, end);
+        break;
+      case 'ClickThrough':
+        pdfBytes = await _analyticsService.downloadClickThroughPdf(id, start, end);
+        break;
+      case 'FollowsByDay':
+        pdfBytes = await _analyticsService.downloadFollowsByDayPdf(id, start, end);
+        break;
+    }
+    debugPrint('PDF bytes length: ${pdfBytes?.length}');
+
+    // If the widget was disposed while waiting for data, stop here
+    if (!mounted) return;
+
+    debugPrint('Preparing to show PDF preview.');
+
+    if (pdfBytes == null || pdfBytes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No data available to generate PDF.')),
+      );
+      return;
+    }
+    debugPrint('PDF generated with ${pdfBytes.length} bytes.');
+    // Safely show the preview after checking context
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _showPdfPreviewBottomSheet(context, pdfBytes!);
+      }
+    });
+  } catch (e) {
+    if (!mounted) return;
+    debugPrint('Error generating PDF: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to generate PDF: $e')),
+    );
+  }
+}
 
   Future<void> _pickDate(BuildContext context, bool isStart) async {
     final initialDate = isStart ? _startDate : _endDate;
@@ -340,60 +429,7 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
     }
   }
 
-  Future<void> _downloadPdf() async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    if (!kIsWeb && Platform.isIOS) {
-      var status = await Permission.photos.request();
-
-      if (!status.isGranted) {
-        if (status.isPermanentlyDenied) {
-          scaffoldMessenger.showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Permission denied. Please enable Photos access in settings.'),
-              duration: Duration(seconds: 5),
-            ),
-          );
-          await openAppSettings();
-        } else {
-          scaffoldMessenger.showSnackBar(
-            const SnackBar(
-                content: Text(
-                    'Photos permission is required to save files on iOS.')),
-          );
-        }
-        return;
-      }
-    }
-
-    final start = DateFormat('yyyy-MM-dd').format(_startDate);
-    final end = DateFormat('yyyy-MM-dd').format(_endDate);
-    final id = _businessId!;
-    final String reportName = 'Report_${_selectedMetric}_$start.pdf';
-
-    try {
-      final Uint8List pdfBytes = await _analyticsService.downloadReportPdf(
-          _selectedMetric, id, start, end);
-
-      await FileSaver.instance.saveFile(
-        name: reportName,
-        bytes: pdfBytes,
-        fileExtension: 'pdf',
-        mimeType: MimeType.pdf,
-      );
-
-      scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text('Report saved as $reportName')),
-      );
-    } catch (e) {
-      debugPrint('Error downloading PDF: $e');
-      scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text('Failed to download PDF: $e')),
-      );
-    }
-  }
-
+ 
   Widget _buildAnalyticsLineChart() {
     if (_analyticsData == null) {
       return const Center(
