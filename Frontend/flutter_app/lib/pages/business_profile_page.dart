@@ -155,7 +155,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
   }
 
   // Helper Widgets 
-  Widget _buildProfileHeader(
+ Widget _buildProfileHeader(
       BuildContext context, UserModel user, bool isOwnProfile) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -170,12 +170,27 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                 : null,
           ),
           const SizedBox(height: 16),
-          Text(user.name,
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(user.name,
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center),
+              if (user.status == 'verified')
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Icon(
+                    Icons.verified,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 24.0,
+                  ),
+                ),
+            ],
+          ),
           if (user.description != null && user.description!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
@@ -221,11 +236,60 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                       : _buildFollowButton(widget.userId),
                 ],
               ),
+
+
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
-                child: isOwnProfile
-                    ? _buildManageLocationsButton(context)
-                    : _buildLocationsButton(context, widget.userId),
+                child: Wrap(
+                  alignment: WrapAlignment.center, 
+                  spacing: 8.0, 
+                  runSpacing: 8.0, 
+                  children: [
+                    // Website Button 
+                    if (user.website != null && user.website!.isNotEmpty)
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          Uri uri;
+                          if (user.website!.startsWith('http://') ||
+                              user.website!.startsWith('https://')) {
+                            uri = Uri.parse(user.website!);
+                          } else {
+                            uri = Uri.parse('https://${user.website!}');
+                          }
+
+                          try {
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri,
+                                  mode: LaunchMode.externalApplication);
+                            } else if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Could not launch website.')),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content:
+                                        Text('Failed to launch website: $e')),
+                              );
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.language_outlined, size: 16),
+                        label: Text(user.website!
+                            .replaceFirst('https://', '')
+                            .replaceFirst('http://', '')),
+                      ),
+                    
+
+                    // Locations Button 
+                    isOwnProfile
+                        ? _buildManageLocationsButton(context)
+                        : _buildLocationsButton(context, widget.userId),
+                  ],
+                ),
               ),
             ],
           ),
@@ -239,7 +303,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
           onPressed: () => Navigator.push(context,
               MaterialPageRoute(builder: (_) => const ManageLocationsPage())),
           icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
-          label: const Text('Manage Store Locations'));
+          label: const Text('Manage Locations'));
 
   Widget _buildLocationsButton(BuildContext context, String businessId) {
     return StreamBuilder<List<LocationModel>>(

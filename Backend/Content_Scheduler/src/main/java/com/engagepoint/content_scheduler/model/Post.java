@@ -1,13 +1,11 @@
 package com.engagepoint.content_scheduler.model;
 
-import org.springframework.data.mongodb.core.mapping.Document;
-import java.time.ZonedDateTime;
+import com.google.cloud.Timestamp;
 
-@Document(collection = "posts")
 public class Post {
     private String businessID;
     private String content;
-    private ZonedDateTime postDate;
+    private Timestamp postDate;
     private String postTitle;
     private String postTag;
     private String postID;
@@ -17,7 +15,7 @@ public class Post {
     public Post() {
     }
 
-    public Post(String businessID, String content, ZonedDateTime postDate, String postTitle, String postTag, String postID, boolean published) {
+    public Post(String businessID, String content, Timestamp postDate, String postTitle, String postTag, String postID, boolean published) {
         this.businessID = businessID;
         this.content = content;
         this.postDate = postDate;
@@ -44,11 +42,11 @@ public class Post {
         this.content = content;
     }
 
-    public ZonedDateTime getPostDate() {
+    public Timestamp getPostDate() {
         return postDate;
     }
 
-    public void setPostDate(ZonedDateTime postDate) {
+    public void setPostDate(Timestamp postDate) {
         this.postDate = postDate;
     }
 

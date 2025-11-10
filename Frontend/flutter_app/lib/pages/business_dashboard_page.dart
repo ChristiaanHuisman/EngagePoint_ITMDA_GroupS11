@@ -230,7 +230,7 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
         builder: (context, scrollController) {
           return Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.background,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Padding(

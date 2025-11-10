@@ -97,7 +97,8 @@ class ProfilePageWrapper extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey;
   final FirestoreService _firestoreService = FirestoreService();
 
-  ProfilePageWrapper({super.key, required this.userId, required this.scaffoldKey});
+  ProfilePageWrapper(
+      {super.key, required this.userId, required this.scaffoldKey});
 
   @override
   Widget build(BuildContext context) {
@@ -113,9 +114,17 @@ class ProfilePageWrapper extends StatelessWidget {
         final user = snapshot.data!;
 
         if (user.isBusiness) {
-          return BusinessProfilePage(userId: userId, isMainPage: true, scaffoldKey: scaffoldKey);
+          return BusinessProfilePage(
+            userId: userId,
+            scaffoldKey: scaffoldKey,
+            isMainPage: true,
+          );
         } else {
-          return CustomerProfilePage(userId: userId, isMainPage: true, scaffoldKey: scaffoldKey);
+          return CustomerProfilePage(
+            userId: userId,
+            scaffoldKey: scaffoldKey,
+            isMainPage: true,
+          );
         }
       },
     );
@@ -136,9 +145,22 @@ class _FollowingFeedState extends State<FollowingFeed> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  String _sortBy = 'createdAt'; // Default sort by date
+  String? _selectedTag;
+  final List<String> _postTags = [
+    'Promotion',
+    'Sale',
+    'Event',
+    'New Stock',
+    'Update'
+  ];
+
+  late Stream<List<String>> _followedBusinessesStream;
+
   @override
   void initState() {
     super.initState();
+    _followedBusinessesStream = _firestoreService.getFollowedBusinesses();
     _searchController.addListener(() {
       if (_searchQuery != _searchController.text) {
         setState(() {
@@ -147,12 +169,78 @@ class _FollowingFeedState extends State<FollowingFeed> {
       }
     });
   }
-  
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+ Widget _buildFilterBar() {
+    final Color borderColor = Colors.grey.shade400;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 5.0),
+      child: Row(
+        children: [
+          // Sort By Dropdown (Date & Likes)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0), 
+            
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _sortBy,
+                items: const [
+                  DropdownMenuItem(value: 'createdAt', child: Text('Most Recent')),
+                  DropdownMenuItem(value: 'reactionCount', child: Text('Most Liked')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _sortBy = value;
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Horizontal Tag List
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _postTags.map((tag) {
+                  final bool isSelected = _selectedTag == tag;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: FilterChip(
+                      label: Text(tag),
+                      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                      selected: isSelected,
+
+                      shape: StadiumBorder(
+                        side: BorderSide(color: borderColor, width: 1.0),
+                      ),
+
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedTag = tag;
+                          } else {
+                            _selectedTag = null; // De-select
+                          }
+                        });
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -186,7 +274,6 @@ class _FollowingFeedState extends State<FollowingFeed> {
               ),
             ),
           ),
-          
           floatingActionButton: userModel.isBusiness
               ? FloatingActionButton(
                   onPressed: () {
@@ -199,7 +286,14 @@ class _FollowingFeedState extends State<FollowingFeed> {
                 )
               : null,
           body: SafeArea(
-            child: _buildFollowedFeed(),
+            child: Column(
+              children: [
+                _buildFilterBar(),
+                Expanded(
+                  child: _buildFollowedFeed(),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -207,55 +301,94 @@ class _FollowingFeedState extends State<FollowingFeed> {
   }
 
   Widget _buildFollowedFeed() {
-    return StreamBuilder<List<String>>(
-      stream: _firestoreService.getFollowedBusinesses(),
-      builder: (context, followedSnapshot) {
-        if (followedSnapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (followedSnapshot.hasError ||
-            !followedSnapshot.hasData ||
-            followedSnapshot.data!.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                "Your feed is empty.\nGo to Discover to find and follow businesses!",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 18, color: Colors.grey),
-              ),
+  return StreamBuilder<List<String>>(
+    stream: _followedBusinessesStream,
+    builder: (context, followedSnapshot) {
+      if (followedSnapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (followedSnapshot.hasError ||
+          !followedSnapshot.hasData ||
+          followedSnapshot.data!.isEmpty) {
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              "Your feed is empty.\nGo to Discover to find and follow businesses!",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, color: Colors.grey),
             ),
-          );
-        }
-        final followedBusinessIds = followedSnapshot.data!;
+          ),
+        );
+      }
 
-        return StreamBuilder<List<PostModel>>(
-          stream: _firestoreService.getFollowedPosts(followedBusinessIds),
-          builder: (context, postSnapshot) {
-            if (postSnapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+      final followedBusinessIds = followedSnapshot.data!;
+
+      return StreamBuilder<List<PostModel>>(
+        stream: _firestoreService.getFollowedPosts(
+          followedBusinessIds,
+          sortBy: _sortBy,
+        ),
+        builder: (context, postSnapshot) {
+          if (postSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!postSnapshot.hasData || postSnapshot.data!.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "The businesses you follow haven't posted anything yet.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+              ),
+            );
+          }
+
+          final allPosts = postSnapshot.data!;
+          final filteredPosts = allPosts.where((post) {
+            if (_selectedTag == null) {
+              return true;
             }
-            if (!postSnapshot.hasData || postSnapshot.data!.isEmpty) {
+
+            return post.tag!.contains(_selectedTag!);
+          }).toList();
+
+          if (filteredPosts.isEmpty) {
+            if (_selectedTag != null) {
               return const Center(
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Text(
-                    "The businesses you follow haven't posted anything yet.",
+                    "No posts match that tag.",
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                 ),
               );
             }
-
-            final posts = postSnapshot.data!;
-            return ListView.builder(
-              itemCount: posts.length,
-              itemBuilder: (context, index) => PostCard(post: posts[index]),
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "The businesses you follow haven't posted anything yet.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+              ),
             );
-          },
-        );
-      },
-    );
-  }
+          }
+
+          return ListView.builder(
+            itemCount: filteredPosts.length, // Use filtered list
+            itemBuilder: (context, index) =>
+                PostCard(post: filteredPosts[index]), // Use filtered list
+          );
+        },
+      );
+    },
+  );
+}
 }
