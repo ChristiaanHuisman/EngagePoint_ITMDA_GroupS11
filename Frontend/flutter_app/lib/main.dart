@@ -74,7 +74,7 @@ Future<void> _handleNotificationNavigation(RemoteMessage message) async {
     if (followerId != null && navigatorKey.currentContext != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
-            builder: (context) => CustomerProfilePage(userId: followerId)),
+            builder: (context) => CustomerProfilePage(userId: followerId, scaffoldKey: GlobalKey<ScaffoldState>())),
       );
     }
   }
@@ -120,7 +120,7 @@ class MyApp extends StatelessWidget {
       builder: (context, themeProvider, child) {
         return MaterialApp(
           navigatorKey: navigatorKey,
-          title: 'Engage Point',
+          title: 'EngagePoint',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             // Light Theme

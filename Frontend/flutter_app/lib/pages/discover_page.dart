@@ -8,10 +8,9 @@ import '../services/firestore_service.dart';
 import '../widgets/post_card.dart';
 import '../widgets/app_drawer.dart';
 
-// This is the main page, which holds the state
 class DiscoverPage extends StatefulWidget {
   final GlobalKey<ScaffoldState>? scaffoldKey;
-  const DiscoverPage({super.key, this.scaffoldKey});
+  const DiscoverPage({super.key, required this.scaffoldKey});
 
   @override
   State<DiscoverPage> createState() => _DiscoverPageState();
@@ -21,6 +20,10 @@ class _DiscoverPageState extends State<DiscoverPage> {
   final FirestoreService _firestoreService = FirestoreService();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  String _sortBy = 'createdAt'; // Default sort by date
+  String? _selectedTag;
+  final List<String> _postTags = ['Promotion', 'Sale', 'Event', 'New Stock', 'Update'];
 
   @override
   void initState() {
@@ -40,7 +43,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
     super.dispose();
   }
 
-  
   void _navigateToUserProfile(String userId) async {
     final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
     if (userId == currentUserId) {
@@ -49,43 +51,43 @@ class _DiscoverPageState extends State<DiscoverPage> {
       }
       return;
     }
-    
 
-    if (!mounted) return; 
-    
+    if (!mounted) return;
+
     UserModel? user = await _firestoreService.getUserProfile(userId);
 
-    if (!mounted) return; 
-    
+    if (!mounted) return;
+
     if (user != null) {
-
-    
-
-      await Navigator.push(      
-        context, 
+      await Navigator.push(
+        context,
         MaterialPageRoute(
           builder: (context) => user.isBusiness
-              ? BusinessProfilePage(userId: userId)
-              : CustomerProfilePage(userId: userId),
+              ? BusinessProfilePage(
+                  userId: userId,
+                  scaffoldKey: widget.scaffoldKey ?? GlobalKey<ScaffoldState>())
+              : CustomerProfilePage(
+                  userId: userId,
+                  scaffoldKey:
+                      widget.scaffoldKey ?? GlobalKey<ScaffoldState>()),
         ),
       );
 
-      if (!mounted) return; 
+      if (!mounted) return;
 
       _searchController.clear();
-
-      
-
       FocusScope.of(context).unfocus();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final Color onPrimaryColor = Theme.of(context).colorScheme.onPrimary;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        foregroundColor: onPrimaryColor,
         leading: widget.scaffoldKey != null
             ? IconButton(
                 icon: const Icon(Icons.menu),
@@ -100,20 +102,18 @@ class _DiscoverPageState extends State<DiscoverPage> {
         title: Container(
           height: 40,
           decoration: BoxDecoration(
-            color: Colors.white.withAlpha(38),
+            color: onPrimaryColor.withAlpha(38),
             borderRadius: BorderRadius.circular(30),
           ),
           child: TextField(
             controller: _searchController,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: onPrimaryColor),
             textAlignVertical: TextAlignVertical.center,
             decoration: InputDecoration(
-              prefixIcon:
-                  const Icon(Icons.search, color: Colors.white, size: 20),
+              prefixIcon: Icon(Icons.search, color: onPrimaryColor, size: 20),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear,
-                          color: Colors.white, size: 20),
+                      icon: Icon(Icons.clear, color: onPrimaryColor, size: 20),
                       onPressed: () {
                         _searchController.clear();
                         FocusScope.of(context).unfocus();
@@ -121,7 +121,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     )
                   : null,
               hintText: 'Search Businesses...',
-              hintStyle: TextStyle(color: Colors.white.withAlpha(179)),
+              hintStyle: TextStyle(color: onPrimaryColor.withAlpha(179)),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(10),
             ),
@@ -130,37 +130,116 @@ class _DiscoverPageState extends State<DiscoverPage> {
       ),
       drawer: const AppDrawer(),
       body: SafeArea(
-        child: DiscoverPageWrapper(
-          searchQuery: _searchQuery,
-          // We pass the actual navigation function to the child
-          onNavigate: _navigateToUserProfile,
+        child: Column(
+          children: [
+            _buildFilterBar(),
+            Expanded(
+              child: DiscoverPageWrapper(
+                searchQuery: _searchQuery,
+                onNavigate: _navigateToUserProfile,
+                sortBy: _sortBy,
+                tag: _selectedTag,
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+ Widget _buildFilterBar() {
+    final Color borderColor = Colors.grey.shade400;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 5.0),
+      child: Row(
+        children: [
+          // Sort By Dropdown (Date & Likes)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0), 
+            
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _sortBy,
+                items: const [
+                  DropdownMenuItem(value: 'createdAt', child: Text('Most Recent')),
+                  DropdownMenuItem(value: 'reactionCount', child: Text('Most Liked')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      _sortBy = value;
+                    });
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Horizontal Tag List
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _postTags.map((tag) {
+                  final bool isSelected = _selectedTag == tag;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: FilterChip(
+                      label: Text(tag),
+                      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                      selected: isSelected,
+
+                      shape: StadiumBorder(
+                        side: BorderSide(color: borderColor, width: 1.0),
+                      ),
+
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedTag = tag;
+                          } else {
+                            _selectedTag = null; // De-select
+                          }
+                        });
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// This wrapper widget correctly passes the onNavigate function down
+// Wrapper widget passes the onNavigate function down
 class DiscoverPageWrapper extends StatelessWidget {
   final String searchQuery;
-  // 🔽 THE FIX: The function signature is now simpler. 🔽
   final Function(String) onNavigate;
+  final String sortBy;
+  final String? tag;
 
   const DiscoverPageWrapper({
     super.key,
     required this.searchQuery,
     required this.onNavigate,
+    required this.sortBy,
+    this.tag,
   });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        const DiscoverFeed(),
+        
+        DiscoverFeed(sortBy: sortBy, tag: tag),
         if (searchQuery.trim().isNotEmpty)
           DiscoverSearchResults(
             searchQuery: searchQuery,
-            onNavigate: onNavigate, // Pass the function to the results
+            onNavigate: onNavigate,
           ),
       ],
     );
@@ -169,7 +248,10 @@ class DiscoverPageWrapper extends StatelessWidget {
 
 // This feed widget shows all posts
 class DiscoverFeed extends StatelessWidget {
-  const DiscoverFeed({super.key});
+  final String sortBy;
+  final String? tag;
+  const DiscoverFeed({super.key, required this.sortBy, this.tag});
+  
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +259,7 @@ class DiscoverFeed extends StatelessWidget {
     final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
     return StreamBuilder<List<PostModel>>(
-      stream: firestoreService.getAllPosts(),
+      stream: firestoreService.getAllPosts(sortBy: sortBy, tag: tag),
       builder: (context, postSnapshot) {
         if (postSnapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -207,10 +289,8 @@ class DiscoverFeed extends StatelessWidget {
   }
 }
 
-// This results widget correctly calls the onNavigate function
 class DiscoverSearchResults extends StatelessWidget {
   final String searchQuery;
-  // 🔽 THE FIX: The function signature is now simpler. 🔽
   final Function(String) onNavigate;
   final FirestoreService _firestoreService = FirestoreService();
 
@@ -253,7 +333,6 @@ class DiscoverSearchResults extends StatelessWidget {
                 ),
                 title: Text(business.name),
                 onTap: () {
-                  // 🔽 THE FIX: Only pass the ID. 🔽
                   onNavigate(business.uid);
                 },
               );

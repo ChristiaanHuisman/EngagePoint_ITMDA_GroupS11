@@ -5,7 +5,7 @@ import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/reward_wheel.dart';
 
-// class to define a level in the progression system.
+// class to define levels
 class Level {
   final int level;
   final String name;
@@ -26,7 +26,7 @@ class RewardsAndProgressionPage extends StatefulWidget {
 class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
   final FirestoreService _firestoreService = FirestoreService();
 
-  // Define level progression data
+  // level progression data
   final List<Level> _levels = [
     Level(level: 1, name: 'Bronze', pointsRequired: 0),
     Level(level: 2, name: 'Silver', pointsRequired: 500),
@@ -35,7 +35,7 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
     Level(level: 5, name: 'Diamond', pointsRequired: 5000),
   ];
 
-  // This function handles all levels, including the max level
+  // function that handles all levels
   Map<String, dynamic> _getLevelData(int points) {
     Level currentLevel = _levels.first;
     for (var level in _levels.reversed) {
@@ -96,7 +96,7 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
                   return const Center(child: Text("Could not load user data."));
                 }
 
-                // Access data directly from the model
+                // gets data from the model
                 final int currentPoints = user.points;
                 final int spinsAvailable = user.spinsAvailable;
 
@@ -139,7 +139,7 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
   }
 }
 
-// This widget displays the level, rank, and XP bar
+// widget displays the level, rank, xp bar
 class LevelProgressBar extends StatelessWidget {
   final String levelName;
   final int levelNumber;
