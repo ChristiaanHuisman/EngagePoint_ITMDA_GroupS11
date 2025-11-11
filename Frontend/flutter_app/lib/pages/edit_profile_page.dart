@@ -4,6 +4,13 @@ import 'package:flutter_app/models/user_model.dart'; // Make sure this path is c
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 
+// For using the business verification microservice
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class EditProfilePage extends StatefulWidget {
   final UserModel user;
 
@@ -27,6 +34,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
   String? _existingImageUrl;
   bool _isLoading = false;
 
+  // For the business verification microservice part
+  String? _verificationMessage;
+  bool _hasRequestedVerification = false;
+  bool _isVerificationLocked = false;
+  String? _lockedMessage;
+  bool _isInitialCheck = true;
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +53,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _websiteController = TextEditingController(text: widget.user.website ?? '');
     
     _existingImageUrl = widget.user.photoUrl;
+
+    // For locking the business verification microservice
+    _checkVerificationStatus();
   }
 
   @override
@@ -105,6 +122,112 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  // Method for checking the user verification status
+  Future<void> _checkVerificationStatus() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        final status = doc.data()?['verificationStatus'] as String?;
+
+        if (status != null) {
+          // Only update lock message if this check runs on init
+          if (_isInitialCheck) {
+            setState(() {
+              switch (status) {
+                case 'pendingAdmin':
+                  _isVerificationLocked = true;
+                  _lockedMessage =
+                  'Your business verification request is pending admin approval.';
+                  break;
+                case 'pendingEmail':
+                  _isVerificationLocked = true;
+                  _lockedMessage =
+                  'Your business verification request is pending your email verification.';
+                  break;
+                case 'accepted':
+                  _isVerificationLocked = true;
+                  _lockedMessage =
+                  'Your business has already been verified.';
+                  break;
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking verification status: $e');
+    } finally {
+      // After first check, mark as no longer initial
+      _isInitialCheck = false;
+    }
+  }
+
+  // Method for calling the business verification microservice
+  Future<void> _requestBusinessVerification() async {
+    const String apiUrl =
+        'http://10.0.2.2:5151/api/BusinessVerification/request-business-verification';
+
+    setState(() {
+      _isLoading = true;
+      _verificationMessage = null; // Clear previous message
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final idToken = await user?.getIdToken();
+      final authToken = 'Bearer $idToken';
+
+      // Apply a 5 second timeout to the request
+      final response = await http
+          .get(
+        Uri.parse(apiUrl),
+        headers: {
+          'Authorization': authToken,
+          'Content-Type': 'application/json',
+        },
+      )
+          .timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          throw TimeoutException('Connection timed out');
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      final message = data['message'] ?? 'Verification request successful.';
+
+      setState(() {
+        _verificationMessage = message;
+        if (response.statusCode == 200) {
+          _hasRequestedVerification = true;
+        }
+      });
+
+      // After the API call, check the verification status again
+      await Future.delayed(const Duration(seconds: 2));
+      await _checkVerificationStatus();
+
+    } on TimeoutException {
+      setState(() {
+        _verificationMessage =
+        'Network issue: The request took too long. Please check your connection and try again later.';
+      });
+    } catch (e) {
+      setState(() {
+        _verificationMessage = 'Request failed: $e';
+      });
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -199,6 +322,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
                     ),
                   if (widget.user.isBusiness) const SizedBox(height: 16),
+
                   // End Business-Only Fields
                   TextFormField(
                     controller: _descriptionController,
@@ -212,6 +336,57 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                     maxLines: 4,
                   ),
+
+                  // Button for business verification request
+                  if (widget.user.isBusiness) ...[
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: (_isLoading || _hasRequestedVerification || _isVerificationLocked)
+                          ? null
+                          : _requestBusinessVerification,
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        backgroundColor: (_hasRequestedVerification || _isVerificationLocked)
+                            ? Colors.grey
+                            : Theme.of(context).colorScheme.primaryContainer,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                          : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.verified),
+                          SizedBox(width: 8),
+                          Text('Request Business Verification'),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // Message display of business verification request
+                  if (_lockedMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _lockedMessage!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ] else if (_verificationMessage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _verificationMessage!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ],
+
                 ],
               ),
             ),
