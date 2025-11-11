@@ -744,4 +744,21 @@ class FirestoreService {
       'auto_response': true,
     });
   }
+
+  // Checks the 'auto_response' status for the current user
+  Future<bool?> getAutoResponseStatus() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return null;
+
+    final docSnapshot =
+        await _db.collection('users').doc(currentUser.uid).get();
+
+    if (docSnapshot.exists) {
+      final data = docSnapshot.data();
+      if (data != null && data.containsKey('auto_response')) {
+        return data['auto_response'] as bool;
+      }
+    }
+    return null; // null if no document or field found
+  }
 }

@@ -14,6 +14,24 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool? _autoReplyLocalValue; // Local value to instantly reflect toggle
+  bool _isLoadingAutoReply = true; // Track loading state for Firestore value
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAutoReplyValue();
+  }
+
+  Future<void> _loadAutoReplyValue() async {
+    final FirestoreService firestoreService = FirestoreService();
+    final value = await firestoreService.getAutoResponseStatus();
+    if (mounted) {
+      setState(() {
+        _autoReplyLocalValue = value;
+        _isLoadingAutoReply = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,24 +147,26 @@ class _SettingsPageState extends State<SettingsPage> {
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
-                    SwitchListTile(
-                      title: const Text("Enable Auto-reply"),
-                      subtitle: const Text(
-                          "Automatically send responses to reviews (businesses can still edit them)"),
-                      value: _autoReplyLocalValue!,
-                      onChanged: (bool value) async {
-                        setState(() {
-                          _autoReplyLocalValue = value; // Update UI immediately
-                        });
-                        // Update Firestore accordingly
-                        if (value) {
-                          await firestoreService.enableAutoResponse();
-                        } else {
-                          await firestoreService.disableAutoResponse();
-                        }
-                      },
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
-                    ),
+                    _isLoadingAutoReply
+                        ? const Center(child: CircularProgressIndicator())
+                        : SwitchListTile(
+                            title: const Text("Enable Auto-reply"),
+                            subtitle: const Text(
+                                "Automatically send responses to reviews (businesses can still edit them)"),
+                            value: _autoReplyLocalValue!,
+                            onChanged: (bool value) async {
+                              setState(() {
+                                _autoReplyLocalValue = value;
+                              });
+                              if (value) {
+                                await firestoreService.enableAutoResponse();
+                              } else {
+                                await firestoreService.disableAutoResponse();
+                              }
+                            },
+                            activeThumbColor:
+                                Theme.of(context).colorScheme.primary,
+                          ),
                     const Divider(height: 32),
                   ],
 
