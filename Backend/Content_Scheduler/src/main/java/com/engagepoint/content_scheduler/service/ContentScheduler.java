@@ -15,7 +15,7 @@ import com.google.cloud.firestore.QueryDocumentSnapshot;
 @EnableScheduling
 @Component
 public class ContentScheduler {
-    @Scheduled(cron = "0 0/1 * * * ?") // Every 30 minutes, adjusted to a minute for testing
+    @Scheduled(cron = "0 0/30 * * * ?") // Every 30 minutes
     public void scheduleContentPosts() {
         // Logic to check for scheduled posts and publish them
         try {
