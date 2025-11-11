@@ -355,13 +355,13 @@ class _ReviewCardState extends State<ReviewCard> {
                 ),
               ],
             ),
-
-            if (isBusinessOwner && widget.review.response == null)
+            if (isBusinessOwner)
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () => _showReplyDialog(context, widget.review.id),
-                  child: const Text('Reply'),
+                  child: Text(
+                      widget.review.response == null ? 'Reply' : 'Edit Reply'),
                 ),
               ),
 

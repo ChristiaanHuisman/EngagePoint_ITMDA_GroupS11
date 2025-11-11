@@ -58,8 +58,6 @@ Future<String> getCloudRunIdToken(String cloudRunUrl) async {
   return data['id_token'];
 }
 
-
-
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -223,43 +221,54 @@ class FirestoreService {
             snapshot.docs.map((doc) => UserModel.fromFirestore(doc)).toList());
   }
 
-  // REVIEW METHODS USING PYTHON MiCROSERVICE  
+  // REVIEW METHODS USING PYTHON MiCROSERVICE
 
   // Adds a new review or updates an existing one for a business using Python API.
   Future<void> addOrUpdateReview({
+    required String businessId,
+    required double rating,
+    required String comment,
+  }) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception("You must be logged in to leave a review.");
+    }
 
-  required String businessId,
-  required double rating,
-  required String comment,
-}) async {
-  final currentUser = _auth.currentUser;
-  if (currentUser == null) {
-    throw Exception("You must be logged in to leave a review.");
+    final url = Uri.parse(
+        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews');
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization':
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
+      },
+      body: jsonEncode({
+        'businessId': businessId,
+        'customerId': currentUser.uid,
+        'rating': rating,
+        'comment': comment,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to submit review: ${response.body}');
+    }
   }
 
-  final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
-  final response = await http.post(
-    url,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'
-    },
-    body: jsonEncode({
-      'businessId': businessId,
-      'customerId': currentUser.uid, 
-      'rating': rating,
-      'comment': comment,
-    }),
-  );
-
-  if (response.statusCode != 200 && response.statusCode != 201) {
-    throw Exception('Failed to submit review: ${response.body}');
-  }
-}
   // Gets all reviews for a business using Python API (for non-stream use).
-  Future<List<Map<String, dynamic>>> getReviewsForBusinessApi(String businessId) async {
-    final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews/$businessId');
-    final response = await http.get(url,headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'},);
+  Future<List<Map<String, dynamic>>> getReviewsForBusinessApi(
+      String businessId) async {
+    final url = Uri.parse(
+        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews/$businessId');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization':
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
+      },
+    );
 
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
@@ -274,10 +283,15 @@ class FirestoreService {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
+    final url = Uri.parse(
+        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews');
     final response = await http.delete(
       url,
-      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization':
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
+      },
       body: jsonEncode({
         'businessId': businessId,
         'customerId': currentUser.uid,
@@ -524,21 +538,29 @@ class FirestoreService {
     return reviewsQuery.size;
   }
 
-Future<Map<String, int>> getReviewSentimentStats(String businessId) async {
-  final url = Uri.parse('https://review-sentiment-service-570976278139.africa-south1.run.app/reviews/analytics/$businessId');
-  final response = await http.get(url,headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'},);
+  Future<Map<String, int>> getReviewSentimentStats(String businessId) async {
+    final url = Uri.parse(
+        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews/analytics/$businessId');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization':
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
+      },
+    );
 
-  if (response.statusCode == 200) {
-    final data = jsonDecode(response.body);
-    return {
-      'positive': data['positive'] ?? 0,
-      'negative': data['negative'] ?? 0,
-      'neutral': data['neutral'] ?? 0,
-    };
-  } else {
-    throw Exception('Failed to fetch sentiment stats: ${response.body}');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return {
+        'positive': data['positive'] ?? 0,
+        'negative': data['negative'] ?? 0,
+        'neutral': data['neutral'] ?? 0,
+      };
+    } else {
+      throw Exception('Failed to fetch sentiment stats: ${response.body}');
+    }
   }
-}
 
   Future<void> addLocation(
       {required String name, required String address}) async {
@@ -679,6 +701,26 @@ Future<Map<String, int>> getReviewSentimentStats(String businessId) async {
 
     await _db.collection('users').doc(currentUser.uid).update({
       'isPrivate': isPrivate,
+    });
+  }
+
+  // Sets the 'auto-response' field to false for the current user
+  Future<void> disableAutoResponse() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    await _db.collection('users').doc(currentUser.uid).update({
+      'auto_response': false,
+    });
+  }
+
+// Sets the 'auto-response' field to true for the current user
+  Future<void> enableAutoResponse() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    await _db.collection('users').doc(currentUser.uid).update({
+      'auto_response': true,
     });
   }
 }

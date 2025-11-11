@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_app/pages/notification_settings_page.dart';
 import '../models/user_model.dart';
 import '../providers/theme_provider.dart';
 import '../services/firestore_service.dart';
+import 'notification_settings_page.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  bool? _autoReplyLocalValue; // Local value to instantly reflect toggle
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +42,9 @@ class SettingsPage extends StatelessWidget {
             final prefs = user.notificationPreferences;
             final bool receiveNotificationsEnabled = prefs.onNewPost;
 
+            // Initialize local auto-reply value if not set
+            _autoReplyLocalValue ??= prefs.onReviewResponse;
+
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -56,7 +66,6 @@ class SettingsPage extends StatelessWidget {
                         const Text("Enable/disable detailed settings below"),
                     value: receiveNotificationsEnabled,
                     onChanged: (bool value) {
-                      // Update preferences in firestore
                       firestoreService.updateNotificationPreference(
                           'onNewPost', value);
                     },
@@ -94,7 +103,6 @@ class SettingsPage extends StatelessWidget {
                           ),
                     ),
                   ),
-
                   CheckboxListTile(
                     title: const Text("Private Profile"),
                     subtitle: const Text(
@@ -109,7 +117,40 @@ class SettingsPage extends StatelessWidget {
 
                   const Divider(height: 32),
 
-                  //App Section
+                  // Auto-reply Section (Business users only)
+                  if (user.isBusiness) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        "Auto-reply for Reviews",
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    SwitchListTile(
+                      title: const Text("Enable Auto-reply"),
+                      subtitle: const Text(
+                          "Automatically send responses to reviews (businesses can still edit them)"),
+                      value: _autoReplyLocalValue!,
+                      onChanged: (bool value) async {
+                        setState(() {
+                          _autoReplyLocalValue = value; // Update UI immediately
+                        });
+                        // Update Firestore accordingly
+                        if (value) {
+                          await firestoreService.enableAutoResponse();
+                        } else {
+                          await firestoreService.disableAutoResponse();
+                        }
+                      },
+                      activeThumbColor: Theme.of(context).colorScheme.primary,
+                    ),
+                    const Divider(height: 32),
+                  ],
+
+                  // App Section
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Text(
