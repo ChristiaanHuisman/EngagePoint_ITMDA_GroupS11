@@ -188,7 +188,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final idToken = await user?.getIdToken();
       final authToken = 'Bearer $idToken';
 
-      // Apply a 5 second timeout to the request
+      // Apply a 15 second timeout to the request
       final response = await http
           .get(
         Uri.parse(apiUrl),
@@ -198,7 +198,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         },
       )
           .timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Connection timed out');
         },
