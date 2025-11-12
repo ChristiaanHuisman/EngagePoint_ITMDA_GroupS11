@@ -248,13 +248,13 @@ class FirestoreService {
     }
 
     final url = Uri.parse(
-        'https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
+        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews');
     final response = await http.post(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
       },
       body: jsonEncode({
         'businessId': businessId,
@@ -273,13 +273,13 @@ class FirestoreService {
   Future<List<Map<String, dynamic>>> getReviewsForBusinessApi(
       String businessId) async {
     final url = Uri.parse(
-        'https://review-sentiment-service-570976278139.africa-south1.run.app/reviews/$businessId');
+        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews/$businessId');
     final response = await http.get(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
       },
     );
 
@@ -297,13 +297,13 @@ class FirestoreService {
     if (currentUser == null) return;
 
     final url = Uri.parse(
-        'https://review-sentiment-service-570976278139.africa-south1.run.app/reviews');
+        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews');
     final response = await http.delete(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
       },
       body: jsonEncode({
         'businessId': businessId,
@@ -561,13 +561,13 @@ class FirestoreService {
 
   Future<Map<String, int>> getReviewSentimentStats(String businessId) async {
     final url = Uri.parse(
-        'https://review-sentiment-service-570976278139.africa-south1.run.app/reviews/analytics/$businessId');
+        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews/analytics/$businessId');
     final response = await http.get(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://review-sentiment-service-570976278139.africa-south1.run.app')}'
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
       },
     );
 
@@ -723,5 +723,42 @@ class FirestoreService {
     await _db.collection('users').doc(currentUser.uid).update({
       'isPrivate': isPrivate,
     });
+  }
+
+  // Sets the 'auto-response' field to false for the current user
+  Future<void> disableAutoResponse() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    await _db.collection('users').doc(currentUser.uid).update({
+      'auto_response': false,
+    });
+  }
+
+// Sets the 'auto-response' field to true for the current user
+  Future<void> enableAutoResponse() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    await _db.collection('users').doc(currentUser.uid).update({
+      'auto_response': true,
+    });
+  }
+
+  // Checks the 'auto_response' status for the current user
+  Future<bool?> getAutoResponseStatus() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return null;
+
+    final docSnapshot =
+        await _db.collection('users').doc(currentUser.uid).get();
+
+    if (docSnapshot.exists) {
+      final data = docSnapshot.data();
+      if (data != null && data.containsKey('auto_response')) {
+        return data['auto_response'] as bool;
+      }
+    }
+    return null; // null if no document or field found
   }
 }
