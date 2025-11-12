@@ -94,6 +94,7 @@ class FirestoreService {
       'tag': tag,
       'createdAt': FieldValue.serverTimestamp(),
       'status': 'published',
+      'businessStatus': userModel.verificationStatus,
     });
   }
 
@@ -369,12 +370,14 @@ class FirestoreService {
     });
   }
 
-  // Returns a stream of all business users with a 'pending' status.
+  // Returns a stream of all business users who are pending admin verification
   Stream<List<UserModel>> getPendingBusinesses() {
     return _db
         .collection('users')
         .where('role', isEqualTo: 'business')
-        .where('status', isEqualTo: 'pending')
+        .where('emailVerified', isEqualTo: true)
+        .where('verificationStatus', isEqualTo: 'pendingAdmin')
+        .orderBy('verificationRequestedAt', descending: true) // Oldest first
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => UserModel.fromFirestore(doc)).toList());
@@ -761,4 +764,32 @@ class FirestoreService {
     }
     return null; // null if no document or field found
   }
+
+  // Business user requests verification
+  Future<void> requestVerification() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    await _db.collection('users').doc(currentUser.uid).update({
+      'verificationStatus': 'pendingAdmin',
+      'verificationRequestedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Admin approves a business
+  Future<void> approveBusiness(String uid) async {
+    await _db.collection('users').doc(uid).update({
+      'verificationStatus': 'accepted',
+      // 'status': 'verified', // <-- You may want to update this old field too for consistency
+    });
+  }
+
+  // Admin rejects a business
+  Future<void> rejectBusiness(String uid) async {
+    await _db.collection('users').doc(uid).update({
+      'verificationStatus': 'rejected',
+      // 'status': 'rejected', // <-- You may want to update this old field too
+    });
+  }
+
 }

@@ -22,6 +22,7 @@ class UserModel {
   final bool emailVerified;
   final String verificationStatus;
   final String? website;
+  final Timestamp? verificationRequestedAt;
 
 
   UserModel({
@@ -45,6 +46,7 @@ class UserModel {
     required this.emailVerified,
     required this.verificationStatus,
     this.website,
+    this.verificationRequestedAt,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -70,6 +72,7 @@ class UserModel {
       emailVerified: data['emailVerified'] ?? false,
       verificationStatus: data['verificationStatus'] ?? 'notStarted',
       website: data['website'],
+      verificationRequestedAt: data['verificationRequestedAt'],
     );
   }
 
@@ -98,6 +101,7 @@ class UserModel {
       'emailVerified': emailVerified,
       'verificationStatus': verificationStatus,
       'website': website,
+      'verificationRequestedAt': verificationRequestedAt,
    
 
       "notificationPreferences": {

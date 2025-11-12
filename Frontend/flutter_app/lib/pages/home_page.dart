@@ -10,6 +10,7 @@ import 'discover_page.dart';
 import 'create_post_page.dart';
 import 'business_profile_page.dart';
 import 'customer_profile_page.dart';
+import '../services/auth_service.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -252,9 +253,31 @@ class _FollowingFeedState extends State<FollowingFeed> {
     return StreamBuilder<UserModel?>(
       stream: _firestoreService.getUserStream(),
       builder: (context, userSnapshot) {
+        if (userSnapshot.connectionState == ConnectionState.waiting) {
+          // Still waiting for data, show a loader
+          return Scaffold(
+            appBar: AppBar(title: const Text('Home')),
+            drawer: const Drawer(), // A plain, empty drawer
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
         final userModel = userSnapshot.data;
-        if (userSnapshot.connectionState == ConnectionState.waiting ||
-            userModel == null) {
+        if (userModel == null) {
+          // --- THIS IS THE FIX ---
+          // We are authenticated, but our user document doesn't exist.
+          // Force a logout to break the loop.
+
+          // We use a post-frame callback to avoid errors
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            AuthService().signOut(); // Log out
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+              (Route<dynamic> route) => false, // Go to login page
+            );
+          });
+
+          // Show a loader while we navigate away
           return Scaffold(
             appBar: AppBar(title: const Text('Home')),
             drawer: const Drawer(),

@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'package:flutter/material.dart';
 import 'home_page.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -20,6 +20,22 @@ class SignUpPageState extends State<SignUpPage> {
   // state variable to track if the user is signing up as a business
   bool _isBusiness = false;
 
+  final TextEditingController _businessTypeController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _websiteController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmController.dispose();
+    _businessTypeController.dispose();
+    _descriptionController.dispose();
+    _websiteController.dispose();
+    super.dispose();
+  }
+
   Future<void> _signUp() async {
     if (_passwordController.text != _confirmController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -29,11 +45,15 @@ class SignUpPageState extends State<SignUpPage> {
 
     setState(() => _loading = true);
 
+    // method to accept these new optional parameters.
     final user = await _authService.signUpWithEmail(
       _emailController.text.trim(),
       _passwordController.text.trim(),
       _nameController.text.trim(),
       isBusiness: _isBusiness,
+      businessType: _isBusiness ? _businessTypeController.text.trim() : null,
+      description: _isBusiness ? _descriptionController.text.trim() : null,
+      website: _isBusiness ? _websiteController.text.trim() : null,
     );
 
     if (!mounted) return;
@@ -108,6 +128,49 @@ class SignUpPageState extends State<SignUpPage> {
                     },
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
+                  ),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _isBusiness
+                        ? Column(
+                            key: const ValueKey('businessFields'),
+                            children: [
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: _businessTypeController,
+                                decoration: const InputDecoration(
+                                  prefixIcon: Icon(Icons.store),
+                                  labelText: "Business Type (Optional)",
+                                  hintText: "e.g., Restaurant, Retail, Cafe",
+                                  border: OutlineInputBorder(),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: _descriptionController,
+                                decoration: const InputDecoration(
+                                  prefixIcon: Icon(Icons.notes),
+                                  labelText: "Description (Optional)",
+                                  hintText:
+                                      "Tell customers about your business...",
+                                  border: OutlineInputBorder(),
+                                ),
+                                maxLines: 3,
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: _websiteController,
+                                decoration: const InputDecoration(
+                                  prefixIcon: Icon(Icons.language),
+                                  labelText: "Website (Optional)",
+                                  hintText: "https://www.yourbusiness.com",
+                                  border: OutlineInputBorder(),
+                                ),
+                                keyboardType: TextInputType.url,
+                              ),
+                            ],
+                          )
+                        : const SizedBox.shrink(),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(

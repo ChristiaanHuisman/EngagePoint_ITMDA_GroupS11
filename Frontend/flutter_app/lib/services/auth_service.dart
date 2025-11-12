@@ -16,15 +16,19 @@ class AuthService {
   final LoggingService _loggingService = LoggingService();
 
   Future<void> _createUserDocument(User user,
-      {String? name, bool isBusiness = false}) async {
+      {String? name,
+      bool isBusiness = false,
+      String? businessType,
+      String? description,
+      String? website}) async {
     final userRef = _firestore.collection('users').doc(user.uid);
     final docSnapshot = await userRef.get();
 
-    //  get raw result
+    //  get raw result
     final dynamic tzRaw = await FlutterTimezone.getLocalTimezone();
     debugPrint('DEBUG → getLocalTimezone raw: $tzRaw (${tzRaw.runtimeType})');
 
-    //  normalize to IANA timezone string
+    //  normalize to IANA timezone string
     String normalizeTimezone(dynamic tz) {
       if (tz == null) return 'UTC';
 
@@ -70,9 +74,11 @@ class AuthService {
         timezone: localTimezone,
         timezoneOffset: timezoneOffset,
         notificationPreferences: NotificationPreferences(),
-        emailVerified: user.emailVerified, 
-        verificationStatus: 'notStarted',  
-        website: null,
+        emailVerified: user.emailVerified,
+        verificationStatus: 'notStarted',
+        businessType: businessType,
+        description: description,
+        website: website,
       );
 
       final userData = newUser.toMap();
@@ -148,7 +154,10 @@ class AuthService {
   }
 
   Future<User?> signUpWithEmail(String email, String password, String name,
-      {required bool isBusiness}) async {
+      {required bool isBusiness,
+      String? businessType,
+      String? description,
+      String? website}) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -158,7 +167,15 @@ class AuthService {
       final user = userCredential.user;
       if (user != null) {
         await user.updateDisplayName(name);
-        await _createUserDocument(user, name: name, isBusiness: isBusiness);
+
+        await _createUserDocument(
+          user,
+          name: name,
+          isBusiness: isBusiness,
+          businessType: businessType,
+          description: description,
+          website: website,
+        );
         await _notificationService.initAndSaveToken();
       }
       return user;
@@ -172,4 +189,32 @@ class AuthService {
     await _auth.signOut();
     await _googleSignIn.signOut();
   }
+
+  Future<void> deleteUserAccount() async {
+  try {
+    final User? user = _auth.currentUser;
+    if (user == null) {
+      throw Exception("No user is currently logged in.");
+    }
+
+    final String uid = user.uid;
+
+    await user.delete();
+
+    await _firestore.collection('users').doc(uid).delete();
+
+
+    await signOut();
+
+  } on FirebaseAuthException catch (e) {
+    // This exception is now caught *before* any data is deleted.
+    if (e.code == 'requires-recent-login') {
+      throw Exception(
+          'This action is sensitive. Please log out and log back in to delete your account.');
+    }
+    throw Exception(e.message);
+  } catch (e) {
+    throw Exception('An error occurred: ${e.toString()}');
+  }
+}
 }
