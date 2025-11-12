@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
+import '../services/moderation_service.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -74,6 +75,42 @@ class _CreatePostPageState extends State<CreatePostPage> {
         imageAspectRatio = await _getImageAspectRatio(_imageData!);
       }
 
+      //  MODERATION INJECTION START
+      final ModerationService moderationService = ModerationService();
+
+      try {
+        // 1) Moderate text content
+        final ModerationResult textResult =
+            await moderationService.moderateText(_contentController.text);
+        
+        if (!textResult.approved) {
+          final reason = textResult.reason ?? 'Content not allowed';
+          throw Exception('Post rejected: $reason');
+        }
+
+        // 2) Moderate image (if uploaded)
+        if (imageUrl != null) {
+          final ModerationResult imageResult =
+              await moderationService.moderateImage(imageUrl);
+          
+          if (!imageResult.approved) {
+            // optionally delete the uploaded image if it’s stored in Firebase
+            try {
+              await _storageService.deleteByUrl(imageUrl);
+            } catch (_) {
+              // ignore deletion failure (log if you want)
+            }
+            final reason = imageResult.reason ?? 'Image not allowed';
+            throw Exception('Image rejected: $reason');
+          }
+        }
+      } on ModerationException catch (me) {
+        // Convert moderation-specific error into a user-visible exception
+        throw Exception('Moderation failed: ${me.message}');
+      }
+      //  MODERATION INJECTION END
+
+      // Only runs if approved
       await _firestoreService.createPost(
         title: _titleController.text,
         content: _contentController.text,
