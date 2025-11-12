@@ -175,7 +175,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   // Method for calling the business verification microservice
   Future<void> _requestBusinessVerification() async {
     const String apiUrl =
-        'http://10.0.2.2:5151/api/BusinessVerification/request-business-verification';
+        // HTTPS request for Cloud Run hosted business verification service
+        'https://business-verification-service-570976278139.africa-south1.run.app/api/BusinessVerification/request-business-verification';
 
     setState(() {
       _isLoading = true;
