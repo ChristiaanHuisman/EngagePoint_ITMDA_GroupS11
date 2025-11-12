@@ -14,13 +14,15 @@ class UserModel {
   final int spinsAvailable;
   final List<String> notificationTags;
   final Timestamp createdAt;
-  
   final String? timezone;
   final String? timezoneOffset;
   final Timestamp? verifiedAt;
   final NotificationPreferences notificationPreferences;
   final bool isPrivate;
-  
+  final bool emailVerified;
+  final String verificationStatus;
+  final String? website;
+
 
   UserModel({
     required this.uid,
@@ -40,6 +42,9 @@ class UserModel {
     this.verifiedAt,
     required this.notificationPreferences,
     this.isPrivate = false,
+    required this.emailVerified,
+    required this.verificationStatus,
+    this.website,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -62,6 +67,9 @@ class UserModel {
       verifiedAt: data['verifiedAt'],
       notificationPreferences: NotificationPreferences.fromMap(data['notificationPreferences']),
       isPrivate: data['isPrivate'] ?? false,
+      emailVerified: data['emailVerified'] ?? false,
+      verificationStatus: data['verificationStatus'] ?? 'notStarted',
+      website: data['website'],
     );
   }
 
@@ -87,6 +95,10 @@ class UserModel {
       'timezoneOffset': timezoneOffset, 
       'verifiedAt': verifiedAt,
       'isPrivate': isPrivate,
+      'emailVerified': emailVerified,
+      'verificationStatus': verificationStatus,
+      'website': website,
+   
 
       "notificationPreferences": {
         "onNewPost": true,

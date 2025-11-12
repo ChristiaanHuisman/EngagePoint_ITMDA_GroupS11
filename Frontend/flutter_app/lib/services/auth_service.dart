@@ -70,6 +70,9 @@ class AuthService {
         timezone: localTimezone,
         timezoneOffset: timezoneOffset,
         notificationPreferences: NotificationPreferences(),
+        emailVerified: user.emailVerified, 
+        verificationStatus: 'notStarted',  
+        website: null,
       );
 
       final userData = newUser.toMap();

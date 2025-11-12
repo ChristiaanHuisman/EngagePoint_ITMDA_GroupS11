@@ -1,99 +1,113 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:pdf/widgets.dart' as pw;
+import 'package:intl/intl.dart';
 
-// Connects the Flutter app to the Google Cloud Run-hosted Business Analytics API.
 class BusinessAnalyticsService {
-  // Base URL of your deployed Cloud Run API
   static const String _baseUrl =
       'https://business-analytics-570976278139.us-central1.run.app/';
 
-  // Fetches total views per post for a business.
+  //Json fetches for visual diagrams
   Future<Map<String, dynamic>?> getViewsPerPost(
       String businessId, String startDate, String endDate) async {
-    final url = Uri.parse(
-        '$_baseUrl/api/Analytics/ViewsPerPost/$businessId/$startDate/$endDate');
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        debugPrint('Error fetching ViewsPerPost: ${response.statusCode}');
-      }
-    } catch (e) {
-      debugPrint('Exception in getViewsPerPost: $e');
-    }
+    final url =
+        Uri.parse('$_baseUrl/api/Analytics/ViewsPerPost/$businessId/$startDate/$endDate');
+    final response = await http.get(url);
+    if (response.statusCode == 200) return jsonDecode(response.body);
     return null;
   }
 
-  // Fetches unique visitors per account for a business.
   Future<Map<String, dynamic>?> getVisitorsPerAccount(
       String businessId, String startDate, String endDate) async {
-    final url = Uri.parse(
-        '$_baseUrl/api/Analytics/VisitorsPerAccount/$businessId/$startDate/$endDate');
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        debugPrint('Error fetching VisitorsPerAccount: ${response.statusCode}');
-      }
-    } catch (e) {
-      debugPrint('Exception in getVisitorsPerAccount: $e');
-    }
+    final url =
+        Uri.parse('$_baseUrl/api/Analytics/VisitorsPerAccount/$businessId/$startDate/$endDate');
+    final response = await http.get(url);
+    if (response.statusCode == 200) return jsonDecode(response.body);
     return null;
   }
 
-  // Fetches click-throughs per day for a business.
   Future<Map<String, dynamic>?> getClickThroughs(
       String businessId, String startDate, String endDate) async {
-    final url = Uri.parse(
-        '$_baseUrl/api/Analytics/ClickThrough/$businessId/$startDate/$endDate');
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        debugPrint('Error fetching ClickThroughs: ${response.statusCode}');
-      }
-    } catch (e) {
-      debugPrint('Exception in getClickThroughs: $e');
-    }
+    final url =
+        Uri.parse('$_baseUrl/api/Analytics/ClickThrough/$businessId/$startDate/$endDate');
+    final response = await http.get(url);
+    if (response.statusCode == 200) return jsonDecode(response.body);
     return null;
   }
 
-  // Fetches follows per day for a business.
   Future<Map<String, dynamic>?> getFollowsByDay(
       String businessId, String startDate, String endDate) async {
-    final url = Uri.parse(
-        '$_baseUrl/api/Analytics/FollowsByDay/$businessId/$startDate/$endDate');
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        debugPrint('Error fetching FollowsByDay: ${response.statusCode}');
-      }
-    } catch (e) {
-      debugPrint('Exception in getFollowsByDay: $e');
-    }
+    final url =
+        Uri.parse('$_baseUrl/api/Analytics/FollowsByDay/$businessId/$startDate/$endDate');
+    final response = await http.get(url);
+    if (response.statusCode == 200) return jsonDecode(response.body);
     return null;
   }
+//pdf generation
+Future<Uint8List> generatePdfBytes(
+      String title,
+      String businessId,
+      String startDate,
+      String endDate,
+      List<Map<String, dynamic>> dataPoints) async {
+    final pdf = pw.Document();
+    final dateRange = '$startDate to $endDate';
+    final dateFormat = DateFormat('MMM d, yyyy').format(DateTime.now());
 
-  // Downloads a PDF report and returns its bytes.
-  Future<Uint8List> downloadReportPdf(String reportType, String businessId,
-      String startDate, String endDate) async {
-    final url = Uri.parse(
-        '$_baseUrl/api/Analytics/$reportType/$businessId/$startDate/$endDate/pdf');
-    final response = await http.get(url);
+    pdf.addPage(
+      pw.MultiPage(
+        build: (context) => [
+          pw.Header(
+            level: 0,
+            child: pw.Text(title,
+                style: pw.TextStyle(
+                    fontSize: 22, fontWeight: pw.FontWeight.bold)),
+          ),
+          pw.Text('Business ID: $businessId'),
+          pw.Text('Date Range: $dateRange'),
+          pw.Text('Generated on: $dateFormat'),
+          pw.SizedBox(height: 20),
+          pw.TableHelper.fromTextArray(
+            headers: dataPoints.isNotEmpty
+                ? dataPoints.first.keys.toList()
+                : ['No Data'],
+            data: dataPoints
+                .map((e) => e.values.map((v) => v.toString()).toList())
+                .toList(),
+          ),
+        ],
+      ),
+    );
 
-    if (response.statusCode == 200) {
-      return response.bodyBytes;
-    } else {
-      debugPrint('API Error: ${response.statusCode} - ${response.body}');
-      throw Exception(
-          'Failed to download report. Server responded with ${response.statusCode}: ${response.body}');
-    }
+    return pdf.save();
   }
+//PDF download functions
+Future<Uint8List> downloadViewsPerPostPdf(
+    String businessId, String startDate, String endDate) async {
+  final json = await getViewsPerPost(businessId, startDate, endDate);
+  final dataPoints = (json?['dataPoints'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+  return generatePdfBytes('Views Per Post Report', businessId, startDate, endDate, dataPoints);
+}
+
+Future<Uint8List> downloadVisitorsPerAccountPdf(
+    String businessId, String startDate, String endDate) async {
+  final json = await getVisitorsPerAccount(businessId, startDate, endDate);
+  final dataPoints = (json?['dataPoints'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+  return generatePdfBytes('Views Per Post Report', businessId, startDate, endDate, dataPoints);
+}
+
+Future<Uint8List> downloadClickThroughPdf(
+    String businessId, String startDate, String endDate) async {
+  final json = await getClickThroughs(businessId, startDate, endDate);
+  final dataPoints = (json?['dataPoints'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+  return generatePdfBytes('Views Per Post Report', businessId, startDate, endDate, dataPoints);
+}
+
+Future<Uint8List> downloadFollowsByDayPdf(
+    String businessId, String startDate, String endDate) async {
+ final json = await getFollowsByDay(businessId, startDate, endDate);
+  final dataPoints = (json?['dataPoints'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+  return generatePdfBytes('Views Per Post Report', businessId, startDate, endDate, dataPoints);
+}
 }
