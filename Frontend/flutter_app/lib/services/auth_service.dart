@@ -158,63 +158,115 @@ class AuthService {
       String? businessType,
       String? description,
       String? website}) async {
+    final userCredential = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    final user = userCredential.user;
+    if (user != null) {
+      await user.updateDisplayName(name);
+
+      await _createUserDocument(
+        user,
+        name: name,
+        isBusiness: isBusiness,
+        businessType: businessType,
+        description: description,
+        website: website,
+      );
+      await _notificationService.initAndSaveToken();
+    }
+    return user;
+  }
+
+  /// Signs out the current user from Firebase Auth and Google Sign-In (if applicable).
+  Future<void> signOut() async {
     try {
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
+      // FIX 1: Only sign out of Google if the user is actually signed in with Google.
+      // This prevents the PlatformException.
+      if (await _googleSignIn.isSignedIn()) {
+        await _googleSignIn.signOut();
+      }
+    } catch (e) {
+      // This catch is important in case the channel is disconnected
+      // but 'isSignedIn' was still true.
+      debugPrint("Error during Google sign out: $e");
+    }
+    // Always sign out of Firebase Auth
+    await _auth.signOut();
+  }
+
+  /// Deletes the user's Auth account and their Firestore document.
+  /// This function assumes the user has logged in recently.
+  /// If it fails with 'requires-recent-login', the UI should call [reAuthenticateAndDelete].
+  Future<void> deleteUserAccount() async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user == null) {
+        throw Exception("No user is currently logged in.");
+      }
+      
+      // --- FIX 2: REVERSED THE ORDER ---
+      // 1. Delete Firestore data FIRST (while user is still logged in)
+      // This prevents a 'permission-denied' error.
+      await _firestore.collection('users').doc(user.uid).delete();
+
+      // 2. Delete Auth user LAST
+      await user.delete();
+      
+      // 3. Sign out (this will now call our new, safe function)
+      await signOut();
+
+    } on FirebaseAuthException catch (_) {
+      // Re-throw the original error so the UI can read its 'code' (e.g., 'requires-recent-login')
+      rethrow; 
+    } catch (e) {
+      throw Exception('An error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Prompts the user to re-enter their password, then securely deletes their account.
+  /// This is the secure flow for handling "sensitive" actions.
+  Future<void> reAuthenticateAndDelete(String password) async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user == null || user.email == null) {
+        throw Exception("User not found or email is null.");
+      }
+
+      // 1. Create a credential with the user's password
+      AuthCredential credential = EmailAuthProvider.credential(
+        email: user.email!,
         password: password,
       );
 
-      final user = userCredential.user;
-      if (user != null) {
-        await user.updateDisplayName(name);
+      // 2. Re-authenticate the user to get a fresh token
+      await user.reauthenticateWithCredential(credential);
 
-        await _createUserDocument(
-          user,
-          name: name,
-          isBusiness: isBusiness,
-          businessType: businessType,
-          description: description,
-          website: website,
-        );
-        await _notificationService.initAndSaveToken();
+      // 3. Re-authentication SUCCESS! Now we can safely delete.
+      final String uid = user.uid;
+
+      // --- FIX 2: REVERSED THE ORDER ---
+      // 3a. Delete Firestore data FIRST
+      await _firestore.collection('users').doc(uid).delete(); 
+      
+      // (Optional) Delete user's storage data if you have any
+      
+      // 3b. Delete Auth user LAST
+      await user.delete(); 
+      
+      // 3c. Sign out (this will now call our new, safe function)
+      await signOut();
+
+    } on FirebaseAuthException catch (e) {
+      // Handle "wrong-password" error during re-auth
+      if (e.code == 'wrong-password') {
+        throw Exception('Incorrect password. Please try again.');
       }
-      return user;
+      rethrow;
     } catch (e) {
-      debugPrint("Sign up error: $e");
-      return null;
+      rethrow;
     }
   }
-
-  Future<void> signOut() async {
-    await _auth.signOut();
-    await _googleSignIn.signOut();
-  }
-
-  Future<void> deleteUserAccount() async {
-  try {
-    final User? user = _auth.currentUser;
-    if (user == null) {
-      throw Exception("No user is currently logged in.");
-    }
-
-    final String uid = user.uid;
-
-    await user.delete();
-
-    await _firestore.collection('users').doc(uid).delete();
-
-
-    await signOut();
-
-  } on FirebaseAuthException catch (e) {
-    // This exception is now caught *before* any data is deleted.
-    if (e.code == 'requires-recent-login') {
-      throw Exception(
-          'This action is sensitive. Please log out and log back in to delete your account.');
-    }
-    throw Exception(e.message);
-  } catch (e) {
-    throw Exception('An error occurred: ${e.toString()}');
-  }
-}
 }

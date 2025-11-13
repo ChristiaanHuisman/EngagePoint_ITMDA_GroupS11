@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user_model.dart';
@@ -20,10 +21,18 @@ class _SettingsPageState extends State<SettingsPage> {
   final AuthService _authService = AuthService();
   bool _isDeleting = false;
 
+  final TextEditingController _passwordController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     _loadAutoReplyValue();
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAutoReplyValue() async {
@@ -76,6 +85,98 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _showReAuthDialog() async {
+    _passwordController.clear(); // Clear password on dialog open
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must enter password or cancel
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Recent Login Required'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                const Text(
+                    'This action is sensitive. Please enter your password to confirm.'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Confirm & Delete'),
+              onPressed: () {
+                final password = _passwordController.text;
+                Navigator.of(context).pop(); // Close the re-auth dialog
+
+                // Call the new re-auth delete function
+                _reAuthenticateAndDelete(password);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // --- NEW FUNCTION: _reAuthenticateAndDelete ---
+  // This calls the new function in your auth service
+  Future<void> _reAuthenticateAndDelete(String password) async {
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password cannot be empty.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isDeleting = true; // Show loading overlay
+    });
+
+    try {
+      await _authService.reAuthenticateAndDelete(password);
+
+      if (!mounted) return;
+      // Success! Navigate to login page
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (Route<dynamic> route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      // Show error (e.g., "Wrong password")
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Delete failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() {
+        _isDeleting = false; // Hide loading overlay
+      });
+    }
+  }
+
   //  HANDLES DELETION LOGIC
   Future<void> _deleteAccount() async {
     setState(() {
@@ -92,9 +193,32 @@ class _SettingsPageState extends State<SettingsPage> {
             builder: (context) => const LoginPage()), // Or your AuthWrapper
         (Route<dynamic> route) => false, // Remove all routes
       );
+    
+    // --- THIS IS THE KEY CHANGE ---
+    // Catch the *specific* exception from Firebase
+    } on FirebaseAuthException catch (e) { 
+      if (!mounted) return;
+      setState(() {
+        _isDeleting = false; // Hide overlay
+      });
+
+      if (e.code == 'requires-recent-login') {
+        // Show the re-auth dialog
+        _showReAuthDialog();
+      
+      } else {
+        // Show other Firebase errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Delete failed: ${e.message}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    
     } catch (e) {
       if (!mounted) return;
-      // Show snackbar with error
+      // Show generic errors
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Delete failed: ${e.toString()}'),
@@ -106,7 +230,6 @@ class _SettingsPageState extends State<SettingsPage> {
       });
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final FirestoreService firestoreService = FirestoreService();

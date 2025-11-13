@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'home_page.dart';
@@ -45,29 +47,41 @@ class SignUpPageState extends State<SignUpPage> {
 
     setState(() => _loading = true);
 
-    // method to accept these new optional parameters.
-    final user = await _authService.signUpWithEmail(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-      _nameController.text.trim(),
-      isBusiness: _isBusiness,
-      businessType: _isBusiness ? _businessTypeController.text.trim() : null,
-      description: _isBusiness ? _descriptionController.text.trim() : null,
-      website: _isBusiness ? _websiteController.text.trim() : null,
-    );
+    try {
+      final user = await _authService.signUpWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+        _nameController.text.trim(),
+        isBusiness: _isBusiness,
+        businessType: _isBusiness ? _businessTypeController.text.trim() : null,
+        description: _isBusiness ? _descriptionController.text.trim() : null,
+        website: _isBusiness ? _websiteController.text.trim() : null,
+      );
 
+      // This check is good!
+      if (!mounted) return;
+
+      if (user != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      // ---- ADD THIS CHECK ----
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message ?? "Sign up failed")));
+    } catch (e) {
+      // ---- AND ADD THIS CHECK ----
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+
+    // ---- AND THIS FINAL CHECK ----
     if (!mounted) return;
     setState(() => _loading = false);
-
-    if (user != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
-    } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Sign up failed")));
-    }
   }
 
   @override
