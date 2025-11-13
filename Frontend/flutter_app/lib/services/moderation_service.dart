@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 
 class ModerationException implements Exception {
   final String message;
@@ -37,9 +38,31 @@ class ModerationService {
 
   Future<String?> _getIdToken() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return null;
-    return await user.getIdToken();
+    if (user == null) {
+      // In production, avoid printing sensitive info; you can log safely if needed.
+      return null;
+    }
+
+    try {
+      // Get cached token; forceRefresh=false by default.
+      // This avoids unnecessary refreshes and respects Firebase token lifetime.
+      final token = await user.getIdToken();
+
+      if (token == null || token.isEmpty) {
+        throw ModerationException('Failed to retrieve authentication token');
+      }
+
+      return token;
+    } on FirebaseAuthException catch (e) {
+      // Handle known auth errors (user signed out, token revoked, etc.)
+      throw ModerationException('Firebase Auth error: ${e.code}');
+    } catch (e) {
+      // Catch any other unexpected errors
+      throw ModerationException('Unexpected error retrieving token');
+    }
   }
+
+
 
   Future<ModerationResult> moderateText(String content) async {
     final token = await _getIdToken();
