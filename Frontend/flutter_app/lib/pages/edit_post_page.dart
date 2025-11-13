@@ -122,9 +122,10 @@ class _EditPostPageState extends State<EditPostPage> {
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -139,24 +140,24 @@ class _EditPostPageState extends State<EditPostPage> {
                   onTap: _pickImage,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: _imageData != null
-                        ? Image.memory(_imageData!,
+                child: _imageData != null
+                    ? Image.memory(_imageData!,
+                        fit: BoxFit.cover, width: double.infinity)
+                    : _existingImageUrl != null
+                        ? Image.network(_existingImageUrl!,
                             fit: BoxFit.cover, width: double.infinity)
-                        : (_existingImageUrl != null
-                            ? Image.network(_existingImageUrl!,
-                                fit: BoxFit.cover, width: double.infinity)
-                            : const Center(
-                                child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add_a_photo_outlined,
-                                      size: 40, color: Colors.grey),
-                                  SizedBox(height: 8),
-                                  Text('Change image (optional)'),
-                                ],
-                              ))),
-                  ),
-                ),
+                        : const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_a_photo_outlined,
+                                    size: 40, color: Colors.grey),
+                                SizedBox(height: 8),
+                                Text('Change image (optional)'),
+                              ],
+                            ),
+                          ),
+              ),),
               ),
               const SizedBox(height: 24),
               DropdownButtonFormField<String>(
@@ -206,6 +207,7 @@ class _EditPostPageState extends State<EditPostPage> {
           ),
         ),
       ),
+      )
     );
   }
 }

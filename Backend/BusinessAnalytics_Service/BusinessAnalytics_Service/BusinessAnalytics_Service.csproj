@@ -7,7 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.2.1" />
+    <PackageReference Include="BouncyCastle.NetCore" Version="1.9.0" />
+    <PackageReference Include="Google.Analytics.Data.V1Beta" Version="2.0.0-beta09" />
     <PackageReference Include="Google.Apis.AnalyticsData.v1beta" Version="1.51.0.2272" />
+    <PackageReference Include="itext.bouncy-castle-fips-adapter" Version="9.3.0" />
+    <PackageReference Include="itext7" Version="9.3.0" />
+    <PackageReference Include="itext7.bouncy-castle-adapter" Version="8.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 

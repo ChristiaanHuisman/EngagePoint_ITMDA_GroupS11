@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/settings_model.dart';
 import '../models/user_model.dart';
+import '../providers/theme_provider.dart';
 import '../services/firestore_service.dart';
+import 'notification_settings_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -12,203 +13,213 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final FirestoreService _firestoreService = FirestoreService();
-  final List<String> _postTags = [
-    'Promotion',
-    'Sale',
-    'Event',
-    'New Stock',
-    'Update'
-  ];
+  bool? _autoReplyLocalValue; // Local value to instantly reflect toggle
+  bool _isLoadingAutoReply = true; // Track loading state for Firestore value
 
-  void _onPreferenceChanged(
-      List<String> currentPrefs, String tag, bool isSelected) {
-    // This function remains the same
-    final newPrefs = List<String>.from(currentPrefs);
-    if (isSelected) {
-      newPrefs.add(tag);
-    } else {
-      newPrefs.remove(tag);
+  @override
+  void initState() {
+    super.initState();
+    _loadAutoReplyValue();
+  }
+
+  Future<void> _loadAutoReplyValue() async {
+    final FirestoreService firestoreService = FirestoreService();
+    final value = await firestoreService.getAutoResponseStatus();
+    if (mounted) {
+      setState(() {
+        _autoReplyLocalValue = value;
+        _isLoadingAutoReply = false;
+      });
     }
-    _firestoreService.updateNotificationPreferences(newPrefs);
   }
 
   @override
   Widget build(BuildContext context) {
+    final FirestoreService firestoreService = FirestoreService();
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Settings")),
-      body: StreamBuilder<UserModel?>(
-        stream: _firestoreService.getUserStream(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      appBar: AppBar(
+        title: const Text("Settings"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      ),
+      body: SafeArea(
+        child: StreamBuilder<UserModel?>(
+          stream: firestoreService.getUserStream(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final user = snapshot.data;
+            final user = snapshot.data;
+            if (user == null) {
+              return const Center(child: Text("Could not load user settings."));
+            }
 
-          if (user == null) {
-            return const Center(child: Text("Could not load settings."));
-          }
+            final prefs = user.notificationPreferences;
+            final bool receiveNotificationsEnabled = prefs.onNewPost;
 
-          // Determine if filtering is enabled based on the data from the model
-          final bool tagFilteringEnabled = user.notificationTags.isNotEmpty;
+            // Initialize local auto-reply value if not set
+            _autoReplyLocalValue ??= prefs.onReviewResponse;
 
-          return Consumer<SettingsData>(
-            builder:
-                (BuildContext context, SettingsData settings, Widget? child) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        "Notifications",
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ),
-
-                    // Master switch for all notifications
-                    SwitchListTile(
-                      title: const Text("Receive Notifications"),
-                      value: settings.receiveNotifications,
-                      onChanged: (bool value) {
-                        settings.receiveNotifications = value;
-                      },
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
-                    ),
-
-                    SwitchListTile(
-                      title: const Text("Filter Notifications by Tag"),
-                      subtitle: const Text(
-                          "Only receive notifications for topics you select."),
-                      value: tagFilteringEnabled,
-                      onChanged: (bool value) {
-                        // When the user toggles this switch, we update Firestore.
-                        // The StreamBuilder will then automatically rebuild the UI.
-                        if (value) {
-                          // If turning on, default to all tags selected.
-                          _firestoreService
-                              .updateNotificationPreferences(_postTags);
-                        } else {
-                          // If turning off, clear the preferences.
-                          _firestoreService.updateNotificationPreferences([]);
-                        }
-                      },
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
-                    ),
-
-                    if (tagFilteringEnabled)
-                      Padding(
-                        padding: const EdgeInsets.only(
-                            left: 16.0, right: 16.0, top: 8.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8),
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  // Notifications Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      "Notifications",
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                          child: Column(
-                            children: _postTags.map((tag) {
-                              return CheckboxListTile(
-                                title: Text(tag),
-                                value: user.notificationTags.contains(tag),
-                                onChanged: (bool? value) {
-                                  if (value != null) {
-                                    _onPreferenceChanged(
-                                        user.notificationTags, tag, value);
-                                  }
-                                },
-                              );
-                            }).toList(),
+                    ),
+                  ),
+                  SwitchListTile(
+                    title: const Text("Receive Notifications"),
+                    subtitle:
+                        const Text("Enable/disable detailed settings below"),
+                    value: receiveNotificationsEnabled,
+                    onChanged: (bool value) {
+                      firestoreService.updateNotificationPreference(
+                          'onNewPost', value);
+                    },
+                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                  ),
+                  ListTile(
+                    title: const Text("Advanced Notification Settings"),
+                    subtitle:
+                        const Text("Manage post, review, and quiet hours"),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios,
+                      color: receiveNotificationsEnabled
+                          ? Colors.grey.shade700
+                          : Colors.grey.shade400,
+                    ),
+                    enabled: receiveNotificationsEnabled,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const NotificationSettingsPage()),
+                      );
+                    },
+                  ),
+
+                  const Divider(height: 32),
+
+                  // Privacy Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      "Privacy",
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                        ),
-                      ),
+                    ),
+                  ),
+                  CheckboxListTile(
+                    title: const Text("Private Profile"),
+                    subtitle: const Text(
+                        "Hide your activity (e.g., reviews) from others"),
+                    value: user.isPrivate,
+                    onChanged: (bool? value) {
+                      if (value != null) {
+                        firestoreService.updateUserPrivacy(value);
+                      }
+                    },
+                  ),
 
-                    const Divider(height: 32),
+                  const Divider(height: 32),
 
+                  // Auto-reply Section (Business users only)
+                  if (user.isBusiness) ...[
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Text(
-                        "Privacy",
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        "Auto-reply for Reviews",
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
-                    CheckboxListTile(
-                      title: const Text("Private Profile"),
-                      value: settings.privateProfile,
-                      onChanged: (bool? value) {
-                        settings.privateProfile = value ?? false;
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: const Text("Anonymous Rewards"),
-                      value: settings.anonymousRewards,
-                      onChanged: (bool? value) {
-                        settings.anonymousRewards = value ?? false;
-                      },
-                    ),
-                    CheckboxListTile(
-                      title: const Text("Track Analytics"),
-                      value: settings.trackAnalytics,
-                      onChanged: (bool? value) {
-                        settings.trackAnalytics = value ?? false;
-                      },
-                    ),
-
+                    _isLoadingAutoReply
+                        ? const Center(child: CircularProgressIndicator())
+                        : SwitchListTile(
+                            title: const Text("Enable Auto-reply"),
+                            subtitle: const Text(
+                                "Automatically send responses to reviews (businesses can still edit them)"),
+                            value: _autoReplyLocalValue!,
+                            onChanged: (bool value) async {
+                              setState(() {
+                                _autoReplyLocalValue = value;
+                              });
+                              if (value) {
+                                await firestoreService.enableAutoResponse();
+                              } else {
+                                await firestoreService.disableAutoResponse();
+                              }
+                            },
+                            activeThumbColor:
+                                Theme.of(context).colorScheme.primary,
+                          ),
                     const Divider(height: 32),
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        "App",
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ),
-                    SwitchListTile(
-                      title: const Text("Dark Mode"),
-                      value: settings.darkModeEnabled,
-                      onChanged: (bool value) {
-                        settings.darkModeEnabled = value;
-                      },
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.cleaning_services),
-                      title: const Text("Clear Cache"),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Cache cleared.')),
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.info_outline),
-                      title: const Text("About"),
-                      onTap: () {
-                        showAboutDialog(
-                          context: context,
-                          applicationName: 'EngagePoint',
-                          applicationVersion: '1.0.0',
-                          applicationLegalese: '© 2024 ITMDA Group S11',
-                          children: <Widget>[
-                            const Text('A mobile engagement app.'),
-                          ],
-                        );
-                      },
-                    ),
                   ],
-                ),
-              );
-            },
-          );
-        },
+
+                  // App Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      "App",
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                  SwitchListTile(
+                    title: const Text("Dark Mode"),
+                    value: themeProvider.themeMode == ThemeMode.dark,
+                    onChanged: (bool value) {
+                      Provider.of<ThemeProvider>(context, listen: false)
+                          .toggleTheme(value);
+                    },
+                    activeThumbColor: Theme.of(context).colorScheme.primary,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.cleaning_services),
+                    title: const Text("Clear Cache"),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Cache cleared (simulation).')),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.info_outline),
+                    title: const Text("About"),
+                    onTap: () {
+                      showAboutDialog(
+                        context: context,
+                        applicationName: 'EngagePoint',
+                        applicationVersion: '1.0.0',
+                        applicationLegalese: '© 2025 ITMDA Group S11',
+                        children: <Widget>[
+                          const Text(
+                              'A mobile engagement app connecting businesses and customers.'),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }

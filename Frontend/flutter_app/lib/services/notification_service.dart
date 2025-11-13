@@ -10,7 +10,7 @@ class NotificationService {
 
   // Function to initialize notifications and save the token
   Future<void> initAndSaveToken() async {
-    // Request permission from the user (for iOS and modern Android)
+    // Request permission from the user 
     await _firebaseMessaging.requestPermission();
 
     // Fetch the FCM token for this device

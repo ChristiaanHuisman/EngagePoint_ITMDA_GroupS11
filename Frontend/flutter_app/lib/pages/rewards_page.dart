@@ -5,7 +5,7 @@ import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/reward_wheel.dart';
 
-// class to define a level in the progression system.
+// class to define levels
 class Level {
   final int level;
   final String name;
@@ -26,7 +26,7 @@ class RewardsAndProgressionPage extends StatefulWidget {
 class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
   final FirestoreService _firestoreService = FirestoreService();
 
-  // Define level progression data
+  // level progression data
   final List<Level> _levels = [
     Level(level: 1, name: 'Bronze', pointsRequired: 0),
     Level(level: 2, name: 'Silver', pointsRequired: 500),
@@ -35,7 +35,7 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
     Level(level: 5, name: 'Diamond', pointsRequired: 5000),
   ];
 
-  // This function handles all levels, including the max level
+  // function that handles all levels
   Map<String, dynamic> _getLevelData(int points) {
     Level currentLevel = _levels.first;
     for (var level in _levels.reversed) {
@@ -76,69 +76,70 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<RewardsData>(
-      create: (BuildContext context) => RewardsData(),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Rewards & Progression"),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        ),
-        body: StreamBuilder<UserModel?>(
-          stream: _firestoreService.getUserStream(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+        create: (BuildContext context) => RewardsData(),
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text("Rewards & Progression"),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          ),
+          body: SafeArea(
+            child: StreamBuilder<UserModel?>(
+              stream: _firestoreService.getUserStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-            final user = snapshot.data;
-            if (user == null) {
-              return const Center(child: Text("Could not load user data."));
-            }
+                final user = snapshot.data;
+                if (user == null) {
+                  return const Center(child: Text("Could not load user data."));
+                }
 
-            // Access data directly from the model
-            final int currentPoints = user.points;
-            final int spinsAvailable = user.spinsAvailable;
+                // gets data from the model
+                final int currentPoints = user.points;
+                final int spinsAvailable = user.spinsAvailable;
 
-            final levelData = _getLevelData(currentPoints);
-            final Level currentLevel = levelData['currentLevel'];
-            final int pointsToNextLevel = levelData['pointsToNextLevel'];
-            final double progress = levelData['progress'];
+                final levelData = _getLevelData(currentPoints);
+                final Level currentLevel = levelData['currentLevel'];
+                final int pointsToNextLevel = levelData['pointsToNextLevel'];
+                final double progress = levelData['progress'];
 
-            return Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    LevelProgressBar(
-                      levelName: currentLevel.name,
-                      levelNumber: currentLevel.level,
-                      progress: progress,
-                      pointsToNextLevel: pointsToNextLevel,
+                return Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        LevelProgressBar(
+                          levelName: currentLevel.name,
+                          levelNumber: currentLevel.level,
+                          progress: progress,
+                          pointsToNextLevel: pointsToNextLevel,
+                        ),
+                        const SizedBox(height: 30),
+                        Text(
+                          "You have $spinsAvailable spin(s) available. Good luck!",
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(color: Colors.grey),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 20),
+                        RewardWheel(spinsAvailable: spinsAvailable),
+                      ],
                     ),
-                    const SizedBox(height: 30),
-                    Text(
-                      "You have $spinsAvailable spin(s) available. Good luck!",
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyLarge
-                          ?.copyWith(color: Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    RewardWheel(spinsAvailable: spinsAvailable),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
+                  ),
+                );
+              },
+            ),
+          ),
+        ));
   }
 }
 
-// This widget displays the level, rank, and XP bar
+// widget displays the level, rank, xp bar
 class LevelProgressBar extends StatelessWidget {
   final String levelName;
   final int levelNumber;

@@ -1,5 +1,5 @@
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart'; // Required for Uint8List
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 class StorageService {
@@ -14,8 +14,7 @@ class StorageService {
     return null;
   }
 
-  /// Uploads raw image data  to Firebase Storage.
-  /// This works on both mobile and web.
+  // Uploads raw image data to Firebase Storage.
   Future<String> uploadImageData(String path, Uint8List data) async {
     try {
       final ref = _storage.ref().child(path);

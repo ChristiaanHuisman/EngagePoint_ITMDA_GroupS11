@@ -1,10 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_app/pages/business_profile_page.dart';
+import 'package:flutter_app/pages/customer_profile_page.dart';
 import 'package:flutter_app/services/logging_service.dart';
 import '../models/post_model.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
-import '../pages/user_profile_page.dart';
 import '../pages/post_page.dart';
 import '../pages/edit_post_page.dart';
 
@@ -19,7 +20,7 @@ Color _getTagColor(String? tag) {
     case 'New Stock':
       return Colors.purple.shade300;
     case 'Update':
-      return Colors.red.shade500;
+      return Colors.grey.shade500;
     default:
       return Colors.transparent;
   }
@@ -62,6 +63,8 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String formattedDate = post.formattedDate;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
@@ -203,7 +206,7 @@ class PostCard extends StatelessWidget {
                     ],
                   ),
                   Text(
-                    post.formattedDate,
+                    formattedDate,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey[500],
                         ),
@@ -223,6 +226,7 @@ class PostHeader extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final FirestoreService _firestoreService = FirestoreService();
+  final LoggingService _loggingService = LoggingService();
 
   PostHeader({
     required this.post,
@@ -230,6 +234,31 @@ class PostHeader extends StatelessWidget {
     required this.onDelete,
     super.key,
   });
+
+  // Helper function for navigation to handle role check
+  void _navigateToUserProfile(
+      BuildContext context, String userId, bool isBusiness) async {
+    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    if (userId == currentUserId) {
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+      return;
+    }
+
+    if (context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => isBusiness
+              ? BusinessProfilePage(
+                  userId: userId, scaffoldKey: GlobalKey<ScaffoldState>())
+              : CustomerProfilePage(
+                  userId: userId, scaffoldKey: GlobalKey<ScaffoldState>()),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -257,18 +286,15 @@ class PostHeader extends StatelessWidget {
 
         return GestureDetector(
           onTap: () {
-            final String targetUserId = post.businessId;
-            if (targetUserId.isNotEmpty && targetUserId == currentUserId) {
-              if (Navigator.canPop(context)) {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              }
-            } else if (targetUserId.isNotEmpty) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UserProfilePage(userId: targetUserId),
-                ),
+            if (business.uid.isNotEmpty) {
+              _loggingService.logAnalyticsEvent(
+                eventName: 'click_through',
+                parameters: {
+                  'business_id': business.uid,
+                },
               );
+              _navigateToUserProfile(
+                  context, business.uid, business.isBusiness);
             }
           },
           child: Row(
@@ -285,7 +311,7 @@ class PostHeader extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  business.name, // Direct access
+                  business.name,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -310,6 +336,7 @@ class PostHeader extends StatelessWidget {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                      padding: const EdgeInsets.only(left: 30),
                       onPressed: onEdit,
                     ),
                     IconButton(

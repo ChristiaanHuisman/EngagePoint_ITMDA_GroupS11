@@ -1,3 +1,8 @@
+# ============================
+# Tokens
+# ============================
+Frontend/flutter_app/assets/service_account.json
+
 # =============================
 # OS / GENERAL
 # =============================
@@ -31,7 +36,6 @@
 **/*.suo
 **/*.ntvs*
 **/*.njsproj
-**/*.sln
 **/*.sw?
 **/*.user
 **/*.userosscache

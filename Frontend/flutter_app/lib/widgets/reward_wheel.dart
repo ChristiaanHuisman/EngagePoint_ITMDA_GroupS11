@@ -12,12 +12,12 @@ class RewardWheel extends StatefulWidget {
   State<RewardWheel> createState() => _RewardWheelState();
 }
 
-class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStateMixin {
+class _RewardWheelState extends State<RewardWheel>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _rotationAnimation;
   final Random _random = Random();
-  
-  // THE FIX: The widget now manages its own angle state locally.
+
   double _currentAngle = 0.0;
   int? _selectedIndexForSpin;
 
@@ -26,7 +26,7 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4), // A slightly longer, smoother spin
+      duration: const Duration(seconds: 4),
     );
 
     _rotationAnimation = Tween<double>(begin: 0, end: 0).animate(
@@ -38,7 +38,6 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
         if (_selectedIndexForSpin != null) {
           final rewardsData = Provider.of<RewardsData>(context, listen: false);
           rewardsData.endSpin(rewardsData.rewards[_selectedIndexForSpin!]);
-          // Save the final angle for the next spin and normalize it
           setState(() {
             _currentAngle = _rotationAnimation.value % (2 * pi);
           });
@@ -63,17 +62,12 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
     final int selectedIndex = _random.nextInt(numRewards);
     _selectedIndexForSpin = selectedIndex;
 
-    // 1. Calculate the final absolute angle for the middle of the winning segment.
     final double targetAngle = (2 * pi * selectedIndex / numRewards);
 
-    // 2. Add a random number of full spins for effect.
     final double randomSpins = (_random.nextInt(4) + 5) * 2 * pi;
-    
-    // 3. The final angle is the combination of spins and the target offset.
-    // We subtract the target so it lands under the top pointer.
+
     final double endAngle = randomSpins - targetAngle;
-    
-    // Ensure the wheel always spins forward from its current position
+
     final double beginAngle = _currentAngle;
 
     _rotationAnimation = Tween<double>(
@@ -103,7 +97,6 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
               alignment: Alignment.center,
               clipBehavior: Clip.none,
               children: <Widget>[
-               // Using AnimatedBuilder to handle the rotation directly.
                 AnimatedBuilder(
                   animation: _animationController,
                   builder: (context, child) {
@@ -132,19 +125,23 @@ class _RewardWheelState extends State<RewardWheel> with SingleTickerProviderStat
         const SizedBox(height: 20),
         Consumer<RewardsData>(
           builder: (BuildContext context, RewardsData rewards, Widget? child) {
-            final bool canSpin = !rewards.isSpinning && widget.spinsAvailable > 0;
+            final bool canSpin =
+                !rewards.isSpinning && widget.spinsAvailable > 0;
             return ElevatedButton.icon(
               icon: rewards.isSpinning
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
                     )
                   : const Icon(Icons.refresh),
-              label: Text(rewards.isSpinning ? "Spinning..." : "Spin for Reward"),
+              label:
+                  Text(rewards.isSpinning ? "Spinning..." : "Spin for Reward"),
               onPressed: canSpin ? _spinTheWheel : null,
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 textStyle: const TextStyle(fontSize: 18),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
