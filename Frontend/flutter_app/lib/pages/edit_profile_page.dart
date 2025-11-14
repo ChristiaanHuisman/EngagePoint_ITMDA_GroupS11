@@ -175,7 +175,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   // Method for calling the business verification microservice
   Future<void> _requestBusinessVerification() async {
     const String apiUrl =
-        'http://10.0.2.2:5151/api/BusinessVerification/request-business-verification';
+        // HTTPS request for Cloud Run hosted business verification service
+        'https://business-verification-service-570976278139.africa-south1.run.app/api/BusinessVerification/request-business-verification';
 
     setState(() {
       _isLoading = true;
@@ -187,7 +188,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final idToken = await user?.getIdToken();
       final authToken = 'Bearer $idToken';
 
-      // Apply a 5 second timeout to the request
+      // Apply a 15 second timeout to the request
       final response = await http
           .get(
         Uri.parse(apiUrl),
@@ -197,7 +198,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         },
       )
           .timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 15),
         onTimeout: () {
           throw TimeoutException('Connection timed out');
         },

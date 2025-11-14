@@ -36,7 +36,6 @@ Frontend/flutter_app/assets/service_account.json
 **/*.suo
 **/*.ntvs*
 **/*.njsproj
-**/*.sln
 **/*.sw?
 **/*.user
 **/*.userosscache
