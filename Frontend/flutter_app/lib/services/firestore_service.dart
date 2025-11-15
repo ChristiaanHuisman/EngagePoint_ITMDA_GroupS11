@@ -248,13 +248,13 @@ class FirestoreService {
     }
 
     final url = Uri.parse(
-        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews');
+        'https://engagepoint-review-service-570976278139.us-central1.run.app/reviews');
     final response = await http.post(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.us-central1.run.app')}'
       },
       body: jsonEncode({
         'businessId': businessId,
@@ -273,13 +273,13 @@ class FirestoreService {
   Future<List<Map<String, dynamic>>> getReviewsForBusinessApi(
       String businessId) async {
     final url = Uri.parse(
-        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews/$businessId');
+        'https://engagepoint-review-service-570976278139.us-central1.run.app/reviews/$businessId');
     final response = await http.get(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.us-central1.run.app')}'
       },
     );
 
@@ -297,13 +297,13 @@ class FirestoreService {
     if (currentUser == null) return;
 
     final url = Uri.parse(
-        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews');
+        'https://engagepoint-review-service-570976278139.us-central1.run.app/reviews');
     final response = await http.delete(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.us-central1.run.app')}'
       },
       body: jsonEncode({
         'businessId': businessId,
@@ -561,13 +561,13 @@ class FirestoreService {
 
   Future<Map<String, int>> getReviewSentimentStats(String businessId) async {
     final url = Uri.parse(
-        'https://engagepoint-review-service-570976278139.africa-south1.run.app/reviews/analytics/$businessId');
+        'https://engagepoint-review-service-570976278139.us-central1.run.app/reviews/analytics/$businessId');
     final response = await http.get(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.africa-south1.run.app')}'
+            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.us-central1.run.app')}'
       },
     );
 
