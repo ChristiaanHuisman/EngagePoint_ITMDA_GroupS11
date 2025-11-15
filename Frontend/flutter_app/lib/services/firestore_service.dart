@@ -253,8 +253,6 @@ class FirestoreService {
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.us-central1.run.app')}'
       },
       body: jsonEncode({
         'businessId': businessId,
@@ -278,8 +276,6 @@ class FirestoreService {
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.us-central1.run.app')}'
       },
     );
 
@@ -302,8 +298,6 @@ class FirestoreService {
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.us-central1.run.app')}'
       },
       body: jsonEncode({
         'businessId': businessId,
@@ -566,8 +560,6 @@ class FirestoreService {
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization':
-            'Bearer ${await getCloudRunIdToken('https://engagepoint-review-service-570976278139.us-central1.run.app')}'
       },
     );
 
