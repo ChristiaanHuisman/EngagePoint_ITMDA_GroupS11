@@ -67,51 +67,60 @@ class FirestoreService {
     String? imageUrl,
     double? imageAspectRatio,
     String? tag,
+    DateTime? scheduledTime, // <-- This is the new parameter
   }) async {
-    final User? user = _auth.currentUser;
-    if (user == null) {
-      throw Exception("No user is logged in to create a post.");
+    final String? currentUserId = _auth.currentUser?.uid;
+    if (currentUserId == null) {
+      throw Exception("User not logged in");
     }
 
-    // Use UserModel for safer role checking
-    final userDoc = await _db.collection('users').doc(user.uid).get();
-    if (!userDoc.exists) {
-      throw Exception("User profile not found. Cannot verify role.");
+    // Determine the status and timestamp based on the scheduleTime
+    final String status;
+    final Timestamp createdAt;
+
+    if (scheduledTime != null) {
+      // This is a scheduled post
+      status = 'scheduled';
+      createdAt =
+          Timestamp.fromDate(scheduledTime); // Set post time to the future
+    } else {
+      // This is a post to be published immediately
+      status = 'published';
+      createdAt = Timestamp.now(); // Set post time to now
     }
 
-    final userModel = UserModel.fromFirestore(userDoc);
-    if (!userModel.isBusiness) {
-      throw Exception(
-          "Permission denied. Only business users can create posts.");
+    try {
+      await _db.collection('posts').add({
+        'businessId': currentUserId,
+        'title': title,
+        'content': content,
+        'imageUrl': imageUrl,
+        'imageAspectRatio': imageAspectRatio,
+        'tag': tag,
+        'status': status, // Use the new status
+        'createdAt': createdAt, // Use the new createdAt
+        'reactionCount': 0,
+      });
+    } catch (e) {
+      debugPrint("Error creating post: $e");
+      throw Exception('Failed to create post: $e');
     }
-
-    await _db.collection('posts').add({
-      'businessId': user.uid,
-      'title': title,
-      'content': content,
-      'imageUrl': imageUrl,
-      'imageAspectRatio': imageAspectRatio,
-      'tag': tag,
-      'createdAt': FieldValue.serverTimestamp(),
-      'status': 'published',
-      'businessStatus': userModel.verificationStatus,
-    });
   }
 
-  Stream<List<PostModel>> getAllPosts(
-      {String? tag, String sortBy = 'createdAt'}) {
-    // Start with the base query
+  Stream<List<PostModel>> getAllPosts({required String sortBy, String? tag}) {
+    // Start with the base collection
     Query query = _db.collection('posts');
 
-    // Add a filter for the tag, if one is provided
+    //  HIDE SCHEDULED POSTS
+    query = query.where('status', isEqualTo: 'published');
+
+    // Add tag filter if one is selected
     if (tag != null) {
       query = query.where('tag', isEqualTo: tag);
     }
 
-    // Add sorting. 'sortBy' will be 'createdAt' (date) or 'reactionCount' (likes)
     query = query.orderBy(sortBy, descending: true);
 
-    // Return the stream
     return query.snapshots().map((snapshot) =>
         snapshot.docs.map((doc) => PostModel.fromFirestore(doc)).toList());
   }
@@ -120,6 +129,7 @@ class FirestoreService {
     return _db
         .collection('posts')
         .where('businessId', isEqualTo: businessId)
+        .where('status', isEqualTo: 'published') 
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
@@ -130,6 +140,7 @@ class FirestoreService {
   Stream<List<PostModel>> getFollowedPosts(
     List<String> businessIds, {
     String sortBy = 'createdAt',
+    String? tag, 
   }) {
     if (businessIds.isEmpty) {
       return Stream.value([]);
@@ -139,6 +150,14 @@ class FirestoreService {
 
     // Apply 'followed' filter
     postsQuery = postsQuery.where('businessId', whereIn: businessIds);
+
+
+    postsQuery = postsQuery.where('status', isEqualTo: 'published');
+
+
+    if (tag != null) {
+      postsQuery = postsQuery.where('tag', isEqualTo: tag);
+    }
 
     // Apply sorting
     postsQuery = postsQuery.orderBy(sortBy, descending: true);
@@ -780,7 +799,7 @@ class FirestoreService {
   Future<void> approveBusiness(String uid) async {
     await _db.collection('users').doc(uid).update({
       'verificationStatus': 'accepted',
-      // 'status': 'verified', // <-- You may want to update this old field too for consistency
+      // 'status': 'verified', 
     });
   }
 
@@ -788,8 +807,18 @@ class FirestoreService {
   Future<void> rejectBusiness(String uid) async {
     await _db.collection('users').doc(uid).update({
       'verificationStatus': 'rejected',
-      // 'status': 'rejected', // <-- You may want to update this old field too
+      // 'status': 'rejected', 
     });
   }
 
+  Stream<List<PostModel>> getPublishedPostsForBusiness(String businessId) {
+    return _db
+        .collection('posts')
+        .where('businessId', isEqualTo: businessId)
+        .where('status', isEqualTo: 'published') 
+        .orderBy('createdAt', descending: true) 
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => PostModel.fromFirestore(doc)).toList());
+  }
 }

@@ -449,7 +449,7 @@ class _PostsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<PostModel>>(
-      stream: firestoreService.getPostsForBusiness(userId),
+      stream: firestoreService.getPublishedPostsForBusiness(userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

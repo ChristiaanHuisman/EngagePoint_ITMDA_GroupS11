@@ -91,6 +91,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       return;
     }
 
+    // Check schedule time *before* moderation/upload
     if (_isScheduled && _scheduledTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -112,7 +113,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         imageAspectRatio = await _getImageAspectRatio(_imageData!);
       }
 
-      //  MODERATION INJECTION START
+      // MODERATION INJECTION START
       final ModerationService moderationService = ModerationService();
 
       try {
@@ -136,7 +137,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
               await _storageService.deleteByUrl(imageUrl);
             } catch (_) {
               // ignore deletion failure (log if you want)
-            }
+           }
             final reason = imageResult.reason ?? 'Image not allowed';
             throw Exception('Image rejected: $reason');
           }
@@ -145,55 +146,32 @@ class _CreatePostPageState extends State<CreatePostPage> {
         // Convert moderation-specific error into a user-visible exception
         throw Exception('Moderation failed: ${me.message}');
       }
-      //  MODERATION INJECTION END
+      // MODERATION INJECTION END
 
-      // Only runs if approved
-      if (_isScheduled) {
-        // --- POST IS SCHEDULED ---
+      // --- CONSOLIDATED POST CREATION ---
+      // This logic now handles both scheduled and immediate posts.
+      // Your _firestoreService.createPost method will need to accept
+      // the new 'scheduledTime' parameter.
+      await _firestoreService.createPost(
+        title: _titleController.text,
+        content: _contentController.text,
+        imageUrl: imageUrl,
+        imageAspectRatio: imageAspectRatio,
+        tag: _selectedTag,
+        scheduledTime: _isScheduled ? _scheduledTime : null,
+      );
+
+      if (mounted) {
+        final successMessage = _isScheduled
+            ? 'Post scheduled for ${DateFormat.yMd().add_jm().format(_scheduledTime!)}'
+            : 'Post created successfully!';
         
-        // 1. Get all post data
-        final postData = {
-          'title': _titleController.text,
-          'content': _contentController.text,
-          'imageUrl': imageUrl,
-          'imageAspectRatio': imageAspectRatio,
-          'tag': _selectedTag,
-          'scheduledTime': _scheduledTime!.toIso8601String(), // Send as ISO string
-          // You also need to pass the businessId/user info
-        };
-
-        // 2. TODO: Send this data to your Java backend
-        // This is where you will make your HTTP POST call to your Java endpoint.
-        // For example:
-        // await YourApiService.schedulePost(postData);
-        
-        // 3. Show success and pop page
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    'Post scheduled for ${DateFormat.yMd().add_jm().format(_scheduledTime!)}')),
-          );
-          Navigator.of(context).pop();
-        }
-
-      } else {
-        // --- POST IS *NOT* SCHEDULED (Original Logic) ---
-        await _firestoreService.createPost(
-          title: _titleController.text,
-          content: _contentController.text,
-          imageUrl: imageUrl,
-          imageAspectRatio: imageAspectRatio,
-          tag: _selectedTag,
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(successMessage)),
         );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Post created successfully!')),
-          );
-          Navigator.of(context).pop();
-        }
+        Navigator.of(context).pop();
       }
+      
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
