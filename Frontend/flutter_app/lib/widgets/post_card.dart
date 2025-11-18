@@ -323,7 +323,7 @@ class PostHeader extends StatelessWidget {
                         maxLines: 1, 
                       ),
                     ),
-                     if (business.status == 'verified') 
+                     if (business.verificationStatus == 'accepted') 
                       Padding(
                         padding: const EdgeInsets.only(left: 6.0),
                         child: Icon(

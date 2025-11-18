@@ -180,7 +180,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                       .headlineSmall
                       ?.copyWith(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center),
-              if (user.status == 'verified')
+              if (user.verificationStatus == 'accepted')
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0),
                   child: Icon(

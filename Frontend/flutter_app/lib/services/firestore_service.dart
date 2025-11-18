@@ -784,30 +784,27 @@ class FirestoreService {
     return null; // null if no document or field found
   }
 
-  // Business user requests verification
-  Future<void> requestVerification() async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) return;
-
-    await _db.collection('users').doc(currentUser.uid).update({
-      'verificationStatus': 'pendingAdmin',
-      'verificationRequestedAt': FieldValue.serverTimestamp(),
-    });
-  }
 
   // Admin approves a business
   Future<void> approveBusiness(String uid) async {
     await _db.collection('users').doc(uid).update({
-      'verificationStatus': 'accepted',
-      // 'status': 'verified', 
+      'verificationStatus': 'accepted'
     });
-  }
+    await _db.collection('users').doc(uid).collection('businessVerification').doc(uid).update({
+      'verificationStatus': 'accepted',
+      'verificationStatusUpdatedAt': FieldValue.serverTimestamp()
+    });
+  } 
 
   // Admin rejects a business
   Future<void> rejectBusiness(String uid) async {
     await _db.collection('users').doc(uid).update({
       'verificationStatus': 'rejected',
-      // 'status': 'rejected', 
+      
+    });
+    await _db.collection('users').doc(uid).collection('businessVerification').doc(uid).update({
+      'verificationStatus': 'rejected',
+      'verificationStatusUpdatedAt': FieldValue.serverTimestamp()
     });
   }
 

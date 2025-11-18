@@ -160,7 +160,7 @@ class _PostPageState extends State<PostPage> {
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16),
                                   ),
-                                  if (_businessProfile!.status == 'verified')
+                                  if (_businessProfile!.verificationStatus == 'accepted')
                                     Padding(
                                       padding: const EdgeInsets.only(left: 6.0),
                                       child: Icon(
