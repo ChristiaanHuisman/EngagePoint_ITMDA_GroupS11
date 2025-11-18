@@ -2,6 +2,9 @@
 # Tokens
 # ============================
 Frontend/flutter_app/assets/service_account.json
+Backend/ReviewSentiment_Service/app/engagepoint-a2c47-firebase-adminsdk-fbsvc-a192339a5a.json
+
+
 
 # =============================
 # OS / GENERAL
@@ -36,7 +39,6 @@ Frontend/flutter_app/assets/service_account.json
 **/*.suo
 **/*.ntvs*
 **/*.njsproj
-**/*.sln
 **/*.sw?
 **/*.user
 **/*.userosscache

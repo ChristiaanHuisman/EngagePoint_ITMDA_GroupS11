@@ -63,7 +63,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '570976278139',
     projectId: 'engagepoint-a2c47',
     storageBucket: 'engagepoint-a2c47.firebasestorage.app',
-    androidClientId: '570976278139-rlil54os35t7h44t4fve17vj6av35vj6.apps.googleusercontent.com',
+    androidClientId: '570976278139-gbnq7ocseqjiu3akaivn0srsh21ais00.apps.googleusercontent.com',
     iosClientId: '570976278139-3m7ok8amg6r1au9t2e5je94edm3h41mu.apps.googleusercontent.com',
     iosBundleId: 'com.groups11.engagepoint.flutterApp',
   );
