@@ -16,22 +16,22 @@ class _AdminPageState extends State<AdminPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2, // The number of tabs
+      length: 2, 
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Admin Dashboard"),
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          bottom: const TabBar(
-            tabs: [
+          bottom: TabBar(
+            tabs: const [
               Tab(
                   icon: Icon(Icons.verified_user_outlined),
                   text: 'Verification'),
               Tab(icon: Icon(Icons.flag_outlined), text: 'Moderation'),
             ],
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
+            indicatorColor: Theme.of(context).colorScheme.onPrimary,
+            labelColor: Theme.of(context).colorScheme.onPrimary,
+            unselectedLabelColor: Theme.of(context).colorScheme.onPrimary,
           ),
         ),
         body: SafeArea(
@@ -75,7 +75,8 @@ class _AdminPageState extends State<AdminPage> {
 
             String requestedAt = 'Unknown request time';
             if (business.verificationRequestedAt != null) {
-              requestedAt = DateFormat('MMM dd, yyyy - hh:mm a').format(business.verificationRequestedAt!.toDate());
+              requestedAt = DateFormat('MMM dd, yyyy - hh:mm a')
+                  .format(business.verificationRequestedAt!.toDate());
             }
 
             return Card(
@@ -91,7 +92,7 @@ class _AdminPageState extends State<AdminPage> {
                     const SizedBox(height: 4),
                     Text(business.email,
                         style: TextStyle(color: Colors.grey[600])),
-                        const SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text('Requested: $requestedAt',
                         style: TextStyle(
                             color: Colors.grey[600],
@@ -125,7 +126,7 @@ class _AdminPageState extends State<AdminPage> {
                 ),
               ),
             );
-          }
+          },
         );
       },
     );
@@ -138,7 +139,8 @@ class _AdminPageState extends State<AdminPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.flag_circle_outlined, size: 80, color: Colors.grey[400]),
+            Icon(Icons.flag_circle_outlined,
+                size: 80, color: Colors.grey[400]),
             const SizedBox(height: 24),
             Text(
               "Content Moderation",
@@ -147,7 +149,7 @@ class _AdminPageState extends State<AdminPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Posts flagged by the Python moderation service for review will appear here.",
+              "Future plans for content moderation will be implemented here.",
               style: Theme.of(context)
                   .textTheme
                   .bodyLarge
