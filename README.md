@@ -42,19 +42,19 @@ EngagePoint bridges this gap by providing an affordable, customizable mobile pla
 
 | Email Login | Google Login | Sign-Up |
 | :---: | :---: | :---: |
-| ![Email Login GIF](READMEassets/EmailLogin.gif) | ![Google Login](READMEassets/GoogleLogin.gif) | ![SignUp](READMEassets/SignUp.gif) |
+| ![Email Login GIF](ReadMeAssets/EmailLogin.gif) | ![Google Login](ReadMeAssets/GoogleLogin.gif) | ![SignUp](ReadMeAssets/SignUp.gif) |
 
 | Feed Demo & Tag Filtering | Posts & Reviews | Creating Posts & Editing Details |
 | :---: | :---: | :---: |
-| ![Feed & Tag Filtering](READMEassets/AppDemo.gif) | ![Post Reviews](READMEassets/PostsReviews.gif) | ![Edit](READMEassets/Editing.gif) | 
+| ![Feed & Tag Filtering](ReadMeAssets/AppDemo.gif) | ![Post Reviews](ReadMeAssets/PostsReviews.gif) | ![Edit](ReadMeAssets/Editing.gif) | 
 
 | Business Website & Locations | Business DashBoards |
 | :---: | :---: |
-| ![WebsiteLocations](READMEassets/WebsiteLocations.gif) | ![Business Dashboard](READMEassets/BusinessDashboard.gif) | 
+| ![WebsiteLocations](ReadMeAssets/WebsiteLocations.gif) | ![Business Dashboard](ReadMeAssets/BusinessDashboard.gif) | 
 
 | Rewards & Progression | Settings |
 | :---: | :---: |
-| ![rewards](READMEassets/RewardWheel.gif) | ![settings](READMEassets/Settings.gif) |
+| ![rewards](ReadMeAssets/RewardWheel.gif) | ![settings](ReadMeAssets/Settings.gif) |
 
 ## Architecture & Tech Stack
 
@@ -135,7 +135,6 @@ This project is licensed under the Apache License 2.0 – see the LICENSE file f
 ## Possible Future Improvements
 
 * Web dashboard for businesses
-* Scheduled content publishing
 * Advanced AI-driven detection for prohibited content
 * Advanced fraud detection for fake businesses
 
