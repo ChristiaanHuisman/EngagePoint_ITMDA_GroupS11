@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/user_model.dart'; // Make sure this path is correct
+import 'package:flutter_app/models/user_model.dart'; 
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 
@@ -34,7 +34,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   String? _existingImageUrl;
   bool _isLoading = false;
 
-  // For the business verification microservice part
+  // For the business verification microservice 
   String? _verificationMessage;
   bool _hasRequestedVerification = false;
   bool _isVerificationLocked = false;

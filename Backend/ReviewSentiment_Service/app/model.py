@@ -5,7 +5,7 @@ from firebase_admin import credentials, firestore
 # Build the absolute path to the Firebase credential file
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 cred_path = os.path.join(
-    BASE_DIR, "engagepoint-a2c47-firebase-adminsdk-fbsvc-1c1a597ea3.json")
+    BASE_DIR, "engagepoint-a2c47-firebase-adminsdk-fbsvc-a192339a5a.json")
 
 # Initialize Firebase only once
 if not firebase_admin._apps:

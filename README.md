@@ -1,21 +1,19 @@
-EngagePoint App - SME Engagement Application
+# EngagePoint App - SME Engagement Application
 
----
 
-Table of Contents
-1. Overview
-2. Features
-3. Architecture & Tech Stack
-4. Project Structure
-5. Installation & Setup
-6. Usage
-7. Contributors
-8. License
-9. Future Improvements
+## Table of Contents
+1. **Overview**
+2. **Features**
+3. **Architecture & Tech Stack**
+4. **Project Structure**
+5. **Installation & Setup**
+6. **Usage**
+7. **Contributors**
+8. **License**
+9. **Future Improvements**
 
----
 
-Overview
+## Overview
 
 Small and medium-sized enterprises (SMEs) often struggle to maintain consistent customer engagement in a mobile-
 first digital world. While large companies rely on expensive apps and marketing platforms, SMEs usually lack the
@@ -26,9 +24,7 @@ EngagePoint bridges this gap by providing an affordable, customizable mobile pla
 - Showcase promotions and catalogues
 - Send notifications that respect customer preferences and encourages engagement
 
----
-
-Features
+## Features
 
 - User Roles
   - Subscribers: follow businesses, view feeds, browse catalogues
@@ -41,28 +37,44 @@ Features
 - Business analytics dashboard
 - Admin moderation & verification tools
 
----
 
-Architecture & Tech Stack
+## Core Feature GIFs
 
-Frontend:
-- Flutter (Dart) – Cross-platform mobile app (Android + iOS)  
+| Email Login | Google Login | Sign-Up |
+| :---: | :---: | :---: |
+| ![Email Login GIF](READMEassets/EmailLogin.gif) | ![Google Login](READMEassets/GoogleLogin.gif) | ![SignUp](READMEassets/SignUp.gif) |
 
-Backend (Core):
-- Firebase Auth – User authentication & role management  
-- Firestore – NoSQL database for users, businesses, posts, products, reviews  
-- Firebase Cloud Messaging – Push notifications  
-- Firebase Cloud Functions – Event-driven logic  
-- Firebase Analytics + BigQuery – Engagement tracking  
+| Feed Demo & Tag Filtering | Posts & Reviews | Creating Posts & Editing Details |
+| :---: | :---: | :---: |
+| ![Feed & Tag Filtering](READMEassets/AppDemo.gif) | ![Post Reviews](READMEassets/PostsReviews.gif) | ![Edit](READMEassets/Editing.gif) | 
 
-Backend (Microservices):
-- Java – Content Scheduler
-- C# (ASP.NET Core) – Engagement analytics & [Business Verification](https://github.com/ChristiaanHuisman/BusinessVerification_Service)  
-- Python – Sentiment analysis & content moderation  
+| Business Website & Locations | Business DashBoards |
+| :---: | :---: |
+| ![WebsiteLocations](READMEassets/WebsiteLocations.gif) | ![Business Dashboard](READMEassets/BusinessDashboard.gif) | 
 
----
+| Rewards & Progression | Settings |
+| :---: | :---: |
+| ![rewards](READMEassets/RewardWheel.gif) | ![settings](READMEassets/Settings.gif) |
 
-Project Structure
+## Architecture & Tech Stack
+
+### Frontend:
+- **Flutter (Dart)** – Cross-platform mobile app (Android + iOS)  
+
+### Backend (Core):
+- **Firebase Auth** – User authentication & role management  
+- **Firestore** – NoSQL database for users, businesses, posts, products, reviews  
+- **Firebase Cloud Messaging** – Push notifications  
+- **Firebase Cloud Functions** – Event-driven logic  
+- **Firebase Analytics + BigQuery** – Engagement tracking  
+
+### Backend (Microservices):
+- **Java** – Content Scheduler
+- **C# (ASP.NET Core)** – Engagement analytics & business verification  
+- **Python** – Sentiment analysis & content moderation  
+
+
+## Project Structure
 
 ```
 EngagePoint_ITMDA_GroupS11/
@@ -84,33 +96,29 @@ EngagePoint_ITMDA_GroupS11/
 └─ SETUP.md               # Setup guide to work on and run the project
 ```
 
----
 
-Installation & Setup
+##  Installation & Setup
 
-Prerequisites
-- Flutter SDK (https://docs.flutter.dev/get-started/install)
-- Firebase CLI (https://firebase.google.com/docs/cli)
-- Docker (https://www.docker.com/) (for microservices)
-- .NET 8 SDK (https://dotnet.microsoft.com/download) (for C# services)
-- Java 21 (https://adoptium.net/) (for recommendation engine)
-- Python 3.10+ (https://www.python.org/) (for sentiment/moderation services)
+### Prerequisites
+- **Flutter SDK** (https://docs.flutter.dev/get-started/install)
+- **Firebase CLI** (https://firebase.google.com/docs/cli)
+- **Docker** (https://www.docker.com/) (for microservices)
+- **.NET 8** SDK (https://dotnet.microsoft.com/download) (for C# services)
+- **Java 21** (https://adoptium.net/) (for recommendation engine)
+- **Python 3.10+** (https://www.python.org/) (for sentiment/moderation services)
 
 See SETUP.md for further detail.
 
----
 
-Usage
+## Usage
 
-* Subscribers: Follow businesses, browse feeds, engages with notifications
-* Businesses: Post promotions, manage catalogues, view analytics
-* Admins: Verify businesses, moderate flagged posts
+* **Subscribers:** Follow businesses, browse feeds, engages with notifications
+* **Businesses:** Post promotions, manage catalogues, view analytics
+* **Admins:** Verify businesses, moderate flagged posts
 
----
+## Contributors
 
-Contributors
-
-EngagePoint App Group S11 – Eduvos
+### EngagePoint App Group S11 – Eduvos
 
 * Benjamin Dähn (https://github.com/BenjaminDahn)
 * Kieran Horsford (https://github.com/KieranH2001)
@@ -120,15 +128,11 @@ EngagePoint App Group S11 – Eduvos
 * Durotimi Samuel (https://github.com/Timi-Samuel)
 * Supervisor: Ntombesisa Mateyisi (ntombesisa.mateyisi@eduvos.com)
 
----
-
-License
+## License
 
 This project is licensed under the Apache License 2.0 – see the LICENSE file for details.
 
----
-
-Possible Future Improvements
+## Possible Future Improvements
 
 * Web dashboard for businesses
 * Scheduled content publishing

@@ -3,10 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/rewards_model.dart';
 import 'wheel_painter.dart';
+import 'countdown_timer.dart'; 
 
 class RewardWheel extends StatefulWidget {
-  final int spinsAvailable;
-  const RewardWheel({super.key, this.spinsAvailable = 0});
+  final DateTime nextFreeSpinAt; 
+  final String userId;
+
+  const RewardWheel({
+    super.key, 
+    required this.nextFreeSpinAt, 
+    required this.userId 
+  });
 
   @override
   State<RewardWheel> createState() => _RewardWheelState();
@@ -37,7 +44,12 @@ class _RewardWheelState extends State<RewardWheel>
       if (status == AnimationStatus.completed) {
         if (_selectedIndexForSpin != null) {
           final rewardsData = Provider.of<RewardsData>(context, listen: false);
-          rewardsData.endSpin(rewardsData.rewards[_selectedIndexForSpin!]);
+          
+          rewardsData.endSpin(
+            rewardsData.rewards[_selectedIndexForSpin!], 
+            widget.userId
+          ); 
+
           setState(() {
             _currentAngle = _rotationAnimation.value % (2 * pi);
           });
@@ -52,9 +64,15 @@ class _RewardWheelState extends State<RewardWheel>
     super.dispose();
   }
 
+  bool get _isSpinReady {
+    return DateTime.now().isAfter(widget.nextFreeSpinAt);
+  }
+
   void _spinTheWheel() {
     final rewardsData = Provider.of<RewardsData>(context, listen: false);
-    if (rewardsData.isSpinning || widget.spinsAvailable <= 0) return;
+    
+    // Validation Check
+    if (rewardsData.isSpinning || !_isSpinReady) return;
 
     rewardsData.startSpin();
 
@@ -63,11 +81,8 @@ class _RewardWheelState extends State<RewardWheel>
     _selectedIndexForSpin = selectedIndex;
 
     final double targetAngle = (2 * pi * selectedIndex / numRewards);
-
     final double randomSpins = (_random.nextInt(4) + 5) * 2 * pi;
-
     final double endAngle = randomSpins - targetAngle;
-
     final double beginAngle = _currentAngle;
 
     _rotationAnimation = Tween<double>(
@@ -123,33 +138,42 @@ class _RewardWheelState extends State<RewardWheel>
           ),
         ),
         const SizedBox(height: 20),
+        
         Consumer<RewardsData>(
           builder: (BuildContext context, RewardsData rewards, Widget? child) {
-            final bool canSpin =
-                !rewards.isSpinning && widget.spinsAvailable > 0;
-            return ElevatedButton.icon(
-              icon: rewards.isSpinning
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.refresh),
-              label:
-                  Text(rewards.isSpinning ? "Spinning..." : "Spin for Reward"),
-              onPressed: canSpin ? _spinTheWheel : null,
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                textStyle: const TextStyle(fontSize: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
+            
+            //  If Spinning, show Loading Button
+            if (rewards.isSpinning) {
+              return ElevatedButton.icon(
+                 icon: const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                 label: const Text("Spinning..."),
+                 onPressed: null,
+                 style: _buttonStyle(),
+              );
+            }
+
+            //  If Ready  show Spin Button
+            if (_isSpinReady) {
+               return ElevatedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text("Spin for Reward"),
+                onPressed: _spinTheWheel,
+                style: _buttonStyle(),
+              );
+            }
+
+            //  If Not Ready, Show Countdown
+            return SpinCountdown(
+              targetDate: widget.nextFreeSpinAt,
+              onTimerFinished: () {
+                setState(() {
+                  // Rebuilds to show button
+                });
+              },
             );
           },
         ),
+        
         const SizedBox(height: 20),
         Consumer<RewardsData>(
           builder: (BuildContext context, RewardsData rewards, Widget? child) {
@@ -183,6 +207,16 @@ class _RewardWheelState extends State<RewardWheel>
           },
         ),
       ],
+    );
+  }
+
+  ButtonStyle _buttonStyle() {
+    return ElevatedButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+      textStyle: const TextStyle(fontSize: 18),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(30),
+      ),
     );
   }
 }

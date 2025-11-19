@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 
@@ -15,22 +16,22 @@ class _AdminPageState extends State<AdminPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2, // The number of tabs
+      length: 2, 
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Admin Dashboard"),
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          bottom: const TabBar(
-            tabs: [
+          bottom: TabBar(
+            tabs: const [
               Tab(
                   icon: Icon(Icons.verified_user_outlined),
                   text: 'Verification'),
               Tab(icon: Icon(Icons.flag_outlined), text: 'Moderation'),
             ],
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
+            indicatorColor: Theme.of(context).colorScheme.onPrimary,
+            labelColor: Theme.of(context).colorScheme.onPrimary,
+            unselectedLabelColor: Theme.of(context).colorScheme.onPrimary,
           ),
         ),
         body: SafeArea(
@@ -72,6 +73,12 @@ class _AdminPageState extends State<AdminPage> {
           itemBuilder: (context, index) {
             final business = pendingBusinesses[index];
 
+            String requestedAt = 'Unknown request time';
+            if (business.verificationRequestedAt != null) {
+              requestedAt = DateFormat('MMM dd, yyyy - hh:mm a')
+                  .format(business.verificationRequestedAt!.toDate());
+            }
+
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Padding(
@@ -85,14 +92,19 @@ class _AdminPageState extends State<AdminPage> {
                     const SizedBox(height: 4),
                     Text(business.email,
                         style: TextStyle(color: Colors.grey[600])),
+                    const SizedBox(height: 8),
+                    Text('Requested: $requestedAt',
+                        style: TextStyle(
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                            fontSize: 12)),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
                           onPressed: () {
-                            _firestoreService.updateUserStatus(
-                                business.uid, 'rejected');
+                            _firestoreService.rejectBusiness(business.uid);
                           },
                           child: const Text('Reject',
                               style: TextStyle(color: Colors.red)),
@@ -100,8 +112,7 @@ class _AdminPageState extends State<AdminPage> {
                         const SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: () {
-                            _firestoreService.updateUserStatus(
-                                business.uid, 'verified');
+                            _firestoreService.approveBusiness(business.uid);
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
@@ -128,7 +139,8 @@ class _AdminPageState extends State<AdminPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.flag_circle_outlined, size: 80, color: Colors.grey[400]),
+            Icon(Icons.flag_circle_outlined,
+                size: 80, color: Colors.grey[400]),
             const SizedBox(height: 24),
             Text(
               "Content Moderation",
@@ -137,7 +149,7 @@ class _AdminPageState extends State<AdminPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Posts flagged by the Python moderation service for review will appear here.",
+              "Future plans for content moderation will be implemented here.",
               style: Theme.of(context)
                   .textTheme
                   .bodyLarge

@@ -21,9 +21,15 @@ class _DiscoverPageState extends State<DiscoverPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  String _sortBy = 'createdAt'; // Default sort by date
+  String _sortBy = 'createdAt'; 
   String? _selectedTag;
-  final List<String> _postTags = ['Promotion', 'Sale', 'Event', 'New Stock', 'Update'];
+  final List<String> _postTags = [
+    'Promotion',
+    'Sale',
+    'Event',
+    'New Stock',
+    'Update'
+  ];
 
   @override
   void initState() {
@@ -147,23 +153,24 @@ class _DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
- Widget _buildFilterBar() {
+  Widget _buildFilterBar() {
     final Color borderColor = Colors.grey.shade400;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 5.0),
       child: Row(
         children: [
-          // Sort By Dropdown (Date & Likes)
+          // Sort By Dropdown 
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0), 
-            
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _sortBy,
                 items: const [
-                  DropdownMenuItem(value: 'createdAt', child: Text('Most Recent')),
-                  DropdownMenuItem(value: 'reactionCount', child: Text('Most Liked')),
+                  DropdownMenuItem(
+                      value: 'createdAt', child: Text('Most Recent')),
+                  DropdownMenuItem(
+                      value: 'reactionCount', child: Text('Most Liked')),
                 ],
                 onChanged: (value) {
                   if (value != null) {
@@ -187,19 +194,18 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: FilterChip(
                       label: Text(tag),
-                      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                      selectedColor:
+                          Theme.of(context).colorScheme.primaryContainer,
                       selected: isSelected,
-
                       shape: StadiumBorder(
                         side: BorderSide(color: borderColor, width: 1.0),
                       ),
-
                       onSelected: (selected) {
                         setState(() {
                           if (selected) {
                             _selectedTag = tag;
                           } else {
-                            _selectedTag = null; // De-select
+                            _selectedTag = null; 
                           }
                         });
                       },
@@ -234,7 +240,6 @@ class DiscoverPageWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        
         DiscoverFeed(sortBy: sortBy, tag: tag),
         if (searchQuery.trim().isNotEmpty)
           DiscoverSearchResults(
@@ -251,7 +256,6 @@ class DiscoverFeed extends StatelessWidget {
   final String sortBy;
   final String? tag;
   const DiscoverFeed({super.key, required this.sortBy, this.tag});
-  
 
   @override
   Widget build(BuildContext context) {
@@ -331,7 +335,26 @@ class DiscoverSearchResults extends StatelessWidget {
                       ? Icon(business.isBusiness ? Icons.store : Icons.person)
                       : null,
                 ),
-                title: Text(business.name),
+                title: Row(
+                  mainAxisSize:
+                      MainAxisSize.min, 
+                  children: [
+                    Flexible(
+                      child: Text(
+                        business.name,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4), 
+                    if (business.verificationStatus == 'accepted') 
+                    Icon(
+                      Icons.verified,
+                      color: Theme.of(context).colorScheme.primary,
+                      size:
+                          20.0, 
+                    ),
+                  ],
+                ),
                 onTap: () {
                   onNavigate(business.uid);
                 },

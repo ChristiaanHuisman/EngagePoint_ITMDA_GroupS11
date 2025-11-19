@@ -27,4 +27,22 @@ class StorageService {
       rethrow;
     }
   }
+
+  /// Deletes a file from Firebase Storage using its download URL.
+  Future<void> deleteByUrl(String imageUrl) async {
+    try {
+      // refFromURL throws if the URL cannot be parsed as a Storage reference.
+      final ref = _storage.refFromURL(imageUrl);
+      await ref.delete();
+      debugPrint(' Image deleted successfully: $imageUrl');
+    } on FirebaseException catch (e) {
+      if (e.code == 'object-not-found' || e.code == '404') {
+        debugPrint('Delete skipped — object not found: $imageUrl');
+      } else {
+        debugPrint('Firebase exception deleting image: ${e.code} - ${e.message}');
+      }
+    } catch (e) {
+      debugPrint('Failed to delete image: $e');
+    }
+  }
 }

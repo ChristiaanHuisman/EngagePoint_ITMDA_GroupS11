@@ -12,6 +12,7 @@ class UserModel {
   final String? description;
   final int points;
   final int spinsAvailable;
+  final DateTime nextFreeSpinAt;
   final List<String> notificationTags;
   final Timestamp createdAt;
   final String? timezone;
@@ -22,6 +23,7 @@ class UserModel {
   final bool emailVerified;
   final String verificationStatus;
   final String? website;
+  final Timestamp? verificationRequestedAt;
 
 
   UserModel({
@@ -35,6 +37,7 @@ class UserModel {
     this.description,
     this.points = 0,
     this.spinsAvailable = 0,
+    required this.nextFreeSpinAt,
     this.notificationTags = const [],
     required this.createdAt,
     this.timezone,
@@ -45,10 +48,15 @@ class UserModel {
     required this.emailVerified,
     required this.verificationStatus,
     this.website,
+    this.verificationRequestedAt,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+    Timestamp? spinTs = data['nextFreeSpinAt'];
+    DateTime spinDate = spinTs?.toDate() ?? DateTime(2000);
+
     return UserModel(
       uid: doc.id,
       name: data['name'] ?? 'No Name',
@@ -60,6 +68,7 @@ class UserModel {
       description: data['description'],
       points: data['points'] ?? 0,
       spinsAvailable: data['spinsAvailable'] ?? 0,
+      nextFreeSpinAt: spinDate,
       notificationTags: List<String>.from(data['notificationTags'] ?? []),
       createdAt: data['createdAt'] ?? Timestamp.now(),
       timezone: data['timezone'],
@@ -70,6 +79,7 @@ class UserModel {
       emailVerified: data['emailVerified'] ?? false,
       verificationStatus: data['verificationStatus'] ?? 'notStarted',
       website: data['website'],
+      verificationRequestedAt: data['verificationRequestedAt'],
     );
   }
 
@@ -89,6 +99,7 @@ class UserModel {
       'description': description,
       'points': points,
       'spinsAvailable': spinsAvailable,
+      'nextFreeSpinAt': Timestamp.fromDate(nextFreeSpinAt),
       'notificationTags': notificationTags,
       'createdAt': createdAt,
       'timezone': timezone,
@@ -98,6 +109,7 @@ class UserModel {
       'emailVerified': emailVerified,
       'verificationStatus': verificationStatus,
       'website': website,
+      'verificationRequestedAt': verificationRequestedAt,
    
 
       "notificationPreferences": {

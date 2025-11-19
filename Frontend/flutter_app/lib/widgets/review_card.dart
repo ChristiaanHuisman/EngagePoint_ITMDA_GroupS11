@@ -215,23 +215,22 @@ class _ReviewCardState extends State<ReviewCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GestureDetector(
-                  onTap: () {
-                    final String targetUserId = widget.review.customerId;
-                    if (!widget.showBusinessName && targetUserId.isNotEmpty) {
-                      _navigateToUserProfile(context, targetUserId);
-                    }
-                  },
-                  child: CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.grey.shade300,
-                    backgroundImage: customerPhotoUrl != null
-                        ? NetworkImage(customerPhotoUrl)
-                        : null,
-                    child: customerPhotoUrl == null
-                        ? const Icon(Icons.person, color: Colors.white)
-                        : null,
-                  ),
+                onTap: () {
+                  final String targetUserId = widget.review.customerId;
+                  if (!widget.showBusinessName && targetUserId.isNotEmpty) {
+                    _navigateToUserProfile(context, targetUserId);
+                  }
+                },
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundImage: customerPhotoUrl != null
+                      ? NetworkImage(customerPhotoUrl)
+                      : null,
+                  child: customerPhotoUrl == null
+                      ? const Icon(Icons.person) 
+                      : null,
                 ),
+              ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

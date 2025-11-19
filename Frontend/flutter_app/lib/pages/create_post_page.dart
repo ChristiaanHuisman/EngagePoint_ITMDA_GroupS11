@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
+import '../services/moderation_service.dart';
 
 class CreatePostPage extends StatefulWidget {
   const CreatePostPage({super.key});
@@ -30,6 +32,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
     'Update'
   ];
 
+  bool _isScheduled = false;
+  DateTime? _scheduledTime;
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -47,6 +52,34 @@ class _CreatePostPageState extends State<CreatePostPage> {
     }
   }
 
+  Future<void> _pickScheduleDateTime() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _scheduledTime ?? DateTime.now().add(const Duration(hours: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (pickedDate != null && mounted) {
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_scheduledTime ?? DateTime.now().add(const Duration(hours: 1))),
+      );
+
+      if (pickedTime != null) {
+        setState(() {
+          _scheduledTime = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
+    }
+  }
+
   // Helper function to get the aspect ratio from image data
   Future<double> _getImageAspectRatio(Uint8List imageData) async {
     final image = await decodeImageFromList(imageData);
@@ -55,6 +88,16 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   Future<void> _submitPost() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Check schedule time before upload
+    if (_isScheduled && _scheduledTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Please select a schedule time'),
+            backgroundColor: Colors.red),
+      );
       return;
     }
 
@@ -70,20 +113,60 @@ class _CreatePostPageState extends State<CreatePostPage> {
         imageAspectRatio = await _getImageAspectRatio(_imageData!);
       }
 
+      // MODERATION INJECTION START
+      final ModerationService moderationService = ModerationService();
+
+      try {
+        // Moderate text content
+        final ModerationResult textResult =
+            await moderationService.moderateText(_contentController.text);
+        
+        if (!textResult.approved) {
+          final reason = textResult.reason ?? 'Content not allowed';
+          throw Exception('Post rejected: $reason');
+        }
+
+        // Moderate image 
+        if (imageUrl != null) {
+          final ModerationResult imageResult =
+              await moderationService.moderateImage(imageUrl);
+          
+          if (!imageResult.approved) {
+            try {
+              await _storageService.deleteByUrl(imageUrl);
+            } catch (_) {
+           }
+            final reason = imageResult.reason ?? 'Image not allowed';
+            throw Exception('Image rejected: $reason');
+          }
+        }
+      } on ModerationException catch (me) {
+        // Convert moderation-specific error into a user-visible exception
+        throw Exception('Moderation failed: ${me.message}');
+      }
+      // MODERATION INJECTION END
+
+      // --- CONSOLIDATED POST CREATION ---
       await _firestoreService.createPost(
         title: _titleController.text,
         content: _contentController.text,
         imageUrl: imageUrl,
         imageAspectRatio: imageAspectRatio,
         tag: _selectedTag,
+        scheduledTime: _isScheduled ? _scheduledTime : null,
       );
 
       if (mounted) {
+        final successMessage = _isScheduled
+            ? 'Post scheduled for ${DateFormat.yMd().add_jm().format(_scheduledTime!)}'
+            : 'Post created successfully!';
+        
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post created successfully!')),
+          SnackBar(content: Text(successMessage)),
         );
         Navigator.of(context).pop();
       }
+      
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -183,6 +266,37 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   validator: (value) => value == null || value.isEmpty
                       ? 'Please enter content'
                       : null,
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                SwitchListTile(
+                  title: const Text('Schedule Post'),
+                  subtitle: const Text('Post this at a future date and time'),
+                  value: _isScheduled,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _isScheduled = value;
+                      if (!_isScheduled) {
+                        _scheduledTime = null;
+                      }
+                    });
+                  },
+                  activeThumbColor: Theme.of(context).colorScheme.primary,
+                ),
+                Visibility(
+                  visible: _isScheduled,
+                  child: ListTile(
+                    leading: const Icon(Icons.calendar_today),
+                    title: const Text('Publish Time'),
+                    subtitle: Text(
+                      _scheduledTime == null
+                          ? 'Select Date & Time'
+                          // Format the date/time
+                          : DateFormat.yMd().add_jm().format(_scheduledTime!),
+                    ),
+                    onTap: _pickScheduleDateTime,
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(

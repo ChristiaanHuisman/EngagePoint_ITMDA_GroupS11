@@ -16,8 +16,6 @@ class SignUpPageState extends State<SignUpPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
   bool _loading = false;
-
-  // state variable to track if the user is signing up as a business
   bool _isBusiness = false;
 
   Future<void> _signUp() async {
@@ -39,14 +37,19 @@ class SignUpPageState extends State<SignUpPage> {
     if (!mounted) return;
     setState(() => _loading = false);
 
+
     if (user != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
+      debugPrint("Sign Up Successful! Navigating to Home...");
+      
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const HomePage()),
+        (Route<dynamic> route) => false, 
       );
     } else {
+      debugPrint("Sign Up returned null.");
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Sign up failed")));
+          .showSnackBar(const SnackBar(content: Text("Sign up failed. Check debug console.")));
     }
   }
 

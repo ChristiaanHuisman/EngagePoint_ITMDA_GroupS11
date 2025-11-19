@@ -180,7 +180,7 @@ class _BusinessProfilePageState extends State<BusinessProfilePage> {
                       .headlineSmall
                       ?.copyWith(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center),
-              if (user.status == 'verified')
+              if (user.verificationStatus == 'accepted')
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0),
                   child: Icon(
@@ -449,7 +449,7 @@ class _PostsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<PostModel>>(
-      stream: firestoreService.getPostsForBusiness(userId),
+      stream: firestoreService.getPublishedPostsForBusiness(userId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
