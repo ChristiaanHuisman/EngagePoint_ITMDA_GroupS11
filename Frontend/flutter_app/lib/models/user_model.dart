@@ -55,7 +55,6 @@ class UserModel {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
     Timestamp? spinTs = data['nextFreeSpinAt'];
-    // If null, set to past so they can spin now
     DateTime spinDate = spinTs?.toDate() ?? DateTime(2000);
 
     return UserModel(

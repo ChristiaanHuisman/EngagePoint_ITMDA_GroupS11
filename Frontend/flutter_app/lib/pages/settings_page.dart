@@ -16,8 +16,8 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool? _autoReplyLocalValue; // Local value to instantly reflect toggle
-  bool _isLoadingAutoReply = true; // Track loading state for Firestore value
+  bool? _autoReplyLocalValue; 
+  bool _isLoadingAutoReply = true; 
   final AuthService _authService = AuthService();
   bool _isDeleting = false;
 
@@ -49,7 +49,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _showDeleteConfirmationDialog() async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: !_isDeleting, // Don't dismiss while loading
+      barrierDismissible: !_isDeleting, 
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Are you sure?'),
@@ -75,8 +75,8 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               child: const Text('Delete'),
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-                _deleteAccount(); // Start the deletion process
+                Navigator.of(context).pop(); 
+                _deleteAccount(); 
               },
             ),
           ],
@@ -86,10 +86,10 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _showReAuthDialog() async {
-    _passwordController.clear(); // Clear password on dialog open
+    _passwordController.clear(); 
     return showDialog<void>(
       context: context,
-      barrierDismissible: false, // User must enter password or cancel
+      barrierDismissible: false, 
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Recent Login Required'),
@@ -124,9 +124,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: const Text('Confirm & Delete'),
               onPressed: () {
                 final password = _passwordController.text;
-                Navigator.of(context).pop(); // Close the re-auth dialog
-
-                // Call the new re-auth delete function
+                Navigator.of(context).pop(); 
                 _reAuthenticateAndDelete(password);
               },
             ),
@@ -136,8 +134,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // --- NEW FUNCTION: _reAuthenticateAndDelete ---
-  // Perform re-authentication using Firebase directly, then delete via AuthService
   Future<void> _reAuthenticateAndDelete(String password) async {
     if (password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -150,7 +146,7 @@ class _SettingsPageState extends State<SettingsPage> {
     }
 
     setState(() {
-      _isDeleting = true; // Show loading overlay
+      _isDeleting = true; 
     });
 
     try {
@@ -164,16 +160,14 @@ class _SettingsPageState extends State<SettingsPage> {
         throw Exception('User email is not available for re-authentication.');
       }
 
-      // Create credential and reauthenticate
       final credential =
           EmailAuthProvider.credential(email: email, password: password);
       await user.reauthenticateWithCredential(credential);
 
-      // After successful re-authentication, delete account through AuthService
       await _authService.deleteUserAccount();
 
       if (!mounted) return;
-      // Success! Navigate to login page
+
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginPage()),
         (Route<dynamic> route) => false,
@@ -184,7 +178,6 @@ class _SettingsPageState extends State<SettingsPage> {
         _isDeleting = false;
       });
 
-      // Provide clearer feedback for auth-related errors
       String message = 'Delete failed: ${e.message ?? e.code}';
       if (e.code == 'wrong-password') {
         message = 'Delete failed: Wrong password.';
@@ -202,7 +195,6 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      // Show generic errors
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Delete failed: ${e.toString()}'),
@@ -225,19 +217,17 @@ class _SettingsPageState extends State<SettingsPage> {
       await _authService.deleteUserAccount();
 
       if (!mounted) return;
-      // On success, navigate out of the app to the login screen
+      // On success navigate out of the app to the login screen
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-            builder: (context) => const LoginPage()), // Or your AuthWrapper
-        (Route<dynamic> route) => false, // Remove all routes
+            builder: (context) => const LoginPage()), 
+        (Route<dynamic> route) => false,
       );
     
-    // --- THIS IS THE KEY CHANGE ---
-    // Catch the *specific* exception from Firebase
     } on FirebaseAuthException catch (e) { 
       if (!mounted) return;
       setState(() {
-        _isDeleting = false; // Hide overlay
+        _isDeleting = false; 
       });
 
       if (e.code == 'requires-recent-login') {
@@ -245,7 +235,6 @@ class _SettingsPageState extends State<SettingsPage> {
         _showReAuthDialog();
       
       } else {
-        // Show other Firebase errors
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Delete failed: ${e.message}'),
@@ -256,7 +245,6 @@ class _SettingsPageState extends State<SettingsPage> {
     
     } catch (e) {
       if (!mounted) return;
-      // Show generic errors
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Delete failed: ${e.toString()}'),

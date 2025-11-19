@@ -21,7 +21,7 @@ class LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    _loadUserEmail(); // Load email when the page starts
+    _loadUserEmail(); 
   }
 
   @override
@@ -32,13 +32,22 @@ class LoginPageState extends State<LoginPage> {
   }
 
   //  Method to load the saved email from device storage
-  void _loadUserEmail() async {
+  Future<void> _loadUserEmail() async {
     final prefs = await SharedPreferences.getInstance();
+    
     final String? email = prefs.getString('email');
-    if (email != null) {
+    
+    final bool rememberMe = prefs.getBool('remember_me') ?? false;
+
+    if (mounted) {
       setState(() {
-        _emailController.text = email;
-        _rememberMe = true;
+        // Only set the email if we have one AND the user wanted to be remembered
+        if (email != null && rememberMe) {
+          _emailController.text = email;
+          _rememberMe = true;
+        } else {
+           _rememberMe = false;
+        }
       });
     }
   }
@@ -48,8 +57,11 @@ class LoginPageState extends State<LoginPage> {
     final prefs = await SharedPreferences.getInstance();
     if (_rememberMe) {
       await prefs.setString('email', _emailController.text.trim());
+      await prefs.setBool('remember_me', true);
     } else {
+
       await prefs.remove('email');
+      await prefs.setBool('remember_me', false);
     }
   }
 
@@ -65,15 +77,12 @@ class LoginPageState extends State<LoginPage> {
     if (user != null) {
       await _handleRememberMe(); 
       
-
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomePage()),
         );
       }
-
-      
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login failed")),
@@ -88,7 +97,6 @@ class LoginPageState extends State<LoginPage> {
     setState(() => _loading = false);
 
     if (user != null) {
-
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -101,8 +109,6 @@ class LoginPageState extends State<LoginPage> {
       );
     }
   }
-
-  
 
   @override
   Widget build(BuildContext context) {

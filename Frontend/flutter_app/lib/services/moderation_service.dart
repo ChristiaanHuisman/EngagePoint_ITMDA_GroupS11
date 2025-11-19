@@ -1,4 +1,3 @@
-// lib/services/moderation_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,7 +12,7 @@ class ModerationException implements Exception {
 class ModerationResult {
   final bool approved;
   final String? reason;
-  final Map<String, dynamic>? raw; // raw body if you need it
+  final Map<String, dynamic>? raw;
   final int statusCode;
 
   ModerationResult({
@@ -24,7 +23,6 @@ class ModerationResult {
   });
 
   factory ModerationResult.fromResponse(int statusCode, Map<String, dynamic> body) {
-    // body shape depends on backend; adapt keys as needed
     final approved = body['approved'] == true || body['approved'] == 'true';
     final reason = body['reason']?.toString();
     return ModerationResult(approved: approved, reason: reason, raw: body, statusCode: statusCode);
@@ -32,19 +30,17 @@ class ModerationResult {
 }
 
 class ModerationService {
-  // Cloud Run URL — consider moving to .env if you change environments often
+  // Cloud Run URL 
   final String baseUrl = 'https://post-moderation-service-570976278139.africa-south1.run.app';
 
   Future<String?> _getIdToken() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      // In production, avoid printing sensitive info; you can log safely if needed.
       return null;
     }
 
     try {
-      // Get cached token; forceRefresh=false by default.
-      // This avoids unnecessary refreshes and respects Firebase token lifetime.
+      // Get cached token 
       final token = await user.getIdToken();
 
       if (token == null || token.isEmpty) {
@@ -53,7 +49,7 @@ class ModerationService {
 
       return token;
     } on FirebaseAuthException catch (e) {
-      // Handle known auth errors (user signed out, token revoked, etc.)
+      // Handle known auth errors
       throw ModerationException('Firebase Auth error: ${e.code}');
     } catch (e) {
       // Catch any other unexpected errors

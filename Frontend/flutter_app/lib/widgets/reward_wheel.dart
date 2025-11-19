@@ -152,7 +152,7 @@ class _RewardWheelState extends State<RewardWheel>
               );
             }
 
-            //  If Ready (Time Passed), show Spin Button
+            //  If Ready  show Spin Button
             if (_isSpinReady) {
                return ElevatedButton.icon(
                 icon: const Icon(Icons.refresh),

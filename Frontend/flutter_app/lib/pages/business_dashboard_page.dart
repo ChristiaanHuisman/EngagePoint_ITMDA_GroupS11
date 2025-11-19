@@ -492,7 +492,6 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
       }
     }
 
-    // Styling
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return LineChart(
@@ -772,7 +771,6 @@ class _BusinessDashboardPageState extends State<BusinessDashboardPage> {
           border: Border.all(color: Colors.grey, width: 1),
         ),
 
-        // --- 6. The Bars ---
         barGroups: barGroups,
         alignment: BarChartAlignment.spaceAround,
       ),

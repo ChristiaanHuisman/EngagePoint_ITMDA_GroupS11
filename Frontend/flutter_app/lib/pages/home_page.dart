@@ -228,7 +228,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
                           if (selected) {
                             _selectedTag = tag;
                           } else {
-                            _selectedTag = null; // De-select
+                            _selectedTag = null; 
                           }
                         });
                       },
@@ -253,16 +253,10 @@ class _FollowingFeedState extends State<FollowingFeed> {
       stream: _firestoreService.getUserStream(),
       builder: (context, userSnapshot) {
         
-        // 1. Wait for connection
         if (userSnapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-
         final userModel = userSnapshot.data;
-
-        // 2. FIX: Handling Null Data safely
-        // If data is null, it might just be loading the new document. 
-        // DO NOT LOG OUT. Just wait.
         if (userModel == null) {
           return const Scaffold(
             body: Center(
@@ -277,8 +271,6 @@ class _FollowingFeedState extends State<FollowingFeed> {
             ),
           );
         }
-
-        // 3. Data Loaded - Show the Feed
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -367,18 +359,12 @@ class _FollowingFeedState extends State<FollowingFeed> {
           final allPosts = postSnapshot.data!;
           
           final filteredPosts = allPosts.where((post) {
-            // 1. If no tag is selected in the UI, show all posts
             if (_selectedTag == null) {
               return true;
             }
-
-            // 2. FIX: Handle posts that don't have a tag.
-            // If a post's tag is null, it cannot match the selected tag, so return false.
             if (post.tag == null) {
               return false;
             }
-
-            // 3. Now it is safe to check because we know it isn't null
             return post.tag!.contains(_selectedTag!);
           }).toList();
 
@@ -408,9 +394,9 @@ class _FollowingFeedState extends State<FollowingFeed> {
           }
 
           return ListView.builder(
-            itemCount: filteredPosts.length, // Use filtered list
+            itemCount: filteredPosts.length, 
             itemBuilder: (context, index) =>
-                PostCard(post: filteredPosts[index]), // Use filtered list
+                PostCard(post: filteredPosts[index]), 
           );
         },
       );

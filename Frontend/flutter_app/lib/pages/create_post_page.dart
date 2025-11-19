@@ -91,7 +91,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       return;
     }
 
-    // Check schedule time *before* moderation/upload
+    // Check schedule time before upload
     if (_isScheduled && _scheduledTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -117,7 +117,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       final ModerationService moderationService = ModerationService();
 
       try {
-        // 1) Moderate text content
+        // Moderate text content
         final ModerationResult textResult =
             await moderationService.moderateText(_contentController.text);
         
@@ -126,17 +126,15 @@ class _CreatePostPageState extends State<CreatePostPage> {
           throw Exception('Post rejected: $reason');
         }
 
-        // 2) Moderate image (if uploaded)
+        // Moderate image 
         if (imageUrl != null) {
           final ModerationResult imageResult =
               await moderationService.moderateImage(imageUrl);
           
           if (!imageResult.approved) {
-            // optionally delete the uploaded image if it’s stored in Firebase
             try {
               await _storageService.deleteByUrl(imageUrl);
             } catch (_) {
-              // ignore deletion failure (log if you want)
            }
             final reason = imageResult.reason ?? 'Image not allowed';
             throw Exception('Image rejected: $reason');
@@ -149,9 +147,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
       // MODERATION INJECTION END
 
       // --- CONSOLIDATED POST CREATION ---
-      // This logic now handles both scheduled and immediate posts.
-      // Your _firestoreService.createPost method will need to accept
-      // the new 'scheduledTime' parameter.
       await _firestoreService.createPost(
         title: _titleController.text,
         content: _contentController.text,
@@ -281,7 +276,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   onChanged: (bool value) {
                     setState(() {
                       _isScheduled = value;
-                      // Optionally clear time if user toggles off
                       if (!_isScheduled) {
                         _scheduledTime = null;
                       }

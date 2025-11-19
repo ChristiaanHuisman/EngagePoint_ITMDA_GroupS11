@@ -157,9 +157,7 @@ class AuthService {
   Future<User?> signUpWithEmail(String email, String password, String name,
       {required bool isBusiness}) async {
     try {
-      debugPrint("--- STARTING SIGN UP ---");
       
-      // 1. Create Auth User
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -172,17 +170,14 @@ class AuthService {
         
         await user.updateDisplayName(name);
         
-        // 2. Create Firestore Document
         try {
           await _createUserDocument(user, name: name, isBusiness: isBusiness);
           debugPrint("Step 2 Success: Firestore Document Created");
         } catch (e) {
           debugPrint("Step 2 FAILED: Firestore Write Error: $e");
-          // We DO NOT delete the user here. We want to see if the Auth user stays.
-          rethrow; // Pass error to outer catch block
+          rethrow; 
         }
         
-        // 3. Setup Notifications
         try {
           await _notificationService.initAndSaveToken();
           debugPrint("Step 3 Success: Notifications Setup");
@@ -197,58 +192,36 @@ class AuthService {
       
     } catch (e) {
       debugPrint("CRITICAL SIGN UP ERROR: $e");
-      
-      // --- DEBUG CHANGE: DO NOT DELETE USER ---
-      // We are commenting this out so you can check the Firebase Console
-      // to see if the user was actually created in Authentication.
-      
-      // if (_auth.currentUser != null) {
-      //    await _auth.currentUser?.delete();
-      // }
-      
       return null;
     }
   }
-  /// Signs out the current user from Firebase Auth and Google Sign-In (if applicable).
+  /// Signs out the current user from Firebase Auth and Google Sign-In 
   Future<void> signOut() async {
     try {
-      // FIX 1: Only sign out of Google if the user is actually signed in with Google.
-      // This prevents the PlatformException.
       if (await _googleSignIn.isSignedIn()) {
         await _googleSignIn.signOut();
       }
     } catch (e) {
-      // This catch is important in case the channel is disconnected
-      // but 'isSignedIn' was still true.
       debugPrint("Error during Google sign out: $e");
     }
     // Always sign out of Firebase Auth
     await _auth.signOut();
   }
 
-  /// Deletes the user's Auth account and their Firestore document.
-  /// This function assumes the user has logged in recently.
-  /// If it fails with 'requires-recent-login', the UI should call [reAuthenticateAndDelete].
   Future<void> deleteUserAccount() async {
     try {
       final User? user = _auth.currentUser;
       if (user == null) {
         throw Exception("No user is currently logged in.");
       }
-      
-      // --- FIX 2: REVERSED THE ORDER ---
-      // 1. Delete Firestore data FIRST (while user is still logged in)
-      // This prevents a 'permission-denied' error.
+
       await _firestore.collection('users').doc(user.uid).delete();
 
-      // 2. Delete Auth user LAST
       await user.delete();
       
-      // 3. Sign out (this will now call our new, safe function)
       await signOut();
 
     } on FirebaseAuthException catch (_) {
-      // Re-throw the original error so the UI can read its 'code' (e.g., 'requires-recent-login')
       rethrow; 
     } catch (e) {
       throw Exception('An error occurred: ${e.toString()}');

@@ -223,12 +223,11 @@ class _ReviewCardState extends State<ReviewCard> {
                 },
                 child: CircleAvatar(
                   radius: 20,
-                  // REMOVED: backgroundColor: Colors.grey.shade300,
                   backgroundImage: customerPhotoUrl != null
                       ? NetworkImage(customerPhotoUrl)
                       : null,
                   child: customerPhotoUrl == null
-                      ? const Icon(Icons.person) // REMOVED: color: Colors.white
+                      ? const Icon(Icons.person) 
                       : null,
                 ),
               ),

@@ -21,7 +21,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  String _sortBy = 'createdAt'; // Default sort by date
+  String _sortBy = 'createdAt'; 
   String? _selectedTag;
   final List<String> _postTags = [
     'Promotion',
@@ -160,7 +160,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
       padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 5.0),
       child: Row(
         children: [
-          // Sort By Dropdown (Date & Likes)
+          // Sort By Dropdown 
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: DropdownButtonHideUnderline(
@@ -205,7 +205,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                           if (selected) {
                             _selectedTag = tag;
                           } else {
-                            _selectedTag = null; // De-select
+                            _selectedTag = null; 
                           }
                         });
                       },
