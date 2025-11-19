@@ -188,7 +188,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final idToken = await user?.getIdToken();
       final authToken = 'Bearer $idToken';
 
-      // Apply a 15 second timeout to the request
+      // Apply a 60 second timeout to the request
       final response = await http
           .get(
         Uri.parse(apiUrl),
@@ -198,7 +198,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         },
       )
           .timeout(
-        const Duration(seconds: 15),
+        const Duration(seconds: 60),
         onTimeout: () {
           throw TimeoutException('Connection timed out');
         },
@@ -324,7 +324,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                   if (widget.user.isBusiness) const SizedBox(height: 16),
 
-                  // End Business-Only Fields
                   TextFormField(
                     controller: _descriptionController,
                     decoration: InputDecoration(
@@ -387,7 +386,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                   ],
-
+                  // End Business-Only Fields
                 ],
               ),
             ),

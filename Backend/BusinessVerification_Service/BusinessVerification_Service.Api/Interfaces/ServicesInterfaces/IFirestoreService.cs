@@ -7,5 +7,10 @@
 
         Task SetDocumentByFirestorePath<T>(string documentPath, T document)
             where T : class;
+
+        Task DeleteDocumentFromFirestore(string documentPath);
+
+        Task DeleteDocumentsFromCollectionByField(string collectionName, string fieldName,
+            string fieldValue);
     }
 }

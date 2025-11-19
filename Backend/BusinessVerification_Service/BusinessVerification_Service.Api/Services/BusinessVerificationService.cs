@@ -18,12 +18,14 @@ namespace BusinessVerification_Service.Api.Services
         private readonly IFirestoreService _firestoreService;
         private readonly INormalizationAndValidationHelper
             _normalizationAndValidationHelper;
+        private readonly IEmailVerificationService _emailVerificationService;
 
         // Constructor for dependency injection
         public BusinessVerificationService(IDomainParser domainParser,
             IFirebaseHelper firebaseHelper, IDomainNameHelper domainNameHelper,
             IWebsiteAddressHelper websiteAddressHelper, IFirestoreService firestoreService,
-            INormalizationAndValidationHelper normalizationAndValidationHelper)
+            INormalizationAndValidationHelper normalizationAndValidationHelper,
+            IEmailVerificationService emailVerificationService)
         {
             _domainParser = domainParser;
             _firebaseHelper = firebaseHelper;
@@ -31,9 +33,10 @@ namespace BusinessVerification_Service.Api.Services
             _websiteAddressHelper = websiteAddressHelper;
             _firestoreService = firestoreService;
             _normalizationAndValidationHelper = normalizationAndValidationHelper;
+            _emailVerificationService = emailVerificationService;
         }
 
-        // Standard error message ending for displaying user error messages
+        // Standard respnose messages
         const string errorMessageEnd = "Please ensure all account details are correct " +
             "and try again in a few minutes, contact support if the issue persists.";
 
@@ -88,8 +91,7 @@ namespace BusinessVerification_Service.Api.Services
             try
             {
                 // Remove tag or set as null
-                string? authorizationToken = authorizationHeader?
-                    .Trim().Replace("Bearer ", "");
+                string? authorizationToken = authorizationHeader?.Trim().Replace("Bearer ", "");
                 if (string.IsNullOrWhiteSpace(authorizationToken))
                 {
                     // Returning a response
@@ -225,6 +227,18 @@ namespace BusinessVerification_Service.Api.Services
                     return responseDto;
                 }
 
+                // Check if the top level domain is in the public suffix list
+                if (string.IsNullOrWhiteSpace(parsedEmailDomain?.topLevelDomain)
+                    || string.IsNullOrWhiteSpace(parsedWebsiteDomain?.topLevelDomain))
+                {
+                    // Execute writing to Firestore documents and returning a response
+                    responseDto.message = $"Top level domain not recognized. {errorMessageEnd}";
+                    await _firestoreService.SetDocumentByFirestorePath(firestoreUserDocumentPath, userModel);
+                    await _firestoreService.SetDocumentByFirestorePath(
+                        firestoreBusinessVerificationDocumentPath, businessVerificationModel);
+                    return responseDto;
+                }
+
                 // Use parsed domain information to check if email and website domains match
                 if (parsedEmailDomain.registrableDomain != parsedWebsiteDomain.registrableDomain)
                 {
@@ -257,12 +271,7 @@ namespace BusinessVerification_Service.Api.Services
                         }
                         else
                         {
-                            // Call method to trigger the email verification process
-                            //
-                            // This process is not implemented yet, as using a free domain to
-                            // send transactional emails reliably needs a bit of a
-                            // workaround, but it does seem possible in ASP.NET Core
-
+                            await _emailVerificationService.NewVerificationEmail(userModel, userId);
                             userModel.verificationStatus = userVerificationStatus.pendingEmail;
                             businessVerificationModel.SetVerificationStatus(userModel);
                         }
@@ -277,12 +286,7 @@ namespace BusinessVerification_Service.Api.Services
                         }
                         else
                         {
-                            // Call method to trigger the email verification process
-                            //
-                            // This process is not implemented yet, as using a free domain to
-                            // send transactional emails reliably needs a bit of a
-                            // workaround, but it does seem possible in ASP.NET Core
-
+                            await _emailVerificationService.NewVerificationEmail(userModel, userId);
                             userModel.verificationStatus = userVerificationStatus.pendingEmail;
                             businessVerificationModel.SetVerificationStatus(userModel);
                         }
@@ -337,11 +341,12 @@ namespace BusinessVerification_Service.Api.Services
                 return responseDto;
             }
             // Handle unexpected errors gracefully
-            catch
+            catch (Exception exception)
             {
                 // Returning a response
                 responseDto.message = $"An unexpected error occured during your " +
                     $"business verification request process. {errorMessageEnd}";
+                Console.WriteLine($"Failed process business verification: {exception.Message}");
                 return responseDto;
             }
         }

@@ -2,7 +2,7 @@
 
 namespace BusinessVerification_Service.Test.HelpersTests
 {
-    [Trait("Catagory", "WebsiteAddressHelper Unit Testing")]
+    [Trait("Category", "WebsiteAddressHelper Unit Testing")]
     public class WebsiteAddressHelperTest
     {
         // Injected dependencies
