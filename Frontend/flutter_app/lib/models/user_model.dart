@@ -11,6 +11,7 @@ class UserModel {
   final String? businessType;
   final String? description;
   final int points;
+  final int spinsAvailable;
   final DateTime nextFreeSpinAt;
   final List<String> notificationTags;
   final Timestamp createdAt;
@@ -35,6 +36,7 @@ class UserModel {
     this.businessType,
     this.description,
     this.points = 0,
+    this.spinsAvailable = 0,
     required this.nextFreeSpinAt,
     this.notificationTags = const [],
     required this.createdAt,
@@ -66,6 +68,7 @@ class UserModel {
       businessType: data['businessType'],
       description: data['description'],
       points: data['points'] ?? 0,
+      spinsAvailable: data['spinsAvailable'] ?? 0,
       nextFreeSpinAt: spinDate,
       notificationTags: List<String>.from(data['notificationTags'] ?? []),
       createdAt: data['createdAt'] ?? Timestamp.now(),
@@ -96,6 +99,7 @@ class UserModel {
       'businessType': businessType,
       'description': description,
       'points': points,
+      'spinsAvailable': spinsAvailable,
       'nextFreeSpinAt': Timestamp.fromDate(nextFreeSpinAt),
       'notificationTags': notificationTags,
       'createdAt': createdAt,

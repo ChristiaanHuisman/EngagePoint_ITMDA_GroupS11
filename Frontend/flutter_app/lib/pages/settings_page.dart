@@ -137,7 +137,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   // --- NEW FUNCTION: _reAuthenticateAndDelete ---
-  // This calls the new function in your auth service
+  // Perform re-authentication using Firebase directly, then delete via AuthService
   Future<void> _reAuthenticateAndDelete(String password) async {
     if (password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -154,7 +154,23 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     try {
-      await _authService.reAuthenticateAndDelete(password);
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('No user is currently signed in.');
+      }
+
+      final email = user.email;
+      if (email == null || email.isEmpty) {
+        throw Exception('User email is not available for re-authentication.');
+      }
+
+      // Create credential and reauthenticate
+      final credential =
+          EmailAuthProvider.credential(email: email, password: password);
+      await user.reauthenticateWithCredential(credential);
+
+      // After successful re-authentication, delete account through AuthService
+      await _authService.deleteUserAccount();
 
       if (!mounted) return;
       // Success! Navigate to login page
@@ -162,9 +178,31 @@ class _SettingsPageState extends State<SettingsPage> {
         MaterialPageRoute(builder: (context) => const LoginPage()),
         (Route<dynamic> route) => false,
       );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isDeleting = false;
+      });
+
+      // Provide clearer feedback for auth-related errors
+      String message = 'Delete failed: ${e.message ?? e.code}';
+      if (e.code == 'wrong-password') {
+        message = 'Delete failed: Wrong password.';
+      } else if (e.code == 'user-mismatch') {
+        message = 'Delete failed: User mismatch.';
+      } else if (e.code == 'user-not-found') {
+        message = 'Delete failed: User not found.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      // Show error (e.g., "Wrong password")
+      // Show generic errors
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Delete failed: ${e.toString()}'),
@@ -172,7 +210,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       );
       setState(() {
-        _isDeleting = false; // Hide loading overlay
+        _isDeleting = false;
       });
     }
   }
