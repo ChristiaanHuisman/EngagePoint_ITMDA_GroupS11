@@ -70,8 +70,8 @@ EngagePoint bridges this gap by providing an affordable, customizable mobile pla
 
 ### Backend (Microservices):
 - **Java** – Content Scheduler
-- **C# (ASP.NET Core)** – Engagement analytics & business verification  
-- **Python** – Sentiment analysis & content moderation  
+- **C# (ASP.NET Core)** – Engagement analytics & [Business Verification](https://github.com/ChristiaanHuisman/BusinessVerification_Service)
+- **Python** – Sentiment analysis & content moderation
 
 
 ## Project Structure
