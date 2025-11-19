@@ -228,7 +228,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
                           if (selected) {
                             _selectedTag = tag;
                           } else {
-                            _selectedTag = null; // De-select
+                            _selectedTag = null; 
                           }
                         });
                       },
@@ -252,16 +252,25 @@ class _FollowingFeedState extends State<FollowingFeed> {
     return StreamBuilder<UserModel?>(
       stream: _firestoreService.getUserStream(),
       builder: (context, userSnapshot) {
+        
+        if (userSnapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
         final userModel = userSnapshot.data;
-        if (userSnapshot.connectionState == ConnectionState.waiting ||
-            userModel == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Home')),
-            drawer: const Drawer(),
-            body: const Center(child: CircularProgressIndicator()),
+        if (userModel == null) {
+          return const Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 20),
+                  Text("Setting up your profile..."),
+                ],
+              ),
+            ),
           );
         }
-
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -300,7 +309,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
     );
   }
 
-  Widget _buildFollowedFeed() {
+ Widget _buildFollowedFeed() {
   return StreamBuilder<List<String>>(
     stream: _followedBusinessesStream,
     builder: (context, followedSnapshot) {
@@ -348,11 +357,14 @@ class _FollowingFeedState extends State<FollowingFeed> {
           }
 
           final allPosts = postSnapshot.data!;
+          
           final filteredPosts = allPosts.where((post) {
             if (_selectedTag == null) {
               return true;
             }
-
+            if (post.tag == null) {
+              return false;
+            }
             return post.tag!.contains(_selectedTag!);
           }).toList();
 
@@ -382,9 +394,9 @@ class _FollowingFeedState extends State<FollowingFeed> {
           }
 
           return ListView.builder(
-            itemCount: filteredPosts.length, // Use filtered list
+            itemCount: filteredPosts.length, 
             itemBuilder: (context, index) =>
-                PostCard(post: filteredPosts[index]), // Use filtered list
+                PostCard(post: filteredPosts[index]), 
           );
         },
       );

@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_app/pages/customer_profile_page.dart';
+import 'package:flutter_app/pages/login_page.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'models/post_model.dart';
@@ -86,20 +87,27 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Initialize notification service
-  await NotificationService().initAndSaveToken();
+  try {
+    await NotificationService().initAndSaveToken();
+  } catch (e) {
+    debugPrint("Main: Notification Init failed (Ignored): $e");
+  }
 
-  // Set up notification listeners
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  FirebaseMessaging.instance.getInitialMessage().then((message) {
-    if (message != null) {
-      _handleNotificationNavigation(message);
-    }
-  });
-  FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationNavigation);
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    debugPrint('Foreground message received: ${message.notification?.title}');
-  });
+  
+  try {
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      if (message != null) {
+        _handleNotificationNavigation(message);
+      }
+    });
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationNavigation);
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('Foreground message received: ${message.notification?.title}');
+    });
+  } catch (e) {
+     debugPrint("Main: Messaging listeners failed (Ignored): $e");
+  }
 
   runApp(
     MultiProvider(
@@ -139,7 +147,18 @@ class MyApp extends StatelessWidget {
             useMaterial3: true,
           ),
           themeMode: themeProvider.themeMode,
-          home: const HomePage(),
+          home: StreamBuilder<User?>(
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasData) {
+                return const HomePage();
+              }
+              return const LoginPage(); // Or SignUpPage, depending on flow
+            },
+          ),
         );
       },
     );

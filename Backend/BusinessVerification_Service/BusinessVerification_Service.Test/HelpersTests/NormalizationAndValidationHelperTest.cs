@@ -2,7 +2,7 @@
 
 namespace BusinessVerification_Service.Test.HelpersTests
 {
-    [Trait("Catagory", "NormalizationAndValidationHelper Unit Testing")]
+    [Trait("Category", "NormalizationAndValidationHelper Unit Testing")]
     public class NormalizationAndValidationHelperTest
     {
         // Injected dependencies

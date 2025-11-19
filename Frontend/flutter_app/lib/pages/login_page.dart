@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/pages/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import 'signup_page.dart';
@@ -20,7 +21,7 @@ class LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    _loadUserEmail(); // Load email when the page starts
+    _loadUserEmail();
   }
 
   @override
@@ -30,25 +31,38 @@ class LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  //  Method to load the saved email from device storage
-  void _loadUserEmail() async {
+  Future<void> _loadUserEmail() async {
+    debugPrint("TRYING TO LOAD SAVED EMAIL ");
     final prefs = await SharedPreferences.getInstance();
-    final String? email = prefs.getString('email');
-    if (email != null) {
+
+    final bool rememberMe = prefs.getBool('remember_me') ?? false;
+    final String? savedEmail = prefs.getString('saved_email');
+
+    debugPrint("Remember Me status: $rememberMe");
+    debugPrint("Saved Email: $savedEmail");
+
+    if (mounted) {
       setState(() {
-        _emailController.text = email;
-        _rememberMe = true;
+        _rememberMe = rememberMe;
+
+        if (rememberMe && savedEmail != null) {
+          _emailController.text = savedEmail;
+          debugPrint("EMAIL FILLED SUCCESSFULY ");
+        }
       });
     }
   }
 
-  //  Method to handle saving or removing the email
   Future<void> _handleRememberMe() async {
     final prefs = await SharedPreferences.getInstance();
     if (_rememberMe) {
-      await prefs.setString('email', _emailController.text.trim());
+      debugPrint("SAVING EMAIL: ${_emailController.text.trim()} ---");
+      await prefs.setString('saved_email', _emailController.text.trim());
+      await prefs.setBool('remember_me', true);
     } else {
-      await prefs.remove('email');
+      debugPrint("CLEARING SAVED EMAIL ");
+      await prefs.remove('saved_email');
+      await prefs.setBool('remember_me', false);
     }
   }
 
@@ -62,7 +76,14 @@ class LoginPageState extends State<LoginPage> {
     setState(() => _loading = false);
 
     if (user != null) {
-      await _handleRememberMe(); //  Save/remove email on successful login
+      await _handleRememberMe();
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      }
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login failed")),
@@ -76,7 +97,14 @@ class LoginPageState extends State<LoginPage> {
     if (!mounted) return;
     setState(() => _loading = false);
 
-    if (user == null && mounted) {
+    if (user != null) {
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      }
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Google login failed")),
       );
@@ -85,6 +113,9 @@ class LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onPrimaryColor = theme.colorScheme.onPrimary;
+
     return Scaffold(
         body: SafeArea(
       child: Center(
@@ -140,17 +171,31 @@ class LoginPageState extends State<LoginPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme
+                        .colorScheme.primary,
+                    foregroundColor:
+                        onPrimaryColor, 
+                  ),
                   onPressed: _loading ? null : _loginWithEmail,
                   child: _loading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 22,
                           width: 22,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            // Use onPrimary so the spinner matches the text color
+                            color: onPrimaryColor,
                             strokeWidth: 2.5,
                           ),
                         )
-                      : const Text("Login"),
+                      : Text(
+                          "Login",
+                          style: TextStyle(
+                            //  forces the text to use the themes contrast color
+                            color: onPrimaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 20),

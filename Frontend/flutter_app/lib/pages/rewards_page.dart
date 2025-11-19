@@ -85,7 +85,8 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
           ),
           body: SafeArea(
             child: StreamBuilder<UserModel?>(
-              stream: _firestoreService.getUserStream(),
+              // Ensure this function returns the User with the new UID
+              stream: _firestoreService.getUserStream(), 
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -96,9 +97,9 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
                   return const Center(child: Text("Could not load user data."));
                 }
 
-                // gets data from the model
                 final int currentPoints = user.points;
-                final int spinsAvailable = user.spinsAvailable;
+                // Use the Date, not the int count
+                final DateTime nextFreeSpinAt = user.nextFreeSpinAt;
 
                 final levelData = _getLevelData(currentPoints);
                 final Level currentLevel = levelData['currentLevel'];
@@ -118,16 +119,31 @@ class _RewardsAndProgressionPageState extends State<RewardsAndProgressionPage> {
                           pointsToNextLevel: pointsToNextLevel,
                         ),
                         const SizedBox(height: 30),
-                        Text(
-                          "You have $spinsAvailable spin(s) available. Good luck!",
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(color: Colors.grey),
-                          textAlign: TextAlign.center,
+                        
+                        // Header Text Logic
+                        Builder(
+                          builder: (context) {
+                            bool isReady = DateTime.now().isAfter(nextFreeSpinAt);
+                            return Text(
+                              isReady 
+                                ? "Your Daily Spin is Ready!" 
+                                : "Come back later for more rewards.",
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(color: Colors.grey),
+                              textAlign: TextAlign.center,
+                            );
+                          }
                         ),
+                        
                         const SizedBox(height: 20),
-                        RewardWheel(spinsAvailable: spinsAvailable),
+                        
+                        // Pass the Date Logic
+                        RewardWheel(
+                          nextFreeSpinAt: nextFreeSpinAt, 
+                          userId: user.uid,
+                        ),
                       ],
                     ),
                   ),

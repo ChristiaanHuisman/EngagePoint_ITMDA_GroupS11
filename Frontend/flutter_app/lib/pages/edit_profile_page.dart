@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_app/models/user_model.dart'; // Make sure this path is correct
+import 'package:flutter_app/models/user_model.dart'; 
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
 
@@ -34,7 +34,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   String? _existingImageUrl;
   bool _isLoading = false;
 
-  // For the business verification microservice part
+  // For the business verification microservice 
   String? _verificationMessage;
   bool _hasRequestedVerification = false;
   bool _isVerificationLocked = false;
@@ -188,7 +188,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       final idToken = await user?.getIdToken();
       final authToken = 'Bearer $idToken';
 
-      // Apply a 15 second timeout to the request
+      // Apply a 60 second timeout to the request
       final response = await http
           .get(
         Uri.parse(apiUrl),
@@ -198,7 +198,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         },
       )
           .timeout(
-        const Duration(seconds: 15),
+        const Duration(seconds: 60),
         onTimeout: () {
           throw TimeoutException('Connection timed out');
         },
@@ -324,7 +324,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                   if (widget.user.isBusiness) const SizedBox(height: 16),
 
-                  // End Business-Only Fields
                   TextFormField(
                     controller: _descriptionController,
                     decoration: InputDecoration(
@@ -387,7 +386,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                   ],
-
+                  // End Business-Only Fields
                 ],
               ),
             ),

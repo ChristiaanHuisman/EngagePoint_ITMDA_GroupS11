@@ -100,7 +100,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
 
         final bool canViewContent = !user.isPrivate || isOwnProfile;
 
-        // Customer has 2 tabs: Reviews & Rewards
+        // Reviews & Rewards
         return DefaultTabController(
             length: 2,
             child: Scaffold(

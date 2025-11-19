@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import '../services/firestore_service.dart';
 
@@ -26,7 +25,6 @@ class RewardsData extends ChangeNotifier {
 
   RewardItem? _currentReward;
   bool _isSpinning = false;
-  
 
   List<RewardItem> get rewards => _rewards;
   RewardItem? get currentReward => _currentReward;
@@ -40,14 +38,21 @@ class RewardsData extends ChangeNotifier {
     }
   }
 
-  void endSpin(RewardItem selectedReward) {
+  Future<void> endSpin(RewardItem selectedReward, String userId) async {
     _currentReward = selectedReward;
     _isSpinning = false;
-
-    if (selectedReward.points > 0) {
-      _firestoreService.updateUserPoints(selectedReward.points);
-    }
-    
     notifyListeners();
+
+    try {
+      bool isSpinAgain = selectedReward.name == "Spin Again";
+
+      await _firestoreService.processSpinResult(
+        userId: userId,
+        pointsWon: selectedReward.points,
+        isSpinAgain: isSpinAgain,
+      );
+    } catch (e) {
+      debugPrint("Error processing spin reward: $e");
+    }
   }
 }

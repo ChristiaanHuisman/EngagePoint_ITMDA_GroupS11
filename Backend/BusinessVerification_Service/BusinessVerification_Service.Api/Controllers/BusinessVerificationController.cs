@@ -18,14 +18,14 @@ namespace BusinessVerification_Service.Api.Controllers
             _businessVerificationService = businessVerificationService;
         }
 
-        // Standard error message ending for displaying user error messages
+        // Standard respnose messages
         const string errorMessageEnd = "Please ensure all account details are correct " +
             "and try again in a few minutes, contact support if the issue persists.";
 
         // Bind the Authorization header to the authorizationHeader variable
         [HttpGet("request-business-verification")]
         public async Task<IActionResult> RequestBusinessVerification(
-            [FromHeader(Name = "Authorization")] string authorizationHeader)
+            [FromHeader(Name = "Authorization")] string? authorizationHeader)
         {
             // Create response DTO instance
             BusinessVerificationResponseDto responseDto = new();
@@ -37,9 +37,10 @@ namespace BusinessVerification_Service.Api.Controllers
                     .BusinessVerificationProcess(authorizationHeader);
                 return Ok(responseDto);
             }
+            // Handle unexpected errors gracefully
             catch
             {
-                // Handle unexpected errors gracefully
+                // Returning a response
                 responseDto.message = $"An unexpected error occured during your " +
                     $"business verification request process. {errorMessageEnd}";
                 return StatusCode(500, responseDto);
