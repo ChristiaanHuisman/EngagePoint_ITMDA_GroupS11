@@ -310,12 +310,29 @@ class PostHeader extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  business.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                child: Row( 
+                  children: [
+                    Flexible( 
+                      child: Text(
+                        business.name,
+	                    style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        overflow: TextOverflow.ellipsis, 
+                        maxLines: 1, 
+                      ),
+                    ),
+                     if (business.verificationStatus == 'accepted') 
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6.0),
+                        child: Icon(
+                         Icons.verified,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 18.0, 
+                        ),
+                      ),
+                  ],
                 ),
               ),
               if (post.tag != null && post.tag!.isNotEmpty)

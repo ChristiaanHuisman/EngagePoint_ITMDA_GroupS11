@@ -252,16 +252,33 @@ class _FollowingFeedState extends State<FollowingFeed> {
     return StreamBuilder<UserModel?>(
       stream: _firestoreService.getUserStream(),
       builder: (context, userSnapshot) {
+        
+        // 1. Wait for connection
+        if (userSnapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+
         final userModel = userSnapshot.data;
-        if (userSnapshot.connectionState == ConnectionState.waiting ||
-            userModel == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Home')),
-            drawer: const Drawer(),
-            body: const Center(child: CircularProgressIndicator()),
+
+        // 2. FIX: Handling Null Data safely
+        // If data is null, it might just be loading the new document. 
+        // DO NOT LOG OUT. Just wait.
+        if (userModel == null) {
+          return const Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 20),
+                  Text("Setting up your profile..."),
+                ],
+              ),
+            ),
           );
         }
 
+        // 3. Data Loaded - Show the Feed
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -300,7 +317,7 @@ class _FollowingFeedState extends State<FollowingFeed> {
     );
   }
 
-  Widget _buildFollowedFeed() {
+ Widget _buildFollowedFeed() {
   return StreamBuilder<List<String>>(
     stream: _followedBusinessesStream,
     builder: (context, followedSnapshot) {

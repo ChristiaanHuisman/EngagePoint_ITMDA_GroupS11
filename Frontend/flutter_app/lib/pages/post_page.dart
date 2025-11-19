@@ -152,10 +152,26 @@ class _PostPageState extends State<PostPage> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                _businessProfile!.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 16),
+                              Row(
+                                children: [
+                                  Text(
+                                    _businessProfile!.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16),
+                                  ),
+                                  if (_businessProfile!.verificationStatus == 'accepted')
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 6.0),
+                                      child: Icon(
+                                        Icons.verified,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        size: 18.0, 
+                                      ),
+                                    ),
+                                ],
                               ),
                               Text(
                                 'Posted on $formattedDate',
@@ -187,7 +203,6 @@ class _PostPageState extends State<PostPage> {
 
                 const Divider(height: 24),
 
-                // Title
                 Text(
                   widget.post.title,
                   style: Theme.of(context)

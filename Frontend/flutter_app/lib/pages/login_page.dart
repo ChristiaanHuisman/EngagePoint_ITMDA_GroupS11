@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_app/pages/home_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import 'signup_page.dart';
@@ -62,7 +63,17 @@ class LoginPageState extends State<LoginPage> {
     setState(() => _loading = false);
 
     if (user != null) {
-      await _handleRememberMe(); //  Save/remove email on successful login
+      await _handleRememberMe(); 
+      
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      }
+
+      
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login failed")),
@@ -76,12 +87,22 @@ class LoginPageState extends State<LoginPage> {
     if (!mounted) return;
     setState(() => _loading = false);
 
-    if (user == null && mounted) {
+    if (user != null) {
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      }
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Google login failed")),
       );
     }
   }
+
+  
 
   @override
   Widget build(BuildContext context) {

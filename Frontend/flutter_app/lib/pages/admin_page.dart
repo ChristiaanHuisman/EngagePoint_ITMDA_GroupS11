@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/user_model.dart';
 import '../services/firestore_service.dart';
 
@@ -72,6 +73,11 @@ class _AdminPageState extends State<AdminPage> {
           itemBuilder: (context, index) {
             final business = pendingBusinesses[index];
 
+            String requestedAt = 'Unknown request time';
+            if (business.verificationRequestedAt != null) {
+              requestedAt = DateFormat('MMM dd, yyyy - hh:mm a').format(business.verificationRequestedAt!.toDate());
+            }
+
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Padding(
@@ -85,14 +91,19 @@ class _AdminPageState extends State<AdminPage> {
                     const SizedBox(height: 4),
                     Text(business.email,
                         style: TextStyle(color: Colors.grey[600])),
+                        const SizedBox(height: 8),
+                    Text('Requested: $requestedAt',
+                        style: TextStyle(
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                            fontSize: 12)),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
                           onPressed: () {
-                            _firestoreService.updateUserStatus(
-                                business.uid, 'rejected');
+                            _firestoreService.rejectBusiness(business.uid);
                           },
                           child: const Text('Reject',
                               style: TextStyle(color: Colors.red)),
@@ -100,8 +111,7 @@ class _AdminPageState extends State<AdminPage> {
                         const SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: () {
-                            _firestoreService.updateUserStatus(
-                                business.uid, 'verified');
+                            _firestoreService.approveBusiness(business.uid);
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
@@ -115,7 +125,7 @@ class _AdminPageState extends State<AdminPage> {
                 ),
               ),
             );
-          },
+          }
         );
       },
     );
