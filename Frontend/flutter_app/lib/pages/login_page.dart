@@ -21,7 +21,7 @@ class LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    _loadUserEmail(); 
+    _loadUserEmail();
   }
 
   @override
@@ -34,7 +34,6 @@ class LoginPageState extends State<LoginPage> {
   Future<void> _loadUserEmail() async {
     debugPrint("TRYING TO LOAD SAVED EMAIL ");
     final prefs = await SharedPreferences.getInstance();
-    
 
     final bool rememberMe = prefs.getBool('remember_me') ?? false;
     final String? savedEmail = prefs.getString('saved_email');
@@ -45,7 +44,6 @@ class LoginPageState extends State<LoginPage> {
     if (mounted) {
       setState(() {
         _rememberMe = rememberMe;
-        
 
         if (rememberMe && savedEmail != null) {
           _emailController.text = savedEmail;
@@ -78,8 +76,8 @@ class LoginPageState extends State<LoginPage> {
     setState(() => _loading = false);
 
     if (user != null) {
-      await _handleRememberMe(); 
-      
+      await _handleRememberMe();
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -115,10 +113,9 @@ class LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-
     final theme = Theme.of(context);
-    final onPrimaryColor = theme.colorScheme.onPrimary; 
-    
+    final onPrimaryColor = theme.colorScheme.onPrimary;
+
     return Scaffold(
         body: SafeArea(
       child: Center(
@@ -170,39 +167,37 @@ class LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 10),
 
-              
-
               // Login button
-              
-
-SizedBox(
-  width: double.infinity,
-  child: ElevatedButton(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: theme.colorScheme.primary, // Ensures background is Primary
-      foregroundColor: onPrimaryColor, // Ensures text/icon is OnPrimary
-    ),
-    onPressed: _loading ? null : _loginWithEmail,
-    child: _loading
-        ? SizedBox(
-            height: 22,
-            width: 22,
-            child: CircularProgressIndicator(
-              // Use onPrimary so the spinner matches the text color
-              color: onPrimaryColor, 
-              strokeWidth: 2.5,
-            ),
-          )
-        : Text(
-            "Login",
-            style: TextStyle(
-              // This explicitly forces the text to use the theme's contrast color
-              color: onPrimaryColor, 
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-  ),
-),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme
+                        .colorScheme.primary,
+                    foregroundColor:
+                        onPrimaryColor, 
+                  ),
+                  onPressed: _loading ? null : _loginWithEmail,
+                  child: _loading
+                      ? SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            // Use onPrimary so the spinner matches the text color
+                            color: onPrimaryColor,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : Text(
+                          "Login",
+                          style: TextStyle(
+                            //  forces the text to use the themes contrast color
+                            color: onPrimaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ),
               const SizedBox(height: 20),
 
               // Google login
