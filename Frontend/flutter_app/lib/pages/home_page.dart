@@ -365,11 +365,20 @@ class _FollowingFeedState extends State<FollowingFeed> {
           }
 
           final allPosts = postSnapshot.data!;
+          
           final filteredPosts = allPosts.where((post) {
+            // 1. If no tag is selected in the UI, show all posts
             if (_selectedTag == null) {
               return true;
             }
 
+            // 2. FIX: Handle posts that don't have a tag.
+            // If a post's tag is null, it cannot match the selected tag, so return false.
+            if (post.tag == null) {
+              return false;
+            }
+
+            // 3. Now it is safe to check because we know it isn't null
             return post.tag!.contains(_selectedTag!);
           }).toList();
 
