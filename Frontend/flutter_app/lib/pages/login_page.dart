@@ -31,36 +31,39 @@ class LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  //  Method to load the saved email from device storage
   Future<void> _loadUserEmail() async {
+    debugPrint("TRYING TO LOAD SAVED EMAIL ");
     final prefs = await SharedPreferences.getInstance();
     
-    final String? email = prefs.getString('email');
-    
+
     final bool rememberMe = prefs.getBool('remember_me') ?? false;
+    final String? savedEmail = prefs.getString('saved_email');
+
+    debugPrint("Remember Me status: $rememberMe");
+    debugPrint("Saved Email: $savedEmail");
 
     if (mounted) {
       setState(() {
-        // Only set the email if we have one AND the user wanted to be remembered
-        if (email != null && rememberMe) {
-          _emailController.text = email;
-          _rememberMe = true;
-        } else {
-           _rememberMe = false;
+        _rememberMe = rememberMe;
+        
+
+        if (rememberMe && savedEmail != null) {
+          _emailController.text = savedEmail;
+          debugPrint("EMAIL FILLED SUCCESSFULY ");
         }
       });
     }
   }
 
-  //  Method to handle saving or removing the email
   Future<void> _handleRememberMe() async {
     final prefs = await SharedPreferences.getInstance();
     if (_rememberMe) {
-      await prefs.setString('email', _emailController.text.trim());
+      debugPrint("SAVING EMAIL: ${_emailController.text.trim()} ---");
+      await prefs.setString('saved_email', _emailController.text.trim());
       await prefs.setBool('remember_me', true);
     } else {
-
-      await prefs.remove('email');
+      debugPrint("CLEARING SAVED EMAIL ");
+      await prefs.remove('saved_email');
       await prefs.setBool('remember_me', false);
     }
   }
@@ -112,6 +115,10 @@ class LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+
+    final theme = Theme.of(context);
+    final onPrimaryColor = theme.colorScheme.onPrimary; 
+    
     return Scaffold(
         body: SafeArea(
       child: Center(
@@ -163,23 +170,39 @@ class LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 10),
 
+              
+
               // Login button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : _loginWithEmail,
-                  child: _loading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.5,
-                          ),
-                        )
-                      : const Text("Login"),
-                ),
-              ),
+              
+
+SizedBox(
+  width: double.infinity,
+  child: ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: theme.colorScheme.primary, // Ensures background is Primary
+      foregroundColor: onPrimaryColor, // Ensures text/icon is OnPrimary
+    ),
+    onPressed: _loading ? null : _loginWithEmail,
+    child: _loading
+        ? SizedBox(
+            height: 22,
+            width: 22,
+            child: CircularProgressIndicator(
+              // Use onPrimary so the spinner matches the text color
+              color: onPrimaryColor, 
+              strokeWidth: 2.5,
+            ),
+          )
+        : Text(
+            "Login",
+            style: TextStyle(
+              // This explicitly forces the text to use the theme's contrast color
+              color: onPrimaryColor, 
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+  ),
+),
               const SizedBox(height: 20),
 
               // Google login

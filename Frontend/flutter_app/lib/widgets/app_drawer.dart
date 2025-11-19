@@ -1,21 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../pages/settings_page.dart';
 import '../pages/admin_page.dart';
 import '../pages/business_dashboard_page.dart';
 import '../pages/rewards_page.dart';
+import '../services/auth_service.dart';
+import '../pages/login_page.dart';
+
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
   Future<void> _signOut(BuildContext context) async {
-    // Pop the drawer to avoid errors after sign out
+
     Navigator.of(context).pop();
-    await GoogleSignIn().signOut();
-    await FirebaseAuth.instance.signOut();
+
+    final AuthService authService = AuthService();
+    await authService.signOut();
+
+    if (context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (Route<dynamic> route) => false,
+      );
+    }
   }
 
   @override
@@ -129,9 +139,8 @@ class AppDrawer extends StatelessWidget {
                 ),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.red),
-                title:
-                    const Text('Logout', style: TextStyle(color: Colors.red)),
-                onTap: () => _signOut(context),
+                title: const Text('Logout', style: TextStyle(color: Colors.red)),
+                onTap: () => _signOut(context), // Calls our updated function
               ),
             ],
           ),
