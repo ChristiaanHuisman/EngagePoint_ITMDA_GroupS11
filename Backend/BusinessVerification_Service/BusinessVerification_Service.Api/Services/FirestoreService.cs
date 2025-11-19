@@ -9,7 +9,7 @@ namespace BusinessVerification_Service.Api.Services
         private readonly FirestoreDb _firestoreDb;
 
         // Constructor for dependency injection
-        public FirestoreService (FirestoreDb firestoreDb)
+        public FirestoreService(FirestoreDb firestoreDb)
         {
             _firestoreDb = firestoreDb;
         }
@@ -55,6 +55,43 @@ namespace BusinessVerification_Service.Api.Services
             // do not remove other fields
             DocumentReference documentReference = _firestoreDb.Document(documentPath);
             await documentReference.SetAsync(document, SetOptions.MergeAll);
+        }
+
+        // Generic method
+        //
+        // Need to carefully specify path to document when calling the method
+        //
+        // Delete relevant document specified from Firestore collection
+        public async Task DeleteDocumentFromFirestore(string documentPath)
+        {
+            // Get a reference to the specified Firestore document and delete it
+            DocumentReference documentReference = _firestoreDb.Document(documentPath);
+            await documentReference.DeleteAsync();
+        }
+
+        // Generic method
+        //
+        // Need to specify collection name, field name, and field value of the desired
+        // deleted documents when calling this method
+        //
+        // Delete relevant Firestore documents by qury from a specified field
+        public async Task DeleteDocumentsFromCollectionByField(string collectionName,
+            string fieldName, string fieldValue)
+        {
+            // Get all document snapshots from collection that match the query
+            CollectionReference collectionReference = _firestoreDb.Collection(collectionName);
+            Query query = collectionReference.WhereEqualTo(fieldName, fieldValue);
+            QuerySnapshot querySnapshot = await query.GetSnapshotAsync();
+
+            // Add all documents delete tasks
+            List<Task> deleteTasks = [];
+            foreach (DocumentSnapshot documentSnapshot in querySnapshot.Documents)
+            {
+                deleteTasks.Add(documentSnapshot.Reference.DeleteAsync());
+            }
+
+            // Delete all documents concurrently
+            await Task.WhenAll(deleteTasks);
         }
 
         // Generic method

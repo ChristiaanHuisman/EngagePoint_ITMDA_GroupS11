@@ -57,7 +57,7 @@ Backend (Core):
 
 Backend (Microservices):
 - Java – Content Scheduler
-- C# (ASP.NET Core) – Engagement analytics & business verification  
+- C# (ASP.NET Core) – Engagement analytics & [Business Verification](https://github.com/ChristiaanHuisman/BusinessVerification_Service)  
 - Python – Sentiment analysis & content moderation  
 
 ---

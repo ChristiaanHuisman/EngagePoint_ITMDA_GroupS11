@@ -21,7 +21,8 @@ namespace BusinessVerification_Service.Api.Models
         [FirestoreProperty(ConverterType = typeof(
             Services.FirestoreService.FirestoreEnumStringConverter<userVerificationStatus>))]
         public userVerificationStatus verificationStatus { get; set; }
-            = userVerificationStatus.notStarted;
+            = userVerificationStatus.notStarted
+        ;
 
         [FirestoreProperty]
         public int? fuzzyScore { get; set; }
