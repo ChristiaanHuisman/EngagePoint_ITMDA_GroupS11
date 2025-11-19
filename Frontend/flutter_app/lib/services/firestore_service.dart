@@ -818,4 +818,45 @@ class FirestoreService {
         .map((snapshot) =>
             snapshot.docs.map((doc) => PostModel.fromFirestore(doc)).toList());
   }
+  // Transaction to safely handle spins and points
+  Future<void> processSpinResult({
+    required String userId,
+    required int pointsWon,
+    required bool isSpinAgain,
+  }) async {
+    final userRef = _db.collection('users').doc(userId);
+
+    return _db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(userRef);
+
+      if (!snapshot.exists) {
+        throw Exception("User does not exist!");
+      }
+
+      final data = snapshot.data() as Map<String, dynamic>;
+      final currentPoints = data['points'] as int? ?? 0;
+      
+      // TIME CHECK LOGIC
+      Timestamp? nextSpinTs = data['nextFreeSpinAt'];
+      DateTime nextFreeSpinAt = nextSpinTs?.toDate() ?? DateTime(2000);
+      
+      if (DateTime.now().isBefore(nextFreeSpinAt)) {
+        throw Exception("Daily spin not ready yet!");
+      }
+
+      // Calculate new values
+      final int newPoints = currentPoints + pointsWon;
+
+      // IF "Spin Again": Next spin is NOW (keep old date or set to past)
+      // IF Normal Spin: Next spin is NOW + 24 Hours
+      DateTime newNextSpinTime = isSpinAgain 
+          ? DateTime.now().subtract(const Duration(minutes: 1)) 
+          : DateTime.now().add(const Duration(hours: 24));
+
+      transaction.update(userRef, {
+        'points': newPoints,
+        'nextFreeSpinAt': Timestamp.fromDate(newNextSpinTime),
+      });
+    });
+  }
 }

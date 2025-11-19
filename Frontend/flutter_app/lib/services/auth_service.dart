@@ -71,6 +71,7 @@ class AuthService {
         role: isBusiness ? 'business' : 'customer',
         status: isBusiness ? 'pending' : 'verified',
         createdAt: Timestamp.now(),
+        nextFreeSpinAt: DateTime(2000),
         timezone: localTimezone,
         timezoneOffset: timezoneOffset,
         notificationPreferences: NotificationPreferences(),
