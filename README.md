@@ -40,6 +40,8 @@ EngagePoint bridges this gap by providing an affordable, customizable mobile pla
 
 ## Core Feature GIFs
 
+* [Demonstration Videos](https://www.youtube.com/playlist?list=PLkQbrD7zzx7UYRKuAnybhsrwOBHJG-b7U)
+
 | Email Login | Google Login | Sign-Up |
 | :---: | :---: | :---: |
 | ![Email Login GIF](ReadMeAssets/EmailLogin.gif) | ![Google Login](ReadMeAssets/GoogleLogin.gif) | ![SignUp](ReadMeAssets/SignUp.gif) |
